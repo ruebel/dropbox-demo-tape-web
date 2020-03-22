@@ -33,7 +33,14 @@ const Play = styled.span`
 
 const Updated = styled.span`
   color: ${p => p.theme.color.secondary};
+  display: grid;
   font-size: 11px;
+  line-height: 15px;
+  text-align: right;
+`;
+
+const UpdatedBy = styled.span`
+  color: ${p => p.theme.color.disabled};
 `;
 
 const Wrapper = styled.button`
@@ -92,9 +99,11 @@ function Track({
           <div />
         ) : (
           <Updated>
-            Updated{" "}
-            {formatRelative(new Date(track.server_modified), new Date())}
-            {user ? ` by ${user.name.display_name}` : ""}
+            <span>
+              Updated{" "}
+              {formatRelative(new Date(track.server_modified), new Date())}
+            </span>
+            {user && <UpdatedBy>by {user.name.display_name}</UpdatedBy>}
           </Updated>
         )}
       </Inner>
