@@ -94,7 +94,7 @@ function Track({
           <Updated>
             Updated{" "}
             {formatRelative(new Date(track.server_modified), new Date())}
-            {user ? ` by ${user.name.full}` : ""}
+            {user ? ` by ${user.name.display_name}` : ""}
           </Updated>
         )}
       </Inner>

@@ -7,6 +7,7 @@ import List from "../List";
 import Track from "./Track";
 
 import { reorderList } from "../utils";
+import { getModifiedBy } from "../Explorer/fileUtils";
 
 const DragHandle = styled.div`
   align-items: center;
@@ -70,7 +71,8 @@ function TrackList({
   onTrackClick,
   onTrackDelete,
   playingId,
-  tracks
+  tracks,
+  users
 }) {
   function handleSort(result) {
     if (
@@ -119,6 +121,7 @@ function TrackList({
           isPlaying={playingId === track.id}
           onClick={onTrackClick}
           track={track}
+          user={users[getModifiedBy(track)]}
         />
       )}
     />

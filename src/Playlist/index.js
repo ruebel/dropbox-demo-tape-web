@@ -43,7 +43,9 @@ const Inputs = styled.div`
 `;
 
 function Playlist({ navigate, playlistId }) {
-  const { data, isLoading, onDelete, onSave } = usePlaylist({ playlistId });
+  const { data, isLoading, onDelete, onSave, users } = usePlaylist({
+    playlistId
+  });
   const [isDirty, setIsDirty] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [playlist, setPlaylist] = useState(data);
@@ -159,6 +161,7 @@ function Playlist({ navigate, playlistId }) {
         onTrackClick={handleTrackClick}
         playingId={audio.track?.id}
         tracks={playlist.data.tracks}
+        users={users}
       />
     </div>
   );
