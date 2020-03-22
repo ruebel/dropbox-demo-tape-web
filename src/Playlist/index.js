@@ -1,6 +1,7 @@
 import React, { Fragment, useState } from "react";
 import styled from "styled-components";
 
+import { HOME } from "../constants";
 import Button from "../Button";
 import ButtonLink from "../ButtonLink";
 import ConfirmationButton from "../ConfirmationButton";
@@ -56,7 +57,7 @@ function Playlist({ navigate, playlistId }) {
 
   async function handleDelete() {
     await onDelete(playlist);
-    navigate("/");
+    navigate(HOME);
   }
 
   function handleTrackChange(tracks) {

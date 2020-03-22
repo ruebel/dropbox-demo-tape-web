@@ -10,6 +10,7 @@ import blue from "@material-ui/core/colors/blue";
 import { AudioProvider } from "./audioContext";
 import { CacheProvider } from "./cacheContext";
 import { DropboxProvider } from "./dropboxContext";
+import { HOME } from "./constants";
 import theme from "./theme";
 
 import Auth from "./Auth";
@@ -33,7 +34,7 @@ function App() {
           <DropboxProvider authUrl={`${window.location.href}`}>
             <AudioProvider>
               <Router>
-                <Main path="/">
+                <Main path={HOME}>
                   <Auth path="auth" />
                   <AddPlaylist path="new" />
                   <Playlist path="playlist/:playlistId" />

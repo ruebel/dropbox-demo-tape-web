@@ -71,7 +71,7 @@ function Playlists() {
         itemRenderer={playlist => {
           const modifiedBy = playlist.meta.user?.name?.display_name;
           return (
-            <Link to={`/playlist/${playlist.meta.id}`}>
+            <Link to={`playlist/${playlist.meta.id}`}>
               <Playlist>
                 <Title>
                   <Name>{playlist.data.title}</Name>

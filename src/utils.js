@@ -1,3 +1,7 @@
+export function getPlaylistId(playlist) {
+  return playlist.meta.id;
+}
+
 export function removeExtension(fileName = "") {
   return fileName.substring(0, fileName.lastIndexOf("."));
 }

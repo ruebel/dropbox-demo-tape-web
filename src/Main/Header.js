@@ -5,6 +5,7 @@ import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 
 import { useDropbox } from "../dropboxContext";
+import { HOME } from "../constants";
 import Avatar from "../Avatar";
 import Link from "../Link";
 
@@ -33,21 +34,9 @@ const Wrapper = styled.div`
   grid-template-columns: auto 1fr auto;
   padding: 20px;
 `;
-
-const pathResolver = {
-  "/": {
-    title: "Playlists"
-  },
-  default: {
-    title: "Demo Tape"
-  }
-};
-
 function Header({ location }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const { currentUser, onLogout } = useDropbox();
-
-  const info = pathResolver[location.path] || pathResolver.default;
 
   function closeMenu() {
     setAnchorEl(null);
@@ -63,10 +52,10 @@ function Header({ location }) {
 
   return (
     <Wrapper>
-      <Link to="/">
+      <Link to={HOME}>
         <Inner>
           <Voicemail fontSize="large" />
-          <Title>{info.title}</Title>
+          <Title>Demo Tape</Title>
         </Inner>
       </Link>
       <span />

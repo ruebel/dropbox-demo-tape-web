@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import styled from "styled-components";
 
+import { HOME } from "./constants";
 import Button from "./Button";
 import ButtonLink from "./ButtonLink";
 import Explorer from "./Explorer";
@@ -76,7 +77,7 @@ function AddPlaylist({ navigate }) {
         <Button disabled={!canSave} type="submit">
           Save
         </Button>
-        <ButtonLink to="/">Cancel</ButtonLink>
+        <ButtonLink to={HOME}>Cancel</ButtonLink>
       </Header>
       <TextInput onChange={setTitle} title="Title" value={title} />
       <TextInput onChange={setArtist} title="Artist" value={artist} />

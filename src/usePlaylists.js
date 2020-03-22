@@ -3,9 +3,8 @@ import { useEffect, useState } from "react";
 import { useCache } from "./cacheContext";
 import { useDropbox } from "./dropboxContext";
 import useUsers from "./useUsers";
-import { updateItemInListById } from "./utils";
+import { getPlaylistId, updateItemInListById } from "./utils";
 import { uploadFile } from "./dropxboxUtils";
-import * as selectors from "./selectors";
 import {
   getModifiedBy,
   getModifiedUsersFromEntries
@@ -142,8 +141,8 @@ function usePlaylists({ forceRefresh }) {
       ? [...playlists, playlist]
       : updateItemInListById(
           playlists,
-          selectors.playlistId(playlist),
-          selectors.playlistId,
+          getPlaylistId(playlist),
+          getPlaylistId,
           playlist
         );
     savePlaylists(updatedList);

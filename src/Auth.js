@@ -3,6 +3,7 @@ import styled from "styled-components";
 import { Redirect } from "@reach/router";
 
 import { useDropbox } from "./dropboxContext";
+import { HOME } from "./constants";
 
 import Button from "./Button";
 import ButtonLink from "./ButtonLink";
@@ -53,7 +54,7 @@ function Auth() {
   }
 
   if (isAuthenticated) {
-    return <Redirect noThrow={true} to="/" />;
+    return <Redirect noThrow={true} to={HOME} />;
   }
 
   return (
