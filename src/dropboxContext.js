@@ -16,12 +16,14 @@ function DropboxProvider({ authUrl, children }) {
     cache.getValue("accessToken")
   );
   const [authHref, setAuthHref] = React.useState(null);
-  const dbx = React.useRef();
+  const [dbx, setDbx] = React.useState(null);
 
+  // Gets Auth Href after client id is added
   React.useEffect(() => {
     if (clientId) {
-      dbx.current = new Dropbox({ accessToken, clientId });
-      const href = dbx.current.getAuthenticationUrl(authUrl);
+      const currentDbx = new Dropbox({ accessToken, clientId });
+      setDbx(currentDbx);
+      const href = currentDbx.getAuthenticationUrl(authUrl);
       if (href) {
         setAuthHref(href);
       } else {
@@ -31,18 +33,19 @@ function DropboxProvider({ authUrl, children }) {
     // eslint-disable-next-line
   }, [clientId]);
 
+  // Gets current user's info if we don't have it already
   React.useEffect(() => {
     async function getCurrentUser() {
-      const user = await dbx.current.usersGetCurrentAccount();
+      const user = await dbx.usersGetCurrentAccount();
       setCurrentUser(user);
       cache.setValue("currentUser", user);
     }
 
-    if (accessToken && !currentUser) {
+    if (accessToken && !currentUser && dbx) {
       getCurrentUser();
     }
     // eslint-disable-next-line
-  }, [accessToken]);
+  }, [accessToken, dbx]);
 
   function onClearClientId() {
     setError(null);
@@ -53,6 +56,7 @@ function DropboxProvider({ authUrl, children }) {
   function onLogout() {
     setAccessToken("");
     setCurrentUser(null);
+    setDbx(null);
     cache.resetCache({ clientId });
   }
 
@@ -63,10 +67,15 @@ function DropboxProvider({ authUrl, children }) {
   }
 
   function parseAcessToken(url) {
+    // Get the access token from the query string
     const { access_token } = parseQueryString(window.location.hash);
-    dbx.current = new Dropbox({ accessToken: access_token });
-    setAccessToken(access_token);
+
+    // create a new dropbox token using the access token
+    setDbx(new Dropbox({ accessToken: access_token, clientId }));
+
+    // Save the access token in memory and cache
     cache.setValue("accessToken", access_token);
+    setAccessToken(access_token);
   }
 
   const value = {
@@ -74,9 +83,9 @@ function DropboxProvider({ authUrl, children }) {
     authHref,
     clientId,
     currentUser,
-    dbx: dbx.current,
+    dbx,
     error,
-    isAuthenticated: Boolean(accessToken),
+    isAuthenticated: dbx?.accessToken,
     onClearClientId,
     onLogout,
     onSaveClientId,

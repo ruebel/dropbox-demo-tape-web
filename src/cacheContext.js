@@ -13,20 +13,20 @@ function CacheProvider({ children, initialState = {} }) {
     // eslint-disable-next-line
   }, [state]);
 
-  const getValue = key => {
+  function getValue(key) {
     return state[key];
-  };
+  }
 
-  const resetCache = (stateToLoad = {}) => {
+  function resetCache(stateToLoad = {}) {
     setState(() => ({ ...initialState, ...stateToLoad }));
-  };
+  }
 
-  const setValue = (key, value) => {
+  function setValue(key, value) {
     setState(currentState => ({
       ...currentState,
       [key]: value
     }));
-  };
+  }
 
   const value = {
     getValue,
