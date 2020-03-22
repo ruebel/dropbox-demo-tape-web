@@ -37,7 +37,7 @@ const Wrapper = styled.div`
   background-color: ${p => p.theme.color.backgroundLight};
   bottom: 0;
   display: grid;
-  grid-template-columns: 200px 1fr;
+  grid-template-columns: minmax(200px, 0.5fr) 1fr;
   padding: 10px 20px;
   position: absolute;
   width: 100%;
