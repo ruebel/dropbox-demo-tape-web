@@ -1,6 +1,6 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "6286c0e08cf32902d9c46c84e980732e",
+    "revision": "8bb2ba5a3f413c9af707c94101c389e4",
     "url": "/dropbox-demo-tape-web/index.html"
   },
   {
