@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState } from "react";
+import React, { createContext, useContext, useEffect, useState } from "react";
 
 import useLocalStorage from "./useLocalStorage";
 
@@ -8,22 +8,24 @@ function CacheProvider({ children, initialState = {} }) {
   const [localStorage, setLocalStorage] = useLocalStorage("ddt", initialState);
   const [state, setState] = useState(localStorage);
 
+  useEffect(() => {
+    setLocalStorage(state);
+    // eslint-disable-next-line
+  }, [state]);
+
   const getValue = key => {
     return state[key];
   };
 
   const resetCache = (stateToLoad = {}) => {
-    setState({ ...initialState, ...stateToLoad });
+    setState(() => ({ ...initialState, ...stateToLoad }));
   };
 
   const setValue = (key, value) => {
-    const newState = {
-      ...state,
+    setState(currentState => ({
+      ...currentState,
       [key]: value
-    };
-
-    setState(newState);
-    setLocalStorage(newState);
+    }));
   };
 
   const value = {
