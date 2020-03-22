@@ -22,7 +22,7 @@ const Wrapper = styled.div`
 function Main({ children, location }) {
   const { isAuthenticated } = useDropbox();
 
-  if (!isAuthenticated && location.pathname !== "/auth") {
+  if (!isAuthenticated && !location.pathname.includes("/auth")) {
     return <Redirect noThrow={true} to="auth" />;
   }
 

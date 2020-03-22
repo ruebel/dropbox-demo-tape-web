@@ -33,8 +33,8 @@ function App() {
         <CacheProvider>
           <DropboxProvider authUrl={`${window.location.href}`}>
             <AudioProvider>
-              <Router>
-                <Main path={HOME}>
+              <Router basepath={HOME}>
+                <Main path="/">
                   <Auth path="auth" />
                   <AddPlaylist path="new" />
                   <Playlist path="playlist/:playlistId" />
