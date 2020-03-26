@@ -31,7 +31,7 @@ function App() {
     <MuiThemeProvider theme={muiTheme}>
       <ThemeProvider theme={theme}>
         <CacheProvider>
-          <DropboxProvider authUrl={`${window.location.href}`}>
+          <DropboxProvider authUrl={`${window.location.href}/auth`}>
             <AudioProvider>
               <Router basepath={HOME}>
                 <Main path="/">
