@@ -1,20 +1,11 @@
-import React, { Fragment, useState } from "react";
+import React, { Fragment } from "react";
 import styled from "styled-components";
 import { Redirect } from "@reach/router";
 
 import { useDropbox } from "./dropboxContext";
 import { HOME } from "./constants";
 
-import Button from "./Button";
 import ButtonLink from "./ButtonLink";
-import TextInput from "./TextInput";
-
-const Form = styled.form`
-  display: grid;
-  grid-gap: 20px;
-  position: relative;
-  width: 300px;
-`;
 
 const Wrapper = styled.div`
   align-items: center;
@@ -25,29 +16,7 @@ const Wrapper = styled.div`
 `;
 
 function Auth() {
-  const {
-    authHref,
-    clientId,
-    error,
-    isAuthenticated,
-    parseAcessToken,
-    onClearClientId,
-    onSaveClientId
-  } = useDropbox();
-  const [id, setId] = useState(clientId || "");
-
-  function handleIdChange(value) {
-    setId(value);
-  }
-
-  function handleSubmit(e) {
-    if (id) {
-      onSaveClientId(id);
-      setId("");
-    }
-    e.preventDefault();
-    return false;
-  }
+  const { authHref, isAuthenticated, parseAcessToken } = useDropbox();
 
   if (!isAuthenticated && window.location.hash.includes("access_token")) {
     parseAcessToken();
@@ -60,27 +29,9 @@ function Auth() {
   return (
     <Wrapper>
       <h1>Welcome</h1>
-      {clientId ? (
-        <Fragment>
-          <ButtonLink disabled={!clientId} href={authHref}>
-            Authenticate With Dropbox
-          </ButtonLink>
-          <Button onClick={onClearClientId}>Clear Dropbox Client Id</Button>
-        </Fragment>
-      ) : (
-        <Form onSubmit={handleSubmit}>
-          <TextInput
-            error={error}
-            hasError={error}
-            onChange={handleIdChange}
-            title="Dropbox Client Id"
-            value={id}
-          />
-          <Button disabled={!id} type="submit">
-            Save
-          </Button>
-        </Form>
-      )}
+      <Fragment>
+        <ButtonLink href={authHref}>Authenticate With Dropbox</ButtonLink>
+      </Fragment>
     </Wrapper>
   );
 }

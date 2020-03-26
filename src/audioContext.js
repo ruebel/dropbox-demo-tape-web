@@ -179,11 +179,6 @@ function AudioProvider({ children, initialState = {} }) {
 
   function onNext() {
     if (hasNext) {
-      // eslint-disable-next-line
-      console.log("on next", {
-        playlistId,
-        trackId: playlist.data.data.tracks[trackIndex + 1].id
-      });
       dispatch({
         type: "play",
         payload: {
