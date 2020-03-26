@@ -21,18 +21,27 @@ export const audioStates = {
 const defaultState = {
   duration: 0,
   playlistId: null,
+  position: 0,
   trackId: null,
   state: audioStates.stopped
 };
 
 function reducer(state, action) {
   switch (action.type) {
-    case "loaded":
+    case "duration":
       return {
         ...state,
-        ...action.payload,
-        state: audioStates.playing
+        ...action.payload
       };
+    case "loaded":
+      if (state.state === "loading") {
+        return {
+          ...state,
+          position: 0,
+          state: audioStates.playing
+        };
+      }
+      return state;
     case "pause":
       if (state.state === audioStates.playing) {
         return {
@@ -47,6 +56,11 @@ function reducer(state, action) {
         ...action.payload,
         state: audioStates.loading
       };
+    case "position":
+      return {
+        ...state,
+        ...action.payload
+      };
     case "resume":
       return {
         ...state,
@@ -55,6 +69,7 @@ function reducer(state, action) {
     case "stop":
       return {
         ...state,
+        position: 0,
         state: audioStates.stopped
       };
     default:
@@ -63,13 +78,13 @@ function reducer(state, action) {
 }
 
 function AudioProvider({ children, initialState = {} }) {
-  const [{ duration, playlistId, state, trackId }, dispatch] = useReducer(
-    reducer,
-    {
-      ...defaultState,
-      ...initialState
-    }
-  );
+  const [
+    { duration, playlistId, position, state, trackId },
+    dispatch
+  ] = useReducer(reducer, {
+    ...defaultState,
+    ...initialState
+  });
   const audioRef = useRef();
   const { dbx } = useDropbox();
   const playlist = usePlaylist({ playlistId });
@@ -95,27 +110,45 @@ function AudioProvider({ children, initialState = {} }) {
     // eslint-disable-next-line
   }, [trackId, playlistId]);
 
-  useEffect(() => {
-    const player = audioRef.current;
-    player.addEventListener("playing", e => {
-      if (state === audioStates.loading) {
-        dispatch({
-          type: "loaded",
-          payload: {
-            duration: e.target.duration * 1000
-          }
-        });
-      }
-    });
+  function handleEnded(e) {
+    if (hasNext) {
+      onNext();
+    } else {
+      onStop();
+    }
+  }
 
-    player.addEventListener("ended", e => {
-      if (hasNext) {
-        onNext();
-      } else {
-        onStop();
+  function handlePlaying(e) {
+    dispatch({
+      type: "loaded"
+    });
+  }
+
+  function handleDurationChange(e) {
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    dispatch({
+      type: "duration",
+      payload: {
+        duration: el.duration * 1000
       }
     });
-  });
+  }
+
+  function handleProgress(e) {
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    dispatch({
+      type: "position",
+      payload: {
+        position: el.currentTime * 1000
+      }
+    });
+  }
 
   useEffect(() => {
     async function updatePlayer() {
@@ -146,6 +179,11 @@ function AudioProvider({ children, initialState = {} }) {
 
   function onNext() {
     if (hasNext) {
+      // eslint-disable-next-line
+      console.log("on next", {
+        playlistId,
+        trackId: playlist.data.data.tracks[trackIndex + 1].id
+      });
       dispatch({
         type: "play",
         payload: {
@@ -166,12 +204,6 @@ function AudioProvider({ children, initialState = {} }) {
         }
       });
     }
-  }
-
-  function subscribeToProgress(callback) {
-    audioRef.current.addEventListener("progress", e => {
-      callback(e.target.currentTime * 1000);
-    });
   }
 
   function onPause() {
@@ -215,7 +247,7 @@ function AudioProvider({ children, initialState = {} }) {
     onSeek,
     onStop,
     playlist,
-    subscribeToProgress,
+    position,
     state,
     track
   };
@@ -223,7 +255,13 @@ function AudioProvider({ children, initialState = {} }) {
   return (
     <AudioContext.Provider value={value}>
       {children}
-      <audio ref={audioRef} />
+      <audio
+        onDurationChange={handleDurationChange}
+        onEnded={handleEnded}
+        onPlay={handlePlaying}
+        onProgress={handleProgress}
+        ref={audioRef}
+      />
     </AudioContext.Provider>
   );
 }

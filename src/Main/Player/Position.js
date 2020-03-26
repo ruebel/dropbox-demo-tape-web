@@ -23,11 +23,20 @@ function Position() {
   const [isSeeking, setIsSeeking] = useState(false);
 
   useEffect(() => {
-    audio.subscribeToProgress(setPosition);
-    // eslint-disable-next-line
-  }, [audio.subscribeToProgress]);
+    if (audio.state === "playing" && !isSeeking) {
+      const timeout = setInterval(() => {
+        if (!isSeeking) {
+          setPosition(position => position + 1000);
+        }
+      }, 1000);
 
-  // if (!audio.track) return null;
+      return () => clearInterval(timeout);
+    }
+  }, [audio.state, isSeeking, audio.position]);
+
+  useEffect(() => {
+    setPosition(audio.position);
+  }, [audio.position]);
 
   function handleSeek(e) {
     if (isSeeking) {
@@ -35,8 +44,8 @@ function Position() {
     } else {
       const nextPosition = parseInt(seekPosition);
       if (!isNaN(nextPosition)) {
+        setPosition(e.target.value);
         audio.onSeek(nextPosition);
-        setPosition(nextPosition);
       }
     }
   }
