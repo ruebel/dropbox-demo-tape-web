@@ -72,6 +72,11 @@ function reducer(state, action) {
         position: 0,
         state: audioStates.stopped
       };
+    case "tick":
+      return {
+        ...state,
+        position: state.position + 1000
+      };
     default:
       throw new Error();
   }
@@ -177,6 +182,18 @@ function AudioProvider({ children, initialState = {} }) {
     // eslint-disable-next-line
   }, [state, trackId, playlistId]);
 
+  useEffect(() => {
+    if (state === "playing") {
+      const interval = setInterval(() => {
+        dispatch({
+          type: "tick"
+        });
+      }, 1000);
+
+      return () => clearInterval(interval);
+    }
+  });
+
   function onNext() {
     if (hasNext) {
       dispatch({
@@ -221,6 +238,16 @@ function AudioProvider({ children, initialState = {} }) {
     if (track) {
       const player = audioRef.current;
       player.currentTime = positionMs / 1000;
+
+      // eslint-disable-next-line no-console
+      console.log("onseek", positionMs);
+
+      dispatch({
+        type: "position",
+        payload: {
+          position: positionMs
+        }
+      });
     }
   }
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useRef, useState } from "react";
 import styled from "styled-components";
 
 import { useAudio } from "../../audioContext";
@@ -18,39 +18,23 @@ const Wrapper = styled.div`
 
 function Position() {
   const audio = useAudio();
-  const [position, setPosition] = useState(0);
   const [seekPosition, setSeekPosition] = useState(0);
   const [isSeeking, setIsSeeking] = useState(false);
+  const inputRef = useRef();
 
-  useEffect(() => {
-    if (audio.state === "playing" && !isSeeking) {
-      const timeout = setInterval(() => {
-        if (!isSeeking) {
-          setPosition(position => position + 1000);
-        }
-      }, 1000);
-
-      return () => clearInterval(timeout);
-    }
-  }, [audio.state, isSeeking, audio.position]);
-
-  useEffect(() => {
-    setPosition(audio.position);
-  }, [audio.position]);
+  function handleChange(e) {
+    setSeekPosition(inputRef.current.value);
+  }
 
   function handleSeek(e) {
-    if (isSeeking) {
-      setSeekPosition(e.target.value);
-    } else {
-      const nextPosition = parseInt(seekPosition);
-      if (!isNaN(nextPosition)) {
-        setPosition(e.target.value);
-        audio.onSeek(nextPosition);
-      }
+    setIsSeeking(false);
+    const nextPosition = parseInt(inputRef.current.value);
+    if (!isNaN(nextPosition)) {
+      audio.onSeek(nextPosition);
     }
   }
 
-  const displayPos = isSeeking ? seekPosition : position;
+  const displayPos = isSeeking ? seekPosition : audio.position;
 
   return (
     <Wrapper isDisabled={!audio.track}>
@@ -60,13 +44,14 @@ function Position() {
         disabled={!audio.track}
         min={0}
         max={audio.duration}
-        onChange={handleSeek}
+        onChange={handleChange}
         onMouseDown={e => {
           setIsSeeking(true);
         }}
         onMouseUp={e => {
-          setIsSeeking(false);
+          handleSeek(e);
         }}
+        ref={inputRef}
         value={displayPos}
       />
       <span>{getMMSSFromMs(audio.duration)}</span>
