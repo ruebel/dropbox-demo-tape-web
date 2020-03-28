@@ -23,7 +23,8 @@ const defaultState = {
   playlistId: null,
   position: 0,
   trackId: null,
-  state: audioStates.stopped
+  state: audioStates.stopped,
+  volume: 1
 };
 
 function reducer(state, action) {
@@ -77,6 +78,11 @@ function reducer(state, action) {
         ...state,
         position: state.position + 1000
       };
+    case "volume":
+      return {
+        ...state,
+        ...action.payload
+      };
     default:
       throw new Error();
   }
@@ -84,7 +90,7 @@ function reducer(state, action) {
 
 function AudioProvider({ children, initialState = {} }) {
   const [
-    { duration, playlistId, position, state, trackId },
+    { duration, playlistId, position, state, trackId, volume },
     dispatch
   ] = useReducer(reducer, {
     ...defaultState,
@@ -239,9 +245,6 @@ function AudioProvider({ children, initialState = {} }) {
       const player = audioRef.current;
       player.currentTime = positionMs / 1000;
 
-      // eslint-disable-next-line no-console
-      console.log("onseek", positionMs);
-
       dispatch({
         type: "position",
         payload: {
@@ -257,6 +260,20 @@ function AudioProvider({ children, initialState = {} }) {
     }
   }
 
+  function onVolumeChange(vol) {
+    dispatch({
+      type: "volume",
+      payload: {
+        volume: vol
+      }
+    });
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    el.volume = vol;
+  }
+
   const value = {
     duration,
     hasNext,
@@ -268,10 +285,12 @@ function AudioProvider({ children, initialState = {} }) {
     onResume,
     onSeek,
     onStop,
+    onVolumeChange,
     playlist,
     position,
     state,
-    track
+    track,
+    volume
   };
 
   return (

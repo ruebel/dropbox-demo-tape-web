@@ -11,6 +11,7 @@ import { audioStates, useAudio } from "../../audioContext";
 import IconButton from "../../IconButton";
 import Position from "./Position";
 import SongDetails from "./SongDetails";
+import Volume from "./Volume";
 
 const Buttons = styled.div`
   align-items: center;
@@ -37,7 +38,7 @@ const Wrapper = styled.div`
   background-color: ${p => p.theme.color.backgroundLight};
   bottom: 0;
   display: grid;
-  grid-template-columns: minmax(200px, 0.5fr) 1fr;
+  grid-template-columns: minmax(200px, 0.5fr) 1fr 150px;
   padding: 10px 20px;
   position: absolute;
   width: 100%;
@@ -90,6 +91,7 @@ function Player() {
           <Position />
         </ControlsInner>
       </Controls>
+      <Volume />
     </Wrapper>
   );
 }
