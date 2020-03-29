@@ -1,22 +1,22 @@
 {
   "files": {
     "main.css": "/dropbox-demo-tape-web/static/css/main.ea119a09.chunk.css",
-    "main.js": "/dropbox-demo-tape-web/static/js/main.102c10aa.chunk.js",
-    "main.js.map": "/dropbox-demo-tape-web/static/js/main.102c10aa.chunk.js.map",
+    "main.js": "/dropbox-demo-tape-web/static/js/main.55ecda37.chunk.js",
+    "main.js.map": "/dropbox-demo-tape-web/static/js/main.55ecda37.chunk.js.map",
     "runtime-main.js": "/dropbox-demo-tape-web/static/js/runtime-main.ece9a5b1.js",
     "runtime-main.js.map": "/dropbox-demo-tape-web/static/js/runtime-main.ece9a5b1.js.map",
-    "static/js/2.b42ddd5d.chunk.js": "/dropbox-demo-tape-web/static/js/2.b42ddd5d.chunk.js",
-    "static/js/2.b42ddd5d.chunk.js.map": "/dropbox-demo-tape-web/static/js/2.b42ddd5d.chunk.js.map",
+    "static/js/2.c378cdaf.chunk.js": "/dropbox-demo-tape-web/static/js/2.c378cdaf.chunk.js",
+    "static/js/2.c378cdaf.chunk.js.map": "/dropbox-demo-tape-web/static/js/2.c378cdaf.chunk.js.map",
     "index.html": "/dropbox-demo-tape-web/index.html",
-    "precache-manifest.5d03f4f4ab9b43625ac35aff012abf48.js": "/dropbox-demo-tape-web/precache-manifest.5d03f4f4ab9b43625ac35aff012abf48.js",
+    "precache-manifest.382a3e53780b4d040e4c56b5071849ee.js": "/dropbox-demo-tape-web/precache-manifest.382a3e53780b4d040e4c56b5071849ee.js",
     "service-worker.js": "/dropbox-demo-tape-web/service-worker.js",
     "static/css/main.ea119a09.chunk.css.map": "/dropbox-demo-tape-web/static/css/main.ea119a09.chunk.css.map",
-    "static/js/2.b42ddd5d.chunk.js.LICENSE.txt": "/dropbox-demo-tape-web/static/js/2.b42ddd5d.chunk.js.LICENSE.txt"
+    "static/js/2.c378cdaf.chunk.js.LICENSE.txt": "/dropbox-demo-tape-web/static/js/2.c378cdaf.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.ece9a5b1.js",
-    "static/js/2.b42ddd5d.chunk.js",
+    "static/js/2.c378cdaf.chunk.js",
     "static/css/main.ea119a09.chunk.css",
-    "static/js/main.102c10aa.chunk.js"
+    "static/js/main.55ecda37.chunk.js"
   ]
 }
