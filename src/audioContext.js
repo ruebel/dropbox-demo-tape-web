@@ -20,6 +20,7 @@ export const audioStates = {
 
 const defaultState = {
   duration: 0,
+  isMuted: false,
   playlistId: null,
   position: 0,
   trackId: null,
@@ -43,6 +44,11 @@ function reducer(state, action) {
         };
       }
       return state;
+    case "mute":
+      return {
+        ...state,
+        isMuted: true
+      };
     case "pause":
       if (state.state === audioStates.playing) {
         return {
@@ -78,10 +84,16 @@ function reducer(state, action) {
         ...state,
         position: state.position + 1000
       };
+    case "unmute":
+      return {
+        ...state,
+        isMuted: false
+      };
     case "volume":
       return {
         ...state,
-        ...action.payload
+        ...action.payload,
+        isMuted: action.payload.volume === 0
       };
     default:
       throw new Error();
@@ -90,7 +102,7 @@ function reducer(state, action) {
 
 function AudioProvider({ children, initialState = {} }) {
   const [
-    { duration, playlistId, position, state, trackId, volume },
+    { duration, isMuted, playlistId, position, state, trackId, volume },
     dispatch
   ] = useReducer(reducer, {
     ...defaultState,
@@ -200,6 +212,17 @@ function AudioProvider({ children, initialState = {} }) {
     }
   });
 
+  function onMute() {
+    dispatch({
+      type: "mute"
+    });
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    el.muted = true;
+  }
+
   function onNext() {
     if (hasNext) {
       dispatch({
@@ -260,6 +283,17 @@ function AudioProvider({ children, initialState = {} }) {
     }
   }
 
+  function onUnmute() {
+    dispatch({
+      type: "unmute"
+    });
+    const el = audioRef.current;
+    if (!el) {
+      return;
+    }
+    el.muted = false;
+  }
+
   function onVolumeChange(vol) {
     dispatch({
       type: "volume",
@@ -272,12 +306,15 @@ function AudioProvider({ children, initialState = {} }) {
       return;
     }
     el.volume = vol;
+    el.muted = vol === 0;
   }
 
   const value = {
     duration,
     hasNext,
     hasPrevious,
+    isMuted,
+    onMute,
     onNext,
     onPause,
     onPlay,
@@ -285,6 +322,7 @@ function AudioProvider({ children, initialState = {} }) {
     onResume,
     onSeek,
     onStop,
+    onUnmute,
     onVolumeChange,
     playlist,
     position,
