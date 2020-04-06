@@ -7,6 +7,7 @@ import ButtonLink from "./ButtonLink";
 import Explorer from "./Explorer";
 import usePlaylist from "./usePlaylist";
 import PlaylistHeader from "./PlaylistHeader";
+import { makeRelativeUrl } from "./constants";
 
 const Header = styled.div`
   display: grid;
@@ -21,7 +22,7 @@ function Tracks({ playlistId }) {
   const [selectedTracks, setSelectedTracks] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
   const navigate = useNavigate();
-  const playlistUrl = `/playlist/${playlistId}`;
+  const playlistUrl = makeRelativeUrl(`/playlist/${playlistId}`);
 
   useEffect(() => {
     setSelectedTracks(playlist?.data?.tracks || []);
@@ -32,8 +33,8 @@ function Tracks({ playlistId }) {
       ...playlist,
       data: {
         ...playlist.data,
-        tracks: selectedTracks
-      }
+        tracks: selectedTracks,
+      },
     });
     navigate(playlistUrl);
   }

@@ -8,6 +8,7 @@ import Explorer from "./Explorer";
 import TextInput from "./TextInput";
 
 import usePlaylists from "./usePlaylists";
+import { makeRelativeUrl } from "./constants";
 
 const ExplorerInner = styled.div`
   overflow-y: scroll;
@@ -15,7 +16,7 @@ const ExplorerInner = styled.div`
 `;
 
 const ExplorerTitle = styled.div`
-  background-color: ${p => p.theme.color.background};
+  background-color: ${(p) => p.theme.color.background};
   font-size: 12px;
   font-weight: 600;
   left: 10px;
@@ -25,7 +26,7 @@ const ExplorerTitle = styled.div`
 `;
 
 const ExplorerWrapper = styled.div`
-  border: 1px solid ${p => p.theme.color.primary};
+  border: 1px solid ${(p) => p.theme.color.primary};
   border-radius: 10px;
   max-height: 480px;
   padding: 5px;
@@ -62,10 +63,10 @@ function AddPlaylist({ navigate }) {
     const playlistId = await onCreatePlaylist(`${path}/${title}.mix`, {
       artist,
       title,
-      tracks: []
+      tracks: [],
     });
 
-    navigate(`/playlist/${playlistId}`);
+    navigate(makeRelativeUrl(`/playlist/${playlistId}`));
 
     return false;
   }

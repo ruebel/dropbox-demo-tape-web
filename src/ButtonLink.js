@@ -3,10 +3,11 @@ import styled from "styled-components";
 import { Link } from "@reach/router";
 
 const Base = styled.a`
-  background-color: ${p => p.theme.color.background};
+  align-items: center;
+  background-color: ${(p) => p.theme.color.background};
   border-radius: 10px;
-  border: 1px solid ${p => p.theme.color.white};
-  color: ${p => p.theme.color.white};
+  border: 1px solid ${(p) => p.theme.color.white};
+  color: ${(p) => p.theme.color.white};
   cursor: pointer;
   display: flex;
   font-size: 14px;
@@ -14,14 +15,14 @@ const Base = styled.a`
   padding: 10px 20px;
   text-decoration: none;
   text-transform: uppercase;
-  transition: ${p => p.theme.transition};
+  transition: ${(p) => p.theme.transition};
 
   :hover {
-    background-color: ${p => p.theme.color.white};
-    color: ${p => p.theme.color.background};
+    background-color: ${(p) => p.theme.color.white};
+    color: ${(p) => p.theme.color.background};
   }
 
-  ${p =>
+  ${(p) =>
     p.disabled
       ? `
   color: ${p.theme.color.disabled};
