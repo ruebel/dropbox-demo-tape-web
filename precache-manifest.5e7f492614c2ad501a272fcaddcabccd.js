@@ -1,10 +1,10 @@
 self.__precacheManifest = (self.__precacheManifest || []).concat([
   {
-    "revision": "cc1a2027b63b28adff95c20dfe24d0fa",
+    "revision": "24de65d72b56f532c4a224853b07e89e",
     "url": "/dropbox-demo-tape-web/index.html"
   },
   {
-    "revision": "b5a92de261802e34914d",
+    "revision": "738a9596614a129076f5",
     "url": "/dropbox-demo-tape-web/static/css/main.ea119a09.chunk.css"
   },
   {
@@ -16,8 +16,8 @@ self.__precacheManifest = (self.__precacheManifest || []).concat([
     "url": "/dropbox-demo-tape-web/static/js/2.c378cdaf.chunk.js.LICENSE.txt"
   },
   {
-    "revision": "b5a92de261802e34914d",
-    "url": "/dropbox-demo-tape-web/static/js/main.559ff16f.chunk.js"
+    "revision": "738a9596614a129076f5",
+    "url": "/dropbox-demo-tape-web/static/js/main.6330dcc1.chunk.js"
   },
   {
     "revision": "0c466b4118587434adb8",
