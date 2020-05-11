@@ -26,12 +26,19 @@ const muiTheme = createMuiTheme({
   }
 });
 
+function getAuthUrl() {
+  // /auth will be in prod but not local so try to strip it
+  // and the trailing slash that could be there
+  const base = window.location.href.replace("/auth", "").replace(/\/$/, "");
+  return `${base}/auth`;
+}
+
 function App() {
   return (
     <MuiThemeProvider theme={muiTheme}>
       <ThemeProvider theme={theme}>
         <CacheProvider>
-          <DropboxProvider authUrl={`${window.location.href}/auth`}>
+          <DropboxProvider authUrl={getAuthUrl()}>
             <AudioProvider>
               <Router basepath={HOME}>
                 <Main path="/">
