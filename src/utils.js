@@ -15,5 +15,5 @@ export function reorderList(list, startIndex, endIndex) {
 }
 
 export function updateItemInListById(list, id, getId, newItem) {
-  return list.map(l => (getId(l) === id ? newItem : l));
+  return list.map((l) => (getId(l) === id ? newItem : l));
 }

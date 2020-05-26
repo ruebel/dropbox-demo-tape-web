@@ -1,5 +1,9 @@
 @import-normalize;
 
+html {
+  height: 100%;
+}
+
 body {
   background-color: #242a31;
   color: #d2d2d2;
@@ -8,6 +12,7 @@ body {
     "Ubuntu", "Cantarell", "Fira Sans", "Droid Sans", "Helvetica Neue",
     sans-serif;
   font-size: 16px;
+  height: 100%;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

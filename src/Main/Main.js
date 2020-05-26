@@ -7,7 +7,7 @@ import Player from "./Player";
 import { useDropbox } from "../dropboxContext";
 
 const Content = styled.main`
-  background-color: ${p => p.theme.color.background};
+  background-color: ${(p) => p.theme.color.background};
   overflow-y: scroll;
   padding-bottom: 113px;
 `;
