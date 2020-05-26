@@ -227,6 +227,18 @@ function AudioProvider({ children, initialState = {} }) {
     }
   });
 
+  useEffect(() => {
+    if ("mediaSession" in navigator) {
+      navigator.mediaSession.setActionHandler("play", onPlay);
+      navigator.mediaSession.setActionHandler("pause", onPause);
+      navigator.mediaSession.setActionHandler("seekbackward", onSeek);
+      navigator.mediaSession.setActionHandler("seekforward", onSeek);
+      navigator.mediaSession.setActionHandler("previoustrack", onPrevious);
+      navigator.mediaSession.setActionHandler("nexttrack", onNext);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   function onMute() {
     dispatch({
       type: "mute",
@@ -349,13 +361,6 @@ function AudioProvider({ children, initialState = {} }) {
           },
         ],
       });
-
-      navigator.mediaSession.setActionHandler("play", onPlay);
-      navigator.mediaSession.setActionHandler("pause", onPause);
-      navigator.mediaSession.setActionHandler("seekbackward", onSeek);
-      navigator.mediaSession.setActionHandler("seekforward", onSeek);
-      navigator.mediaSession.setActionHandler("previoustrack", onPrevious);
-      navigator.mediaSession.setActionHandler("nexttrack", onNext);
     } catch (e) {}
   }
 
