@@ -12,6 +12,7 @@ import TrackList from "./TrackList";
 
 import { useAudio } from "../audioContext";
 import usePlaylist from "../usePlaylist";
+import useSize from "../useSize";
 
 const Actions = styled.div`
   align-items: center;
@@ -24,16 +25,16 @@ const Add = styled.div`
   align-items: center;
   display: grid;
   grid-template-columns: 110px auto;
-  justify-content: flex-start;
+  justify-content: ${(p) =>
+    p.size === "small" ? "space-between" : "flex-start"};
   padding: 20px;
 `;
 
 const Header = styled.div`
-  align-items: ${p => (p.isEditing ? "flex-start" : "center")};
+  align-items: ${(p) => (p.isEditing ? "flex-start" : "center")};
   display: grid;
-  grid-auto-flow: column;
-  grid-gap: ${p => (p.isEditing ? 40 : 20)}px;
-  grid-template-columns: 1fr auto;
+  grid-gap: ${(p) => (p.isEditing ? 40 : 20)}px;
+  grid-template-columns: ${(p) => (p.size === "small" ? "1fr" : "1fr auto")};
   padding: 20px;
 `;
 
@@ -44,12 +45,13 @@ const Inputs = styled.div`
 
 function Playlist({ navigate, playlistId }) {
   const { data, isLoading, onDelete, onSave, users } = usePlaylist({
-    playlistId
+    playlistId,
   });
   const [isDirty, setIsDirty] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [playlist, setPlaylist] = useState(data);
   const audio = useAudio();
+  const size = useSize();
 
   function handleCancelEdit() {
     setIsDirty(false);
@@ -67,8 +69,8 @@ function Playlist({ navigate, playlistId }) {
       ...playlist,
       data: {
         ...playlist.data,
-        tracks
-      }
+        tracks,
+      },
     });
     setIsDirty(true);
   }
@@ -91,8 +93,8 @@ function Playlist({ navigate, playlistId }) {
       ...playlist,
       data: {
         ...playlist.data,
-        artist
-      }
+        artist,
+      },
     });
     setIsDirty(true);
   }
@@ -102,8 +104,8 @@ function Playlist({ navigate, playlistId }) {
       ...playlist,
       data: {
         ...playlist.data,
-        title
-      }
+        title,
+      },
     });
     setIsDirty(true);
   }
@@ -115,7 +117,7 @@ function Playlist({ navigate, playlistId }) {
   return (
     <div>
       {isEditing ? (
-        <Header isEditing={isEditing}>
+        <Header isEditing={isEditing} size={size}>
           <Inputs>
             <TextInput
               onChange={handleTitleChange}
@@ -138,7 +140,7 @@ function Playlist({ navigate, playlistId }) {
           </Actions>
         </Header>
       ) : (
-        <Header isEditing={isEditing}>
+        <Header isEditing={isEditing} size={size}>
           <PlaylistHeader playlist={playlist} />
           <Actions>
             <Button onClick={handleToggleEdit}>Edit</Button>
@@ -149,7 +151,7 @@ function Playlist({ navigate, playlistId }) {
         </Header>
       )}
       {isEditing && (
-        <Add>
+        <Add size={size}>
           <h2>Tracks</h2>
           <ButtonLink to="tracks">Add Tracks</ButtonLink>
         </Add>

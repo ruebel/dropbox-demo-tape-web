@@ -8,6 +8,7 @@ import List from "./List";
 import Loader from "./Loader";
 
 import usePlaylists from "./usePlaylists";
+import useSize from "./useSize";
 
 const Actions = styled.div`
   display: flex;
@@ -18,37 +19,37 @@ const Actions = styled.div`
 const Name = styled.h2``;
 
 const Modified = styled.div`
-  color: ${p => p.theme.color.disabled};
+  color: ${(p) => p.theme.color.disabled};
 `;
 
 const Updated = styled.span`
-  ${p => p.theme.typography.sub}
+  ${(p) => p.theme.typography.sub}
   text-align: right;
 `;
 
 const Path = styled.span`
-  ${p => p.theme.typography.sub}
-  color: ${p => p.theme.color.secondary};
+  ${(p) => p.theme.typography.sub}
+  color: ${(p) => p.theme.color.secondary};
 `;
 
 const Playlist = styled.div`
-  ${p => p.theme.typography.base}
+  ${(p) => p.theme.typography.base}
   align-items: center;
-  background-color: ${p =>
+  background-color: ${(p) =>
     p.theme.color[p.isPlaying ? "bgHighlight" : "background"]};
   border: none;
-  border-top: 1px solid ${p => p.theme.color.bgHighlight};
-  color: ${p => p.theme.color[p.isPlaying ? "highlight" : "inherit"]};
+  border-top: 1px solid ${(p) => p.theme.color.bgHighlight};
+  color: ${(p) => p.theme.color[p.isPlaying ? "highlight" : "inherit"]};
   cursor: pointer;
   display: grid;
   grid-template-columns: 1fr auto;
   line-height: 30px;
   outline: none;
-  padding: ${p => p.theme.space.medium}px ${p => p.theme.space.large}px;
+  padding: ${(p) => p.theme.space.medium}px ${(p) => p.theme.space.large}px;
   text-align: left;
 
   :hover {
-    background-color: ${p => p.theme.color.primary}11;
+    background-color: ${(p) => p.theme.color.primary}11;
   }
 `;
 
@@ -58,6 +59,7 @@ const Title = styled.div`
 
 function Playlists() {
   const playlists = usePlaylists({ forceRefresh: true });
+  const size = useSize();
 
   return (
     <div>
@@ -66,9 +68,9 @@ function Playlists() {
       </Actions>
       <Loader isLoading={playlists.isLoading} />
       <List
-        getKey={playlist => playlist.meta.id}
+        getKey={(playlist) => playlist.meta.id}
         items={playlists.data}
-        itemRenderer={playlist => {
+        itemRenderer={(playlist) => {
           const modifiedBy = playlist.meta.user?.name?.display_name;
           return (
             <Link to={`playlist/${playlist.meta.id}`}>
@@ -81,17 +83,19 @@ function Playlists() {
                     </Path>
                   }
                 </Title>
-                <Updated>
-                  Updated{" "}
-                  {formatRelative(
-                    new Date(playlist.meta.server_modified),
-                    new Date()
-                  )}
-                  <Modified>
-                    {Boolean(modifiedBy) ? "by " : ""}
-                    {modifiedBy}
-                  </Modified>
-                </Updated>
+                {size !== "small" && (
+                  <Updated>
+                    Updated{" "}
+                    {formatRelative(
+                      new Date(playlist.meta.server_modified),
+                      new Date()
+                    )}
+                    <Modified>
+                      {Boolean(modifiedBy) ? "by " : ""}
+                      {modifiedBy}
+                    </Modified>
+                  </Updated>
+                )}
               </Playlist>
             </Link>
           );

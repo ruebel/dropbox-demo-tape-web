@@ -7,6 +7,7 @@ import SkipNext from "@material-ui/icons/SkipNext";
 import SkipPrevious from "@material-ui/icons/SkipPrevious";
 
 import { audioStates, useAudio } from "../../audioContext";
+import useSize from "../../useSize";
 
 import IconButton from "../../IconButton";
 import Position from "./Position";
@@ -35,10 +36,11 @@ const ControlsInner = styled.div`
 
 const Wrapper = styled.div`
   align-items: center;
-  background-color: ${p => p.theme.color.backgroundLight};
+  background-color: ${(p) => p.theme.color.backgroundLight};
   bottom: 0;
   display: grid;
-  grid-template-columns: minmax(200px, 0.5fr) 1fr 150px;
+  grid-template-columns: ${(p) =>
+    p.isSmall ? "60px 1fr" : "minmax(200px, 0.5fr) 1fr 150px"};
   padding: 10px 20px;
   position: absolute;
   width: 100%;
@@ -46,52 +48,62 @@ const Wrapper = styled.div`
 
 function Player() {
   const audio = useAudio();
+  const size = useSize();
 
   const hasTrack = !!audio.track;
   const isPlaying = audio.state === audioStates.playing;
   const isLoading = audio.state === audioStates.loading;
 
+  const isSmall = size === "small";
+
+  if (isSmall && !hasTrack) return null;
+
+  const playButton = isPlaying ? (
+    <IconButton aria-label="Pause" onClick={audio.onPause} size={40}>
+      <Pause />
+    </IconButton>
+  ) : (
+    <IconButton
+      aria-label="Play"
+      disabled={isLoading || !hasTrack}
+      onClick={() => audio.onResume()}
+      size={40}
+    >
+      <PlayArrow />
+    </IconButton>
+  );
+
   return (
-    <Wrapper>
+    <Wrapper isSmall={isSmall}>
+      {isSmall && playButton}
       <SongDetails playlist={audio.playlist} track={audio.track} />
-      <Controls>
-        <ControlsInner>
-          <Buttons>
-            <IconButton
-              aria-label="Previous"
-              disabled={!audio.hasPrevious}
-              hideBorder
-              onClick={audio.onPrevious}
-            >
-              <SkipPrevious fontSize="small" />
-            </IconButton>
-            {isPlaying ? (
-              <IconButton aria-label="Pause" onClick={audio.onPause} size={40}>
-                <Pause />
-              </IconButton>
-            ) : (
+      {!isSmall && (
+        <Controls>
+          <ControlsInner>
+            <Buttons>
               <IconButton
-                aria-label="Play"
-                disabled={isLoading || !hasTrack}
-                onClick={() => audio.onResume()}
-                size={40}
+                aria-label="Previous"
+                disabled={!audio.hasPrevious}
+                hideBorder
+                onClick={audio.onPrevious}
               >
-                <PlayArrow />
+                <SkipPrevious fontSize="small" />
               </IconButton>
-            )}
-            <IconButton
-              aria-label="Next"
-              disabled={!audio.hasNext}
-              hideBorder
-              onClick={audio.onNext}
-            >
-              <SkipNext fontSize="small" />
-            </IconButton>
-          </Buttons>
-          <Position />
-        </ControlsInner>
-      </Controls>
-      <Volume />
+              {playButton}
+              <IconButton
+                aria-label="Next"
+                disabled={!audio.hasNext}
+                hideBorder
+                onClick={audio.onNext}
+              >
+                <SkipNext fontSize="small" />
+              </IconButton>
+            </Buttons>
+            <Position />
+          </ControlsInner>
+        </Controls>
+      )}
+      {!isSmall && <Volume />}
     </Wrapper>
   );
 }

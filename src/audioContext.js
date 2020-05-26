@@ -4,7 +4,7 @@ import React, {
   useEffect,
   useMemo,
   useRef,
-  useReducer
+  useReducer,
 } from "react";
 import usePlaylist from "./usePlaylist";
 import { useDropbox } from "./dropboxContext";
@@ -15,7 +15,7 @@ export const audioStates = {
   loading: "loading",
   paused: "paused",
   playing: "playing",
-  stopped: "stopped"
+  stopped: "stopped",
 };
 
 const defaultState = {
@@ -25,7 +25,7 @@ const defaultState = {
   position: 0,
   trackId: null,
   state: audioStates.stopped,
-  volume: 1
+  volume: 1,
 };
 
 function reducer(state, action) {
@@ -33,27 +33,27 @@ function reducer(state, action) {
     case "duration":
       return {
         ...state,
-        ...action.payload
+        ...action.payload,
       };
     case "loaded":
       if (state.state === "loading") {
         return {
           ...state,
           position: 0,
-          state: audioStates.playing
+          state: audioStates.playing,
         };
       }
       return state;
     case "mute":
       return {
         ...state,
-        isMuted: true
+        isMuted: true,
       };
     case "pause":
       if (state.state === audioStates.playing) {
         return {
           ...state,
-          state: audioStates.paused
+          state: audioStates.paused,
         };
       }
       return state;
@@ -61,39 +61,39 @@ function reducer(state, action) {
       return {
         ...state,
         ...action.payload,
-        state: audioStates.loading
+        state: audioStates.loading,
       };
     case "position":
       return {
         ...state,
-        ...action.payload
+        ...action.payload,
       };
     case "resume":
       return {
         ...state,
-        state: audioStates.playing
+        state: audioStates.playing,
       };
     case "stop":
       return {
         ...state,
         position: 0,
-        state: audioStates.stopped
+        state: audioStates.stopped,
       };
     case "tick":
       return {
         ...state,
-        position: state.position + 1000
+        position: state.position + 1000,
       };
     case "unmute":
       return {
         ...state,
-        isMuted: false
+        isMuted: false,
       };
     case "volume":
       return {
         ...state,
         ...action.payload,
-        isMuted: action.payload.volume === 0
+        isMuted: action.payload.volume === 0,
       };
     default:
       throw new Error();
@@ -103,10 +103,10 @@ function reducer(state, action) {
 function AudioProvider({ children, initialState = {} }) {
   const [
     { duration, isMuted, playlistId, position, state, trackId, volume },
-    dispatch
+    dispatch,
   ] = useReducer(reducer, {
     ...defaultState,
-    ...initialState
+    ...initialState,
   });
   const audioRef = useRef();
   const { dbx } = useDropbox();
@@ -114,7 +114,7 @@ function AudioProvider({ children, initialState = {} }) {
 
   const { hasNext, hasPrevious, track, trackIndex } = useMemo(() => {
     const trackIndex = trackId
-      ? playlist?.data?.data.tracks.findIndex(track => track.id === trackId)
+      ? playlist?.data?.data.tracks.findIndex((track) => track.id === trackId)
       : playlist?.data?.data
       ? 0
       : -1;
@@ -128,7 +128,7 @@ function AudioProvider({ children, initialState = {} }) {
       hasNext,
       hasPrevious,
       track,
-      trackIndex
+      trackIndex,
     };
     // eslint-disable-next-line
   }, [trackId, playlistId]);
@@ -143,7 +143,7 @@ function AudioProvider({ children, initialState = {} }) {
 
   function handlePlaying(e) {
     dispatch({
-      type: "loaded"
+      type: "loaded",
     });
   }
 
@@ -155,8 +155,8 @@ function AudioProvider({ children, initialState = {} }) {
     dispatch({
       type: "duration",
       payload: {
-        duration: el.duration * 1000
-      }
+        duration: el.duration * 1000,
+      },
     });
   }
 
@@ -168,8 +168,8 @@ function AudioProvider({ children, initialState = {} }) {
     dispatch({
       type: "position",
       payload: {
-        position: el.currentTime * 1000
-      }
+        position: el.currentTime * 1000,
+      },
     });
   }
 
@@ -177,10 +177,12 @@ function AudioProvider({ children, initialState = {} }) {
     async function updatePlayer() {
       const player = audioRef.current;
 
+      if (!player) return;
+
       if (track && state === audioStates.loading) {
         // This is not a resume so we need to load the file
         const fileLink = await dbx.filesGetTemporaryLink({
-          path: track.path_lower
+          path: track.path_lower,
         });
         player.setAttribute("src", fileLink.link);
 
@@ -204,7 +206,7 @@ function AudioProvider({ children, initialState = {} }) {
     if (state === "playing") {
       const interval = setInterval(() => {
         dispatch({
-          type: "tick"
+          type: "tick",
         });
       }, 1000);
 
@@ -214,7 +216,7 @@ function AudioProvider({ children, initialState = {} }) {
 
   function onMute() {
     dispatch({
-      type: "mute"
+      type: "mute",
     });
     const el = audioRef.current;
     if (!el) {
@@ -229,8 +231,8 @@ function AudioProvider({ children, initialState = {} }) {
         type: "play",
         payload: {
           playlistId,
-          trackId: playlist.data.data.tracks[trackIndex + 1].id
-        }
+          trackId: playlist.data.data.tracks[trackIndex + 1].id,
+        },
       });
     }
   }
@@ -241,8 +243,8 @@ function AudioProvider({ children, initialState = {} }) {
         type: "play",
         payload: {
           playlistId,
-          trackId: playlist.data.data.tracks[trackIndex - 1].id
-        }
+          trackId: playlist.data.data.tracks[trackIndex - 1].id,
+        },
       });
     }
   }
@@ -271,8 +273,8 @@ function AudioProvider({ children, initialState = {} }) {
       dispatch({
         type: "position",
         payload: {
-          position: positionMs
-        }
+          position: positionMs,
+        },
       });
     }
   }
@@ -285,7 +287,7 @@ function AudioProvider({ children, initialState = {} }) {
 
   function onUnmute() {
     dispatch({
-      type: "unmute"
+      type: "unmute",
     });
     const el = audioRef.current;
     if (!el) {
@@ -298,8 +300,8 @@ function AudioProvider({ children, initialState = {} }) {
     dispatch({
       type: "volume",
       payload: {
-        volume: vol
-      }
+        volume: vol,
+      },
     });
     const el = audioRef.current;
     if (!el) {
@@ -328,19 +330,21 @@ function AudioProvider({ children, initialState = {} }) {
     position,
     state,
     track,
-    volume
+    volume,
   };
 
   return (
     <AudioContext.Provider value={value}>
       {children}
-      <audio
-        onDurationChange={handleDurationChange}
-        onEnded={handleEnded}
-        onPlay={handlePlaying}
-        onProgress={handleProgress}
-        ref={audioRef}
-      />
+      {track && (
+        <audio
+          onDurationChange={handleDurationChange}
+          onEnded={handleEnded}
+          onPlay={handlePlaying}
+          onProgress={handleProgress}
+          ref={audioRef}
+        />
+      )}
     </AudioContext.Provider>
   );
 }

@@ -9,13 +9,15 @@ const Name = styled.span`
 
 const Wrapper = styled.div`
   align-items: center;
-  background-color: ${p => p.theme.color.primary};
+  background-color: ${(p) => p.theme.color.primary};
   border-radius: 50%;
-  color: ${p => p.theme.color.background};
+  color: ${(p) => p.theme.color.background};
   display: flex;
   justify-content: center;
-  height: ${p => p.size}px;
-  width: ${p => p.size}px;
+  height: ${(p) => p.size}px;
+  overflow: hidden;
+  position: relative;
+  width: ${(p) => p.size}px;
 `;
 
 function Avatar({ initials, name, size = 36, url }) {
@@ -33,8 +35,10 @@ function Avatar({ initials, name, size = 36, url }) {
       {url && !hasError ? (
         <Image
           alt={name || initials}
+          height={size}
           onError={() => setHasError(true)}
           src={url}
+          width={size}
         />
       ) : (
         <Name>{initials}</Name>
