@@ -14,7 +14,7 @@
 importScripts("https://storage.googleapis.com/workbox-cdn/releases/4.3.1/workbox-sw.js");
 
 importScripts(
-  "/dropbox-demo-tape-web/precache-manifest.48b57b1e88f46f0e8cd92c7148cc3140.js"
+  "/dropbox-demo-tape-web/precache-manifest.e60e5e0544a9b819194d6ee28cde5aa2.js"
 );
 
 self.addEventListener('message', (event) => {
