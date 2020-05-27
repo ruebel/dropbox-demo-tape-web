@@ -9,6 +9,7 @@ import React, {
 import usePlaylist from "./usePlaylist";
 import { useDropbox } from "./dropboxContext";
 import { removeExtension } from "./utils";
+import useMediaSession from "./useMediaSession";
 
 const AudioContext = createContext();
 
@@ -112,6 +113,7 @@ function AudioProvider({ children, initialState = {} }) {
   const audioRef = useRef();
   const { dbx } = useDropbox();
   const playlist = usePlaylist({ playlistId });
+  const media = useMediaSession();
 
   const { hasNext, hasPrevious, track, trackIndex } = useMemo(() => {
     const trackIndex = trackId
@@ -125,6 +127,15 @@ function AudioProvider({ children, initialState = {} }) {
       ? trackIndex < playlist.data.data.tracks.length - 1
       : false;
     const hasPrevious = track ? trackIndex > 0 : false;
+
+    if (track) {
+      media.setTrack({
+        title: removeExtension(track?.name),
+        artist: playlist?.data?.data?.artist || playlist?.data?.data?.title,
+        album: playlist?.data?.data?.title,
+      });
+    }
+
     return {
       hasNext,
       hasPrevious,
@@ -153,6 +164,9 @@ function AudioProvider({ children, initialState = {} }) {
     if (!el) {
       return;
     }
+    media.setDuration({
+      duration: el.duration,
+    });
     dispatch({
       type: "duration",
       payload: {
@@ -188,24 +202,16 @@ function AudioProvider({ children, initialState = {} }) {
         player.setAttribute("src", fileLink.link);
 
         player.play();
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.playbackState = "playing";
-        }
+        media.setState("playing");
       } else if (track && state === audioStates.playing) {
         player.play();
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.playbackState = "playing";
-        }
+        media.setState("playing");
       } else if (state === audioStates.paused) {
         player.pause();
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.playbackState = "paused";
-        }
+        media.setState("paused");
       } else if (state === audioStates.stopped) {
         player.pause();
-        if ("mediaSession" in navigator) {
-          navigator.mediaSession.playbackState = "none";
-        }
+        media.setState("none");
         // clear time so we restart at beginning
         player.currentTime = 0;
       }
@@ -278,15 +284,30 @@ function AudioProvider({ children, initialState = {} }) {
     }
   }
 
-  function onSeek(positionMs) {
+  function onSeek(positionMs, isForward) {
     if (track) {
       const player = audioRef.current;
-      player.currentTime = positionMs / 1000;
+
+      let nextPosition = positionMs;
+
+      if (positionMs === undefined) {
+        // Handles bumping the position +/- 10 seconds if
+        // the user presses the seek buttons instead of using
+        // the position bar
+        nextPosition = position + (isForward ? 10000 : -10000);
+      }
+
+      player.currentTime = nextPosition / 1000;
+
+      media.setDuration({
+        duration: duration,
+        position: nextPosition,
+      });
 
       dispatch({
         type: "position",
         payload: {
-          position: positionMs,
+          position: nextPosition,
         },
       });
     }
@@ -324,40 +345,13 @@ function AudioProvider({ children, initialState = {} }) {
     el.muted = vol === 0;
   }
 
-  if ("mediaSession" in navigator) {
-    try {
-      // eslint-disable-next-line
-      navigator.mediaSession.metadata = new MediaMetadata({
-        title: removeExtension(track?.name),
-        artist: playlist?.data?.data?.author || playlist?.data?.data?.title,
-        album: playlist?.data?.data?.title,
-        artwork: [
-          {
-            src: "android-icon-96x96.png",
-            sizes: "96x96",
-            type: "image/png",
-          },
-          {
-            src: "android-icon-144x144.png",
-            sizes: "144x144",
-            type: "image/png",
-          },
-          {
-            src: "android-icon-180x180.png",
-            sizes: "180x180",
-            type: "image/png",
-          },
-        ],
-      });
-
-      navigator.mediaSession.setActionHandler("play", onPlay);
-      navigator.mediaSession.setActionHandler("pause", onPause);
-      navigator.mediaSession.setActionHandler("seekbackward", onSeek);
-      navigator.mediaSession.setActionHandler("seekforward", onSeek);
-      navigator.mediaSession.setActionHandler("previoustrack", onPrevious);
-      navigator.mediaSession.setActionHandler("nexttrack", onNext);
-    } catch (e) {}
-  }
+  media.setHandlers({
+    onNext,
+    onPrevious,
+    onPause,
+    onPlay: onResume,
+    onSeek,
+  });
 
   const value = {
     duration,

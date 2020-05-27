@@ -4,12 +4,12 @@ import styled from "styled-components";
 import { removeExtension } from "../../utils";
 
 const Artist = styled.div`
-  ${p => p.theme.typography.sub}
-  color: ${p => p.theme.color.disabled};
+  ${(p) => p.theme.typography.sub}
+  color: ${(p) => p.theme.color.disabled};
 `;
 
 const TrackName = styled.div`
-  ${p => p.theme.typography.base}
+  ${(p) => p.theme.typography.base}
   font-weight: 500;
 `;
 
@@ -23,7 +23,7 @@ function SongDetails({ playlist, track }) {
     <Wrapper>
       <TrackName>{removeExtension(track?.name)}</TrackName>
       <Artist>
-        {playlist?.data?.data?.author || playlist?.data?.data?.title}
+        {playlist?.data?.data?.artist || playlist?.data?.data?.title}
       </Artist>
     </Wrapper>
   );
