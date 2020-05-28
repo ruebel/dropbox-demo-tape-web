@@ -7,14 +7,15 @@ import {
   getModifiedUsersFromEntries,
   sortByTypeAndName,
   sortByTypeAndModified,
-  sortByTypeAndModifiedBy
+  sortByTypeAndModifiedBy,
 } from "./fileUtils";
 
 function useFiles({
   folder = "",
   showFiles = false,
+  showImages = false,
   sortBy = "",
-  sortDir = ""
+  sortDir = "",
 }) {
   const { dbx } = useDropbox();
   const [folderFileMap, setFolderFileMap] = useState({});
@@ -24,7 +25,7 @@ function useFiles({
   useEffect(() => {
     async function fetchFiles() {
       setIsLoading(true);
-      const files = await getFiles(dbx, folder, showFiles);
+      const files = await getFiles(dbx, folder, showFiles, showImages);
 
       // Get all user ids of users who have modified listed files
       const userIds = getModifiedUsersFromEntries(files.data);
@@ -32,14 +33,14 @@ function useFiles({
 
       const filesWithUsers = {
         ...files,
-        data: files.data.map(f => ({
+        data: files.data.map((f) => ({
           ...f,
-          user: users[getModifiedBy(f)]
-        }))
+          user: users[getModifiedBy(f)],
+        })),
       };
 
       setFolderFileMap({
-        [folder]: filesWithUsers
+        [folder]: filesWithUsers,
       });
       setIsLoading(false);
     }
@@ -69,7 +70,7 @@ function useFiles({
     files: sortedData,
     folder,
     hasMore,
-    isLoading
+    isLoading,
   };
 }
 

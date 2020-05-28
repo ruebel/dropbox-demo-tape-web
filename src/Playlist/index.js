@@ -7,6 +7,7 @@ import ButtonLink from "../ButtonLink";
 import ConfirmationButton from "../ConfirmationButton";
 import Loader from "../Loader";
 import PlaylistHeader from "../PlaylistHeader";
+import PlaylistImage from "../PlaylistImage";
 import TextInput from "../TextInput";
 import TrackList from "./TrackList";
 
@@ -36,6 +37,13 @@ const Header = styled.div`
   grid-gap: ${(p) => (p.isEditing ? 40 : 20)}px;
   grid-template-columns: ${(p) => (p.size === "small" ? "1fr" : "1fr auto")};
   padding: 20px;
+`;
+
+const ImageEdit = styled.div`
+  align-items: center;
+  display: grid;
+  grid-gap: 20px;
+  grid-template-columns: 50px 1fr;
 `;
 
 const Inputs = styled.div`
@@ -119,6 +127,10 @@ function Playlist({ navigate, playlistId }) {
       {isEditing ? (
         <Header isEditing={isEditing} size={size}>
           <Inputs>
+            <ImageEdit>
+              <PlaylistImage playlist={playlist} />
+              <ButtonLink to="image">Edit Image</ButtonLink>
+            </ImageEdit>
             <TextInput
               onChange={handleTitleChange}
               title="Title"

@@ -3,7 +3,7 @@ import { Router } from "@reach/router";
 import { ThemeProvider } from "styled-components";
 import {
   ThemeProvider as MuiThemeProvider,
-  createMuiTheme
+  createMuiTheme,
 } from "@material-ui/core/styles";
 import blue from "@material-ui/core/colors/blue";
 
@@ -15,6 +15,7 @@ import theme from "./theme";
 
 import Auth from "./Auth";
 import AddPlaylist from "./AddPlaylist";
+import ImageExplorer from "./ImageExplorer";
 import Home from "./Home";
 import Main from "./Main";
 import Playlist from "./Playlist";
@@ -22,8 +23,8 @@ import Tracks from "./Tracks";
 
 const muiTheme = createMuiTheme({
   palette: {
-    primary: blue
-  }
+    primary: blue,
+  },
 });
 
 function getAuthUrl() {
@@ -45,6 +46,7 @@ function App() {
                   <Auth path="auth" />
                   <AddPlaylist path="new" />
                   <Playlist path="playlist/:playlistId" />
+                  <ImageExplorer path="playlist/:playlistId/image" />
                   <Tracks path="playlist/:playlistId/tracks" />
                   <Home path="/" />
                 </Main>

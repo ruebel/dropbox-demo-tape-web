@@ -10,6 +10,7 @@ import usePlaylist from "./usePlaylist";
 import { useDropbox } from "./dropboxContext";
 import { removeExtension } from "./utils";
 import useMediaSession from "./useMediaSession";
+import useLocalStorage from "./useLocalStorage";
 
 const AudioContext = createContext();
 
@@ -114,6 +115,7 @@ function AudioProvider({ children, initialState = {} }) {
   const { dbx } = useDropbox();
   const playlist = usePlaylist({ playlistId });
   const media = useMediaSession();
+  const [imageMap = {}] = useLocalStorage("playlistImages");
 
   const { hasNext, hasPrevious, track, trackIndex } = useMemo(() => {
     const trackIndex = trackId
@@ -129,10 +131,18 @@ function AudioProvider({ children, initialState = {} }) {
     const hasPrevious = track ? trackIndex > 0 : false;
 
     if (track) {
+      const imagePath = imageMap[playlist?.data?.data?.image?.id];
       media.setTrack({
         title: removeExtension(track?.name),
         artist: playlist?.data?.data?.artist || playlist?.data?.data?.title,
         album: playlist?.data?.data?.title,
+        artwork: imagePath
+          ? [
+              {
+                src: imagePath,
+              },
+            ]
+          : undefined,
       });
     }
 

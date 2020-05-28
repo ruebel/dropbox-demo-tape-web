@@ -24,12 +24,20 @@ function Explorer({
   onPathChange,
   onSelectionChange,
   selectedEntries = [],
-  showFiles = false
+  singleSelection = false,
+  showFiles = false,
+  showImages = false,
 }) {
   const [folder, setFolder] = useState("");
   const [sortBy, setSortBy] = useState("");
   const [sortDir, setSortDir] = useState("");
-  const { files, isLoading } = useFiles({ folder, showFiles, sortBy, sortDir });
+  const { files, isLoading } = useFiles({
+    folder,
+    showFiles,
+    showImages,
+    sortBy,
+    sortDir,
+  });
 
   function handleClick(entry) {
     if (entry.type === "folder") {
@@ -37,11 +45,19 @@ function Explorer({
       if (onPathChange) {
         onPathChange(entry.path);
       }
-    } else if (showFiles) {
-      if (selectedEntries.some(e => e.id === entry.id)) {
-        onSelectionChange(selectedEntries.filter(e => e.id !== entry.id));
+    } else if (showFiles || showImages) {
+      if (singleSelection) {
+        if (selectedEntries.some((e) => e.id === entry.id)) {
+          onSelectionChange([null]);
+        } else {
+          onSelectionChange([entry]);
+        }
       } else {
-        onSelectionChange([...selectedEntries, entry]);
+        if (selectedEntries.some((e) => e.id === entry.id)) {
+          onSelectionChange(selectedEntries.filter((e) => e.id !== entry.id));
+        } else {
+          onSelectionChange([...selectedEntries, entry]);
+        }
       }
     }
   }
@@ -90,11 +106,11 @@ function Explorer({
         emptyMessage="There are no files here"
         isLoading={isLoading}
         items={files}
-        itemRenderer={entry => (
+        itemRenderer={(entry) => (
           <Entry
             entry={entry}
             isSelected={selectedEntries.some(
-              e => e.path_lower === entry.path_lower
+              (e) => e.path_lower === entry.path_lower
             )}
             onClick={handleClick}
           />

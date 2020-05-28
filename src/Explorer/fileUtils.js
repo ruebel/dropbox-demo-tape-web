@@ -29,6 +29,10 @@ export function isAudioFile(name) {
   return ["mp3", "m4a", "ovw", "wav"].includes(getExtension(name));
 }
 
+export function isImage(name) {
+  return ["png", "jpg", "jpeg"].includes(getExtension(name));
+}
+
 export function isFile(entry) {
   return entry[".tag"] === "file";
 }
@@ -39,6 +43,10 @@ export function isFolder(entry) {
 
 export function isAudioFileOrFolder(entry) {
   return isFolder(entry) || (isFile(entry) && isAudioFile(entry.name));
+}
+
+export function isImageOrFolder(entry) {
+  return isFolder(entry) || (isFile(entry) && isImage(entry.name));
 }
 
 /**
@@ -63,23 +71,27 @@ export function transformFile(file) {
     isPlaylist: isPlaylist(file.name),
     path: file.path_display,
     type: file[".tag"],
-    user: getModifiedBy(file)
+    user: getModifiedBy(file),
   };
 }
 
-export async function getFiles(dbx, folder = "", showFiles) {
+export async function getFiles(dbx, folder = "", showFiles, showImages) {
   // Get folder listing
   const { cursor, entries, hasMore } = await dbx.filesListFolder({
-    path: folder
+    path: folder,
   });
+
+  const fileFilter = showFiles
+    ? isAudioFileOrFolder
+    : showImages
+    ? isImageOrFolder
+    : isFolder;
 
   const payload = {
     cursor,
-    data: entries
-      .filter(showFiles ? isAudioFileOrFolder : isFolder)
-      .map(transformFile),
+    data: entries.filter(fileFilter).map(transformFile),
     hasMore,
-    path: folder
+    path: folder,
   };
 
   return payload;
@@ -87,7 +99,7 @@ export async function getFiles(dbx, folder = "", showFiles) {
 
 export function sortByTypeAndName(sortDir) {
   const dir = sortDir === "asc" ? -1 : 1;
-  return function(a, b) {
+  return function (a, b) {
     return (
       (a.type !== b.type && (a.type === "folder" || b.type === "folder")
         ? b.type === "folder"
@@ -100,7 +112,7 @@ export function sortByTypeAndName(sortDir) {
 
 export function sortByTypeAndModified(sortDir) {
   const dir = sortDir === "asc" ? -1 : 1;
-  return function(a, b) {
+  return function (a, b) {
     return (
       (a.type !== b.type && (a.type === "folder" || b.type === "folder")
         ? b.type === "folder"
@@ -113,7 +125,7 @@ export function sortByTypeAndModified(sortDir) {
 
 export function sortByTypeAndModifiedBy(sortDir) {
   const dir = sortDir === "asc" ? -1 : 1;
-  return function(a, b) {
+  return function (a, b) {
     return (
       (a.type !== b.type && (a.type === "folder" || b.type === "folder")
         ? b.type === "folder"

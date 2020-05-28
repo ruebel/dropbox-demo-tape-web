@@ -6,6 +6,7 @@ import ButtonLink from "./ButtonLink";
 import Link from "./Link";
 import List from "./List";
 import Loader from "./Loader";
+import PlaylistImage from "./PlaylistImage";
 
 import usePlaylists from "./usePlaylists";
 import useSize from "./useSize";
@@ -42,7 +43,8 @@ const Playlist = styled.div`
   color: ${(p) => p.theme.color[p.isPlaying ? "highlight" : "inherit"]};
   cursor: pointer;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-gap: 20px;
+  grid-template-columns: 50px 1fr auto;
   line-height: 30px;
   outline: none;
   padding: ${(p) => p.theme.space.medium}px ${(p) => p.theme.space.large}px;
@@ -75,6 +77,7 @@ function Playlists() {
           return (
             <Link to={`playlist/${playlist.meta.id}`}>
               <Playlist>
+                <PlaylistImage playlist={playlist} />
                 <Title>
                   <Name>{playlist.data.title}</Name>
                   {
