@@ -140,6 +140,8 @@ function AudioProvider({ children, initialState = {} }) {
           ? [
               {
                 src: imagePath,
+                sizes: "50x50",
+                type: "image/png",
               },
             ]
           : undefined,
