@@ -12,6 +12,11 @@ const Content = styled.main`
   padding-bottom: 113px;
 `;
 
+const Inner = styled.div`
+  max-width: 1150px;
+  margin: 0 auto;
+`;
+
 const Wrapper = styled.div`
   display: grid;
   grid-template-rows: auto 1fr auto;
@@ -29,7 +34,9 @@ function Main({ children, location }) {
   return (
     <Wrapper>
       <Header location={location} />
-      <Content>{children}</Content>
+      <Content>
+        <Inner>{children}</Inner>
+      </Content>
       <Player />
     </Wrapper>
   );

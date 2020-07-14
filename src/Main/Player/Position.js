@@ -10,7 +10,7 @@ const LeftTime = styled.span`
 
 const Wrapper = styled.div`
   align-items: center;
-  color: ${p => p.theme.color[p.isDisabled ? "disabled" : "primary"]};
+  color: ${(p) => p.theme.color[p.isDisabled ? "disabled" : "primary"]};
   display: grid;
   grid-template-columns: 80px 1fr 80px;
   grid-gap: 5px;
@@ -45,11 +45,17 @@ function Position() {
         min={0}
         max={audio.duration}
         onChange={handleChange}
-        onMouseDown={e => {
+        onMouseDown={(e) => {
           setIsSeeking(true);
         }}
-        onMouseUp={e => {
+        onMouseUp={(e) => {
           handleSeek(e);
+        }}
+        onTouchEnd={(e) => {
+          handleSeek(e);
+        }}
+        onTouchStart={(e) => {
+          setIsSeeking(true);
         }}
         ref={inputRef}
         value={displayPos}

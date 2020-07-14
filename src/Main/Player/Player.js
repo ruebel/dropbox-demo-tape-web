@@ -39,8 +39,9 @@ const Wrapper = styled.div`
   background-color: ${(p) => p.theme.color.backgroundLight};
   bottom: 0;
   display: grid;
+  grid-gap: 20px;
   grid-template-columns: ${(p) =>
-    p.isSmall ? "60px 1fr" : "minmax(200px, 0.5fr) 1fr 150px"};
+    p.isSmall ? "auto 1fr" : "minmax(200px, 0.5fr) 1fr 150px"};
   padding: 10px 20px;
   position: absolute;
   width: 100%;

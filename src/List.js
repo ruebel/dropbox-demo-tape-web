@@ -4,13 +4,13 @@ import styled from "styled-components";
 const getKeyDefault = (_item, index) => index;
 
 const EmptyMessage = styled.div`
-  ${p => p.theme.typography.base}
-  color: ${p => p.theme.color.secondary};
+  ${(p) => p.theme.typography.base}
+  color: ${(p) => p.theme.color.secondary};
   font-size: 18px;
   padding: 20px;
 `;
 
-const gapStyle = gap =>
+const gapStyle = (gap) =>
   gap
     ? `
         display: grid;
@@ -19,16 +19,15 @@ const gapStyle = gap =>
     : "";
 
 const StyledList = styled.ul`
-  liststyletype: none;
+  list-style-type: none;
   margin: 0;
-  marginblockend: 0;
-  marginblockstart: 0;
+  margin-block-end: 0;
+  margin-block-start: 0;
   padding: 0;
-  paddinginlinestart: 0;
-  webkitmarginafter: 0;
-  webkitmarginbefore: 0;
-  webkitpaddingstart: 0;
-  ${p => gapStyle(p.gap)}
+  padding-inline-start: 0;
+  -webkit-margin-start: 0;
+  -webkit-padding-start: 0;
+  ${(p) => gapStyle(p.gap)}
 `;
 
 function List({
@@ -37,7 +36,7 @@ function List({
   itemRenderer,
   items,
   gap,
-  getKey = getKeyDefault
+  getKey = getKeyDefault,
 }) {
   if (!isLoading && items.length === 0 && emptyMessage) {
     return <EmptyMessage>{emptyMessage}</EmptyMessage>;
@@ -51,7 +50,7 @@ function List({
 }
 
 List.defaultProps = {
-  getKey: getKeyDefault
+  getKey: getKeyDefault,
 };
 
 export default List;
