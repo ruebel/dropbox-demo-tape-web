@@ -94,7 +94,7 @@ function MobilePlayer() {
 
   const inner = isExpanded ? (
     <Expanded>
-      <IconButton aria-label="expand" hideBorder onClick={() => setIsExpanded(false)} style={{ justifySelf: 'flex-end'}}>
+      <IconButton aria-label="expand" hideBorder onClick={() => setIsExpanded(false)} style={{ justifySelf: 'flex-end', marginBottom: -40, marginTop: 40, }}>
         <ExpandMore fontSize={isExpanded ? "default" : "small"} />
       </IconButton>
       <TrackName>
