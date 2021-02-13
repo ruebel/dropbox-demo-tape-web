@@ -211,7 +211,7 @@ function AudioProvider({ children, initialState = {} }) {
         const fileLink = await dbx.filesGetTemporaryLink({
           path: track.path_lower,
         });
-        player.setAttribute("src", fileLink.link);
+        player.setAttribute("src", fileLink?.result?.link);
 
         player.play();
         media.setState("playing");

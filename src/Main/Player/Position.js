@@ -12,7 +12,7 @@ const Wrapper = styled.div`
   align-items: center;
   color: ${(p) => p.theme.color[p.isDisabled ? "disabled" : "primary"]};
   display: grid;
-  grid-template-columns: 80px 1fr 80px;
+  grid-template-columns: 60px 1fr 60px;
   grid-gap: 5px;
 `;
 

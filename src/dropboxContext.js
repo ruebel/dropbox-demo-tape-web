@@ -21,14 +21,19 @@ function DropboxProvider({ authUrl, children }) {
 
   // Gets Auth Href after client id is added
   React.useEffect(() => {
-    const currentDbx = new Dropbox({ accessToken, clientId });
-    setDbx(currentDbx);
-    const href = currentDbx.getAuthenticationUrl(authUrl);
-    if (href) {
-      setAuthHref(href);
-    } else {
-      setError("Invalid Dropbox Id");
+    async function getAuthUrl() {
+      const currentDbx = new Dropbox({ accessToken, clientId });
+      setDbx(currentDbx);
+      const href = await currentDbx.auth.getAuthenticationUrl(authUrl);
+  
+      if (href) {
+        setAuthHref(href);
+      } else {
+        setError("Invalid Dropbox Id");
+      }
     }
+
+    getAuthUrl();
     // eslint-disable-next-line
   }, []);
 
@@ -71,7 +76,7 @@ function DropboxProvider({ authUrl, children }) {
     currentUser,
     dbx,
     error,
-    isAuthenticated: dbx?.accessToken,
+    isAuthenticated: dbx?.auth?.accessToken,
     onLogout,
     parseAcessToken
   };

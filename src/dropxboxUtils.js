@@ -3,7 +3,7 @@
  */
 export async function uploadFile(dbx, data, path) {
   // Upload playlist to dropbox (dropbox will return new metadata)
-  const meta = await dbx.filesUpload({
+  const { result } = await dbx.filesUpload({
     // Do not rename on conflict
     autorename: false,
     // File data to upload
@@ -17,7 +17,7 @@ export async function uploadFile(dbx, data, path) {
     // Path to file in dropbox
     path,
   });
-  return meta;
+  return result;
 }
 
 async function getImageUrl(dbx, path) {
@@ -25,7 +25,7 @@ async function getImageUrl(dbx, path) {
     const fileLink = await dbx.filesGetTemporaryLink({
       path,
     });
-    return fileLink?.link;
+    return fileLink?.result?.link;
   }
 }
 

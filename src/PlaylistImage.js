@@ -23,7 +23,7 @@ function PlaylistImage({ playlist, size = 50 }) {
         const fileLink = await dbx.filesGetTemporaryLink({
           path: playlist.data.image?.path_lower,
         });
-        setUrl(fileLink?.link);
+        setUrl(fileLink?.result?.link);
         setImageMap({
           ...imageMap,
           [playlist?.data?.image?.id]: fileLink?.link,
