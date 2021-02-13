@@ -76,7 +76,7 @@ function DropboxProvider({ authUrl, children }) {
     currentUser,
     dbx,
     error,
-    isAuthenticated: dbx?.accessToken,
+    isAuthenticated: dbx?.auth?.accessToken,
     onLogout,
     parseAcessToken
   };

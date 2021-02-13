@@ -28,14 +28,14 @@ function usePlaylists({ forceRefresh }) {
 
       async function fetchPlaylists() {
         // Search for playlist files
-        const { matches } = await dbx.filesSearch({
+        const res = await dbx.filesSearch({
           path: "",
           query: ".mix"
         });
 
         // Downloaad all files
         const results = await Promise.all(
-          matches.map(m =>
+          res?.result?.matches.map(m =>
             dbx.filesDownload({
               path: m.metadata.path_display
             })
@@ -51,10 +51,10 @@ function usePlaylists({ forceRefresh }) {
               fr.addEventListener("loadend", e => {
                 const text = e.srcElement.result;
                 const data = JSON.parse(text);
-                resolve({ data, meta: r });
+                resolve({ data, meta: r.result });
               });
 
-              fr.readAsText(r.fileBlob);
+              fr.readAsText(r.result.fileBlob);
             });
           })
         );

@@ -15,7 +15,7 @@ const color = {
 
 const space = 5;
 
-export default {
+const theme = {
   color: {
     ...color,
     highlight: "#5EB1BF",
@@ -37,3 +37,5 @@ export default {
   },
   transition: "all 250ms ease-in"
 };
+
+export default theme;

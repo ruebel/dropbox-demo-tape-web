@@ -4,7 +4,7 @@ const size = 30;
 
 export default styled.button`
   align-items: center;
-  background-color: ${(p) => p.theme.color.background};
+  background-color: ${(p) => p.hideBackground ? "transparent" : p.theme.color.background};
   border: ${(p) => (p.hideBorder ? "none" : "1px solid white")};
   border-radius: 50%;
   color: white;
