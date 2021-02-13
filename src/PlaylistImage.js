@@ -53,7 +53,7 @@ function PlaylistImage({ playlist, size = 50 }) {
   return (
     <img
       alt={playlist?.data?.title}
-      height={size}
+      height={size === "100%" ? "auto" : size}
       onError={handleError}
       src={url || `${process.env.PUBLIC_URL}/android-icon-96x96.png`}
       width={size}

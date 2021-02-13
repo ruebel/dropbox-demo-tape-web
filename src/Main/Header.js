@@ -49,7 +49,7 @@ function Header({ location }) {
   function showMenu(e) {
     setAnchorEl(e.currentTarget);
   }
-
+  
   return (
     <Wrapper>
       <Link to={HOME}>
@@ -67,8 +67,8 @@ function Header({ location }) {
             onClick={showMenu}
           >
             <Avatar
-              initials={currentUser?.name.abbreviated_name}
-              name={currentUser?.name.display_name}
+              initials={currentUser?.name?.abbreviated_name}
+              name={currentUser?.name?.display_name}
               url={currentUser?.profile_photo_url}
             />
           </UserMenu>

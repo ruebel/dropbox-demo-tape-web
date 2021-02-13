@@ -40,7 +40,8 @@ function DropboxProvider({ authUrl, children }) {
   // Gets current user's info if we don't have it already
   React.useEffect(() => {
     async function getCurrentUser() {
-      const user = await dbx.usersGetCurrentAccount();
+      const res = await dbx.usersGetCurrentAccount();
+      const user = res?.result;
       setCurrentUser(user);
       cache.setValue("currentUser", user);
     }

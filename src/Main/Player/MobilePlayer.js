@@ -45,6 +45,13 @@ const Expanded = styled.div`
   padding: 20px;
 `;
 
+const Header = styled.div`
+  align-items: center;
+  display: grid;
+  grid-template-columns: 1fr auto;
+  margin-top: 60px;
+`;
+
 const InfoWrapper = styled.div`
   display: grid;
   grid-gap: 10px;
@@ -94,12 +101,14 @@ function MobilePlayer() {
 
   const inner = isExpanded ? (
     <Expanded>
-      <IconButton aria-label="expand" hideBorder onClick={() => setIsExpanded(false)} style={{ justifySelf: 'flex-end', marginBottom: -40, marginTop: 40, }}>
-        <ExpandMore fontSize={isExpanded ? "default" : "small"} />
-      </IconButton>
-      <TrackName>
-        {audio.playlist?.data?.data?.title}
-      </TrackName>
+      <Header>
+        <TrackName>
+          {audio.playlist?.data?.data?.title}
+        </TrackName>
+        <IconButton aria-label="expand" hideBorder onClick={() => setIsExpanded(false)}>
+          <ExpandMore fontSize={isExpanded ? "default" : "small"} />
+        </IconButton>
+      </Header>
       <PlaylistImage playlist={audio.playlist?.data} size="100%" />
       <InfoWrapper>
         <TrackName>{removeExtension(audio.track?.name)}</TrackName>
