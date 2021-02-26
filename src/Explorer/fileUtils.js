@@ -77,9 +77,11 @@ export function transformFile(file) {
 
 export async function getFiles(dbx, folder = "", showFiles, showImages) {
   // Get folder listing
-  const { cursor, entries, hasMore } = await dbx.filesListFolder({
+  const { result } = await dbx.filesListFolder({
     path: folder,
   });
+
+  const { cursor, entries, hasMore } = result;
 
   const fileFilter = showFiles
     ? isAudioFileOrFolder

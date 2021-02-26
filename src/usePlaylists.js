@@ -14,6 +14,7 @@ function usePlaylists({ forceRefresh }) {
   const cache = useCache();
   const { dbx, isAuthenticated } = useDropbox();
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [playlists, setPlaylists] = useState(cache.getValue("playlists") || []);
   const { fetchUsers } = useUsers();
 
@@ -112,6 +113,7 @@ function usePlaylists({ forceRefresh }) {
   }
 
   async function onSavePlaylist(playlist) {
+    setIsSaving(true);
     // Optimistic local save
     savePlaylistLocally(playlist);
 
@@ -123,6 +125,7 @@ function usePlaylists({ forceRefresh }) {
       ...playlist,
       meta
     });
+    setIsSaving(false);
   }
 
   function savePlaylists(updatedPlaylists = []) {
@@ -151,6 +154,7 @@ function usePlaylists({ forceRefresh }) {
   return {
     data: playlists,
     isLoading,
+    isSaving,
     onCreatePlaylist,
     onDeletePlaylist,
     onSavePlaylist

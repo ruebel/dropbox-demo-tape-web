@@ -6,7 +6,7 @@ import { getModifiedUsersFromEntries } from "./Explorer/fileUtils";
 
 function usePlaylist({ playlistId }) {
   const { dbx, isAuthenticated } = useDropbox();
-  const { data, isLoading, onDeletePlaylist, onSavePlaylist } = usePlaylists({
+  const { data, isLoading, isSaving, onDeletePlaylist, onSavePlaylist } = usePlaylists({
     dbx,
     isAuthenticated
   });
@@ -43,6 +43,7 @@ function usePlaylist({ playlistId }) {
   return {
     data: playlist,
     isLoading,
+    isSaving,
     onDelete,
     onSave,
     users
