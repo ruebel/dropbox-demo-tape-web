@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 
 import { useCache } from "./cacheContext";
 import { useDropbox } from "./dropboxContext";
+import { logError } from "./useErrorTracking";
 import { useUsers } from "./useUsers";
 import {
   getModifiedBy,
@@ -66,6 +67,7 @@ export function usePlaylists({ forceRefresh, playlistId }) {
                 } catch (e) {
                   // We hit an error parsing a file so log the error
                   console.error(e);
+                  logError(e);
                   // and then return null we will filter it out later
                   resolve(null);
                 }

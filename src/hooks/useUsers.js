@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useCache } from "./cacheContext";
 import { useDropbox } from "./dropboxContext";
+import { logError } from "./useErrorTracking";
 
 export function useUsers() {
   const cache = useCache();
@@ -38,6 +39,7 @@ export function useUsers() {
 
         return updatedUsers;
       } catch (exception) {
+        logError(exception);
         console.error(exception);
       }
     }

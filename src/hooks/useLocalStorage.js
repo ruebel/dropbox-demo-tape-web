@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { logError } from "./useErrorTracking";
 
 export function useLocalStorage(key, initialValue) {
   // State to store our value
@@ -12,6 +13,7 @@ export function useLocalStorage(key, initialValue) {
     } catch (error) {
       // If error also return initialValue
       console.error(error);
+      logError(error);
       return initialValue;
     }
   });
@@ -30,6 +32,7 @@ export function useLocalStorage(key, initialValue) {
     } catch (error) {
       // A more advanced implementation would handle the error case
       console.error(error);
+      logError(error);
     }
   };
 
