@@ -10,7 +10,7 @@ import React, {
 import { useDropbox } from "./dropboxContext";
 import { useMediaSession } from "./useMediaSession";
 import { useLocalStorage } from "./useLocalStorage";
-import { usePlaylist } from "./usePlaylist";
+import { usePlaylists } from "./usePlaylists";
 import { removeExtension } from "../utils";
 
 const AudioContext = createContext();
@@ -114,29 +114,30 @@ function AudioProvider({ children, initialState = {} }) {
   });
   const audioRef = useRef();
   const { dbx } = useDropbox();
-  const playlist = usePlaylist({ playlistId });
+  const playlists = usePlaylists({ playlistId });
   const media = useMediaSession();
   const [imageMap = {}] = useLocalStorage("playlistImages");
 
+  const playlist = playlists?.playlist?.data;
+  const tracks = playlist?.tracks || [];
+  const rev = playlists?.playlist?.meta?.rev;
+
   const { hasNext, hasPrevious, track, trackIndex } = useMemo(() => {
     const trackIndex = trackId
-      ? playlist?.data?.data.tracks.findIndex((track) => track.id === trackId)
-      : playlist?.data?.data
+      ? tracks.findIndex((track) => track.id === trackId)
+      : playlist
       ? 0
       : -1;
-    const track =
-      trackIndex >= 0 ? playlist.data.data.tracks[trackIndex] : null;
-    const hasNext = track
-      ? trackIndex < playlist.data.data.tracks.length - 1
-      : false;
+    const track = trackIndex >= 0 ? tracks[trackIndex] : null;
+    const hasNext = track ? trackIndex < tracks.length - 1 : false;
     const hasPrevious = track ? trackIndex > 0 : false;
 
     if (track) {
-      const imagePath = imageMap[playlist?.data?.data?.image?.id];
+      const imagePath = imageMap[playlist?.image?.id];
       media.setTrack({
         title: removeExtension(track?.name),
-        artist: playlist?.data?.data?.artist || playlist?.data?.data?.title,
-        album: playlist?.data?.data?.title,
+        artist: playlist?.artist || playlist?.title,
+        album: playlist?.title,
         artwork: imagePath
           ? [
               {
@@ -156,7 +157,7 @@ function AudioProvider({ children, initialState = {} }) {
       trackIndex,
     };
     // eslint-disable-next-line
-  }, [trackId, playlistId]);
+  }, [rev, trackId, playlistId]);
 
   function handleEnded(e) {
     if (hasNext) {
@@ -263,7 +264,7 @@ function AudioProvider({ children, initialState = {} }) {
         type: "play",
         payload: {
           playlistId,
-          trackId: playlist.data.data.tracks[trackIndex + 1].id,
+          trackId: tracks[trackIndex + 1].id,
         },
       });
     }
@@ -275,7 +276,7 @@ function AudioProvider({ children, initialState = {} }) {
         type: "play",
         payload: {
           playlistId,
-          trackId: playlist.data.data.tracks[trackIndex - 1].id,
+          trackId: tracks[trackIndex - 1].id,
         },
       });
     }

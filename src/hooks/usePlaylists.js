@@ -11,13 +11,21 @@ import {
   uploadFile,
 } from "../utils";
 
-export function usePlaylists({ forceRefresh }) {
+export function usePlaylists({ forceRefresh, playlistId }) {
   const cache = useCache();
   const { dbx, isAuthenticated } = useDropbox();
+  const { fetchUsers } = useUsers();
+
   const [isLoading, setIsLoading] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
-  const [playlists, setPlaylists] = useState(cache.getValue("playlists") || []);
-  const { fetchUsers } = useUsers();
+  const [users, setUsers] = useState({});
+
+  // Get from cache so all versions of this hook are n-sync
+  const playlists = cache.getValue("playlists");
+  const playlist =
+    playlistId && Array.isArray(playlists)
+      ? playlists.find((p) => p.meta.id === playlistId)
+      : null;
 
   useEffect(() => {
     if (
@@ -92,6 +100,22 @@ export function usePlaylists({ forceRefresh }) {
     // eslint-disable-next-line
   }, [dbx, isAuthenticated]);
 
+  useEffect(() => {
+    async function getUsers(ids) {
+      const users = await fetchUsers(ids);
+      setUsers(users);
+    }
+
+    if (playlist?.data?.tracks) {
+      // Get all user ids of users who have modified listed files
+      const userIds = getModifiedUsersFromEntries(playlist.data.tracks);
+      if (userIds.length > 0) {
+        getUsers(userIds);
+      }
+    }
+    // eslint-disable-next-line
+  }, [playlist]);
+
   async function onCreatePlaylist(path, playlist) {
     // update file on dropbox
     const meta = await uploadFile(dbx, playlist, path);
@@ -109,6 +133,8 @@ export function usePlaylists({ forceRefresh }) {
   }
 
   async function onDeletePlaylist(playlist) {
+    if (!playlist) return;
+
     setIsLoading(true);
     // delete file on dropbox
     await dbx.filesDelete({ path: playlist.meta.path_lower });
@@ -117,8 +143,8 @@ export function usePlaylists({ forceRefresh }) {
     const updatedPlaylists = playlists.filter(
       (p) => p.meta.id !== playlist.meta.id
     );
-    setPlaylists(updatedPlaylists);
     cache.setValue("playlists", updatedPlaylists);
+    // setPlaylists(updatedPlaylists);
     setIsLoading(false);
   }
 
@@ -145,7 +171,6 @@ export function usePlaylists({ forceRefresh }) {
     );
 
     // Save in state and to cache
-    setPlaylists(sortedPlaylists);
     cache.setValue("playlists", sortedPlaylists);
   }
 
@@ -158,15 +183,18 @@ export function usePlaylists({ forceRefresh }) {
           getPlaylistId,
           playlist
         );
+
     savePlaylists(updatedList);
   }
 
   return {
-    data: playlists,
     isLoading,
     isSaving,
     onCreatePlaylist,
     onDeletePlaylist,
     onSavePlaylist,
+    playlist,
+    playlists,
+    users,
   };
 }

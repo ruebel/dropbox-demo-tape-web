@@ -5,7 +5,6 @@ export * from "./useErrorTracking";
 export * from "./useFiles";
 export * from "./useLocalStorage";
 export * from "./useMediaSession";
-export * from "./usePlaylist";
 export * from "./usePlaylists";
 export * from "./useSize";
 export * from "./useUsers";

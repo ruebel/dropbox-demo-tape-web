@@ -8,7 +8,7 @@ import Explorer from "./Explorer";
 import PlaylistHeader from "./PlaylistHeader";
 
 import { makeRelativeUrl } from "../constants";
-import { usePlaylist, useSize } from "../hooks";
+import { usePlaylists, useSize } from "../hooks";
 
 const Actions = styled.div`
   align-items: center;
@@ -26,7 +26,7 @@ const Header = styled.div`
 `;
 
 function ImageExplorer({ playlistId }) {
-  const { data: playlist, isLoading, onSave } = usePlaylist({ playlistId });
+  const { isLoading, onSavePlaylist, playlist } = usePlaylists({ playlistId });
   const [selectedImage, setSelectedImage] = useState([]);
   const [isDirty, setIsDirty] = useState(false);
   const navigate = useNavigate();
@@ -39,7 +39,7 @@ function ImageExplorer({ playlistId }) {
   }, [isLoading, playlist]);
 
   function handleSave() {
-    onSave({
+    onSavePlaylist({
       ...playlist,
       data: {
         ...playlist.data,

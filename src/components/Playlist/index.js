@@ -11,7 +11,7 @@ import TextInput from "../TextInput";
 import TrackList from "./TrackList";
 
 import { HOME } from "../../constants";
-import { useAudio, usePlaylist, useSize } from "../../hooks";
+import { useAudio, usePlaylists, useSize } from "../../hooks";
 
 const Actions = styled.div`
   align-items: center;
@@ -50,23 +50,29 @@ const Inputs = styled.div`
 `;
 
 function Playlist({ navigate, playlistId }) {
-  const { data, isLoading, onDelete, onSave, users } = usePlaylist({
+  const {
+    isLoading,
+    onDeletePlaylist,
+    onSavePlaylist,
+    playlist: savedPlaylist,
+    users,
+  } = usePlaylists({
     playlistId,
   });
   const [isDirty, setIsDirty] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
-  const [playlist, setPlaylist] = useState(data);
+  const [playlist, setPlaylist] = useState(savedPlaylist);
   const audio = useAudio();
   const size = useSize();
 
   function handleCancelEdit() {
     setIsDirty(false);
     setIsEditing(false);
-    setPlaylist(data);
+    setPlaylist(savedPlaylist);
   }
 
   async function handleDelete() {
-    await onDelete(playlist);
+    await onDeletePlaylist(playlist);
     navigate(HOME);
   }
 
@@ -84,13 +90,13 @@ function Playlist({ navigate, playlistId }) {
   function handleToggleEdit() {
     if (isEditing) {
       if (isDirty) {
-        onSave(playlist);
+        onSavePlaylist(playlist);
       }
       setIsDirty(false);
       setIsEditing(false);
     } else {
       setIsEditing(true);
-      setPlaylist(data);
+      setPlaylist(savedPlaylist);
     }
   }
 

@@ -70,7 +70,7 @@ function Playlists() {
       <Loader isLoading={playlists.isLoading} />
       <List
         getKey={(playlist) => playlist.meta.id}
-        items={playlists.data}
+        items={playlists.playlists}
         itemRenderer={(playlist) => {
           const modifiedBy = playlist.meta.user?.name?.display_name;
           return (
