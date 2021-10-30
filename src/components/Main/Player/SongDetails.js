@@ -6,7 +6,7 @@ import { removeExtension } from "../../../utils";
 
 const Artist = styled.div`
   ${(p) => p.theme.typography.sub}
-  color: ${(p) => p.theme.color.disabled};
+  color: ${(p) => p.theme.color.secondary};
 `;
 
 const Info = styled.div`
@@ -17,6 +17,9 @@ const Info = styled.div`
 const TrackName = styled.div`
   ${(p) => p.theme.typography.base}
   font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
 `;
 
 const Wrapper = styled.div`
@@ -29,12 +32,10 @@ const Wrapper = styled.div`
 function SongDetails({ playlist, track }) {
   return (
     <Wrapper>
-      <PlaylistImage playlist={playlist?.data} />
+      <PlaylistImage playlist={playlist} />
       <Info>
         <TrackName>{removeExtension(track?.name)}</TrackName>
-        <Artist>
-          {playlist?.data?.data?.artist || playlist?.data?.data?.title}
-        </Artist>
+        <Artist>{playlist?.data?.artist || playlist?.data?.title}</Artist>
       </Info>
     </Wrapper>
   );

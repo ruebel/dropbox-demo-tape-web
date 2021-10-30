@@ -4,7 +4,7 @@ import Voicemail from "@material-ui/icons/Voicemail";
 import Menu from "@material-ui/core/Menu";
 import MenuItem from "@material-ui/core/MenuItem";
 
-import { useDropbox } from "../../hooks";
+import { useDropbox, useSize } from "../../hooks";
 import { HOME } from "../../constants";
 import Avatar from "../Avatar";
 import Link from "../Link";
@@ -17,6 +17,7 @@ const Inner = styled.div`
 
 const Title = styled.h1`
   padding-left: 10px;
+  font-size: ${(p) => (p.size === "large" ? 36 : 28)}px;
 `;
 
 const UserMenu = styled.button`
@@ -34,9 +35,11 @@ const Wrapper = styled.div`
   grid-template-columns: auto 1fr auto;
   padding: 20px;
 `;
+
 function Header({ location }) {
   const [anchorEl, setAnchorEl] = useState(null);
   const { currentUser, onLogout } = useDropbox();
+  const size = useSize();
 
   function closeMenu() {
     setAnchorEl(null);
@@ -55,7 +58,7 @@ function Header({ location }) {
       <Link to={HOME}>
         <Inner>
           <Voicemail fontSize="large" />
-          <Title>Demo Tape</Title>
+          <Title size={size}>Demo Tape</Title>
         </Inner>
       </Link>
       <span />

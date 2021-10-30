@@ -14,7 +14,7 @@ import { useSize } from "../../hooks";
 const Inner = styled.div`
   align-items: center;
   display: grid;
-  line-height: 30px;
+  line-height: 20px;
   grid-gap: 5px;
   grid-template-columns: ${(p) => (p.size === "small" ? 35 : 40)}px 20px 1fr ${(
       p
@@ -33,7 +33,7 @@ const Play = styled.span`
   display: flex;
   height: 30px;
   justify-content: center;
-  line-height: 30px;
+  line-height: 20px;
   width: 30px;
 `;
 
@@ -47,6 +47,12 @@ const Updated = styled.span`
 
 const UpdatedBy = styled.span`
   color: ${(p) => p.theme.color.disabled};
+`;
+
+const TrackName = styled.span`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 `;
 
 const Wrapper = styled.button`
@@ -102,7 +108,7 @@ function Track({
           </Play>
         )}
         <span>{index}.</span>
-        <span>{removeExtension(track.name)}</span>
+        <TrackName>{removeExtension(track.name)}</TrackName>
         {size !== "small" && !isEditable && (
           <Updated>
             <span>

@@ -25,7 +25,7 @@ export function useUsers() {
         });
 
         // Update dictionary
-        const updatedUsers = results.reduce(
+        const updatedUsers = (results?.result || results).reduce(
           (acc, user) => ({
             ...acc,
             [user.account_id]: user,

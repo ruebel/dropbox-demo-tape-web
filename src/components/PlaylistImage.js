@@ -29,6 +29,9 @@ function PlaylistImage({ playlist, size = 50 }) {
           [playlist?.data?.image?.id]: fileLink?.link,
         });
         setImageState(imgState.fetched);
+      } else {
+        setUrl("");
+        setImageState(imgState.error);
       }
     }
 
@@ -40,7 +43,7 @@ function PlaylistImage({ playlist, size = 50 }) {
       getImageUrl();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageId, imageState]);
+  }, [imageId, imageState, playlist?.meta?.id]);
 
   function handleError(er) {
     if (url && imgState !== imgState.fetched) {

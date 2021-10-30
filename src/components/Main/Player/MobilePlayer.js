@@ -55,6 +55,7 @@ const Header = styled.div`
 const InfoWrapper = styled.div`
   display: grid;
   grid-gap: 10px;
+  text-align: center;
 `;
 
 const TrackName = styled.div`
@@ -118,10 +119,10 @@ function MobilePlayer() {
           <ExpandMore fontSize={isExpanded ? "default" : "small"} />
         </IconButton>
       </Header>
-      <PlaylistImage playlist={audio.playlist?.data} size="100%" />
+      <PlaylistImage playlist={audio.playlist} size="100%" />
       <InfoWrapper>
         <TrackName>{removeExtension(audio.track?.name)}</TrackName>
-        <Artist>{audio.playlist?.data?.data?.artist}</Artist>
+        <Artist>{audio.playlist?.data?.artist}</Artist>
       </InfoWrapper>
       <Position />
       <Buttons>

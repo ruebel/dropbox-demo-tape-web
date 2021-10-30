@@ -382,7 +382,7 @@ function AudioProvider({ children, initialState = {} }) {
     onStop,
     onUnmute,
     onVolumeChange,
-    playlist,
+    playlist: playlists?.playlist,
     position,
     state,
     track,
