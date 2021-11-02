@@ -22,7 +22,7 @@ export function usePlaylists({ forceRefresh, playlistId }) {
   const [users, setUsers] = useState({});
 
   // Get from cache so all versions of this hook are n-sync
-  const playlists = cache.getValue("playlists");
+  const playlists = cache.getValue("playlists") || [];
   const playlist =
     playlistId && Array.isArray(playlists)
       ? playlists.find((p) => p.meta.id === playlistId)
