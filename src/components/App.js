@@ -3,7 +3,7 @@ import { Router } from "@reach/router";
 import { ThemeProvider } from "styled-components";
 import {
   ThemeProvider as MuiThemeProvider,
-  createMuiTheme,
+  createTheme,
 } from "@material-ui/core/styles";
 import blue from "@material-ui/core/colors/blue";
 
@@ -24,7 +24,7 @@ import Main from "./Main";
 import Playlist from "./Playlist";
 import Tracks from "./Tracks";
 
-const muiTheme = createMuiTheme({
+const muiTheme = createTheme({
   palette: {
     primary: blue,
   },

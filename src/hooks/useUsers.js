@@ -40,7 +40,6 @@ export function useUsers() {
         return updatedUsers;
       } catch (exception) {
         logError(exception);
-        console.error(exception);
       }
     }
 

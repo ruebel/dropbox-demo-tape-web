@@ -11,10 +11,15 @@ export function logError(error, info = {}) {
       timestamp: new Date(),
     };
 
-    fetch(ERROR_URL, {
-      body: JSON.stringify(data),
-      method: "POST",
-    });
+    if (process.env.NODE_ENV === "production") {
+      fetch(ERROR_URL, {
+        body: JSON.stringify(data),
+        method: "POST",
+      });
+      console.error("Error", data);
+    } else {
+      console.error("Error: would have tracked to server", data);
+    }
   } catch (e) {
     console.error("Error logging error", {
       originalError: error,

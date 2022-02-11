@@ -66,7 +66,6 @@ export function usePlaylists({ forceRefresh, playlistId }) {
                   resolve({ data, meta: r.result });
                 } catch (e) {
                   // We hit an error parsing a file so log the error
-                  console.error(e);
                   logError(e);
                   // and then return null we will filter it out later
                   resolve(null);
