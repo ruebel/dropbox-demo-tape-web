@@ -113,7 +113,7 @@ function AudioProvider({ children, initialState = {} }) {
     ...initialState,
   });
   const audioRef = useRef();
-  const { dbx } = useDropbox();
+  const { dbx, isAuthenticated } = useDropbox();
   const playlists = usePlaylists({ playlistId });
   const media = useMediaSession();
   const [imageMap = {}] = useLocalStorage("playlistImages");
@@ -206,7 +206,7 @@ function AudioProvider({ children, initialState = {} }) {
     async function updatePlayer() {
       const player = audioRef.current;
 
-      if (!player) return;
+      if (!player || !isAuthenticated) return;
 
       if (track && state === audioStates.loading) {
         // This is not a resume so we need to load the file
@@ -233,7 +233,7 @@ function AudioProvider({ children, initialState = {} }) {
 
     updatePlayer();
     // eslint-disable-next-line
-  }, [state, trackId, playlistId]);
+  }, [state, trackId, playlistId, isAuthenticated]);
 
   useEffect(() => {
     if (state === "playing") {

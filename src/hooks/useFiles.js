@@ -18,7 +18,7 @@ export function useFiles({
   sortBy = "",
   sortDir = "",
 }) {
-  const { dbx } = useDropbox();
+  const { dbx, isAuthenticated } = useDropbox();
   const [folderFileMap, setFolderFileMap] = useState({});
   const [isLoading, setIsLoading] = useState(false);
   const { fetchUsers } = useUsers();
@@ -46,11 +46,11 @@ export function useFiles({
       setIsLoading(false);
     }
 
-    if (dbx) {
+    if (dbx && isAuthenticated) {
       fetchFiles();
     }
     // eslint-disable-next-line
-  }, [dbx, folder]);
+  }, [dbx, folder, isAuthenticated]);
 
   const { cursor, data = [], hasMore } = folderFileMap[folder] || {};
 

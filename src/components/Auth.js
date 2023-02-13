@@ -1,4 +1,4 @@
-import React, { Fragment } from "react";
+import React, { Fragment, useEffect } from "react";
 import styled from "styled-components";
 import { Redirect } from "@reach/router";
 
@@ -16,11 +16,14 @@ const Wrapper = styled.div`
 `;
 
 function Auth() {
-  const { authHref, isAuthenticated, parseAcessToken } = useDropbox();
+  const { isAuthenticated, onAuth, parseAcessToken } = useDropbox();
+  const hasCode = window.location.search.includes("code");
 
-  if (!isAuthenticated && window.location.hash.includes("access_token")) {
-    parseAcessToken();
-  }
+  useEffect(() => {
+    if (!isAuthenticated && hasCode) {
+      parseAcessToken();
+    }
+  }, [hasCode, isAuthenticated, parseAcessToken]);
 
   if (isAuthenticated) {
     return <Redirect noThrow={true} to={HOME} />;
@@ -30,7 +33,7 @@ function Auth() {
     <Wrapper>
       <h1>Welcome</h1>
       <Fragment>
-        <ButtonLink href={authHref}>Authenticate With Dropbox</ButtonLink>
+        <ButtonLink onClick={onAuth}>Authenticate With Dropbox</ButtonLink>
       </Fragment>
     </Wrapper>
   );

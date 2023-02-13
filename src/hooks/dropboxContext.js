@@ -1,33 +1,41 @@
 import * as React from "react";
-import { Dropbox } from "dropbox";
-import { parseQueryString } from "../utils";
+import { Dropbox, DropboxAuth } from "dropbox";
 import { useCache } from "./cacheContext";
 
 const DropboxContext = React.createContext();
-
 const clientId = "ie394xarjsfdxr0";
+const dbxAuth = new DropboxAuth({ clientId });
+const REDIRECT_URI = `${window.location.origin}/auth`;
 
 function DropboxProvider({ authUrl, children }) {
   const cache = useCache();
-  const [currentUser, setCurrentUser] = React.useState(
-    cache.getValue("currentUser")
-  );
+  const [currentUser, setCurrentUser] = React.useState(null);
   const [error, setError] = React.useState(null);
+  const dbxRef = React.useRef(new Dropbox({ clientId }));
+  const [isAuthenticated, setIsAuthenticated] = React.useState(false);
   const [accessToken, setAccessToken] = React.useState(
     cache.getValue("accessToken")
   );
-  const [authHref, setAuthHref] = React.useState(null);
-  const [dbx, setDbx] = React.useState(null);
+  const [refreshToken, setRefreshToken] = React.useState(
+    cache.getValue("refreshToken")
+  );
 
   // Gets Auth Href after client id is added
-  React.useEffect(() => {
+  const onAuth = React.useCallback(() => {
     async function getAuthUrl() {
-      const currentDbx = new Dropbox({ accessToken, clientId });
-      setDbx(currentDbx);
-      const href = await currentDbx.auth.getAuthenticationUrl(authUrl);
+      const href = await dbxAuth.getAuthenticationUrl(
+        REDIRECT_URI,
+        undefined,
+        "code",
+        "offline",
+        undefined,
+        undefined,
+        true
+      );
 
       if (href) {
-        setAuthHref(href);
+        cache.setValue("codeVerifier", dbxAuth.codeVerifier);
+        window.location.href = href;
       } else {
         setError("Invalid Dropbox Id");
       }
@@ -40,45 +48,90 @@ function DropboxProvider({ authUrl, children }) {
   // Gets current user's info if we don't have it already
   React.useEffect(() => {
     async function getCurrentUser() {
-      const res = await dbx.usersGetCurrentAccount();
-      const user = res?.result;
-      setCurrentUser(user);
-      cache.setValue("currentUser", user);
+      try {
+        const res = await dbxRef.current.usersGetCurrentAccount();
+        const user = res?.result;
+        setCurrentUser(user);
+        cache.setValue("currentUser", user);
+        setIsAuthenticated(true);
+      } catch (e) {
+        console.error("Error getting user", e);
+        token();
+      }
     }
 
-    if (accessToken && !currentUser && dbx) {
+    async function token() {
+      try {
+        dbxAuth.setAccessToken(accessToken);
+        dbxAuth.setRefreshToken(refreshToken);
+        dbxAuth.setCodeVerifier(cache.getValue("codeVerifier"));
+        const dbx = new Dropbox({ auth: dbxAuth });
+        dbxRef.current = dbx;
+
+        await dbxAuth.checkAndRefreshAccessToken();
+
+        getCurrentUser();
+      } catch (e) {
+        console.error("Error refreshing token", e);
+        setError(e);
+      }
+    }
+
+    if (isAuthenticated && !currentUser) {
       getCurrentUser();
+    } else if (!isAuthenticated && refreshToken) {
+      token();
     }
     // eslint-disable-next-line
-  }, [accessToken, dbx]);
+  }, [isAuthenticated, refreshToken]);
 
   function onLogout() {
-    setAccessToken("");
+    setIsAuthenticated(false);
     setCurrentUser(null);
-    setDbx(null);
     cache.resetCache({ clientId });
   }
 
-  function parseAcessToken(url) {
+  async function parseAcessToken() {
     // Get the access token from the query string
-    const { access_token } = parseQueryString(window.location.hash);
+    const queryVars = new URLSearchParams(window.location.search);
+    const code = queryVars.get("code");
+
+    // This must match the code verifier we made the original auth url with
+    const codeVerifier = cache.getValue("codeVerifier");
+
+    if (!codeVerifier || !code) return;
+
+    dbxAuth.setCodeVerifier(codeVerifier);
+    const token = await dbxAuth.getAccessTokenFromCode(REDIRECT_URI, code);
+
+    dbxAuth.setAccessToken(token.result.access_token);
+    dbxAuth.setRefreshToken(token.result.refresh_token);
 
     // create a new dropbox token using the access token
-    setDbx(new Dropbox({ accessToken: access_token, clientId }));
+    dbxRef.current = new Dropbox({ auth: dbxAuth });
 
     // Save the access token in memory and cache
-    cache.setValue("accessToken", access_token);
-    setAccessToken(access_token);
+    cache.setValue("accessToken", token.result.access_token);
+    cache.setValue("refreshToken", token.result.refresh_token);
+    setRefreshToken(refreshToken);
+    setAccessToken(accessToken);
+    setIsAuthenticated(true);
+  }
+
+  function onAuthError(error) {
+    console.error("onAuthError", error);
+    setIsAuthenticated(false);
   }
 
   const value = {
     accessToken,
-    authHref,
     currentUser,
-    dbx,
+    dbx: dbxRef.current,
     error,
-    isAuthenticated: dbx?.auth?.accessToken,
+    isAuthenticated,
+    onAuth,
     onLogout,
+    onAuthError,
     parseAcessToken,
   };
 

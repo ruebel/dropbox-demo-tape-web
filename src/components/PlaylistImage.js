@@ -11,7 +11,7 @@ const imgState = {
 function PlaylistImage({ playlist, size = 50 }) {
   const [url, setUrl] = useState();
   const [imageState, setImageState] = useState(imgState.none);
-  const { dbx } = useDropbox();
+  const { dbx, isAuthenticated } = useDropbox();
   const [imageMap = {}, setImageMap] = useLocalStorage("playlistImages");
   const imageId = playlist?.data?.image?.id;
 
@@ -43,7 +43,7 @@ function PlaylistImage({ playlist, size = 50 }) {
       getImageUrl();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageId, imageState, playlist?.meta?.id]);
+  }, [imageId, imageState, playlist?.meta?.id, isAuthenticated]);
 
   function handleError(er) {
     if (url && imgState !== imgState.fetched) {
@@ -52,6 +52,8 @@ function PlaylistImage({ playlist, size = 50 }) {
       setImageState(imgState.error);
     }
   }
+
+  if (!isAuthenticated) return null;
 
   return (
     <img
