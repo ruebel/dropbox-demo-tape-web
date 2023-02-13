@@ -13,6 +13,7 @@ const Wrapper = styled.div`
   grid-gap: 20px;
   justify-content: center;
   padding: 40px;
+  text-align: center;
 `;
 
 function Auth() {
