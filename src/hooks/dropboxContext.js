@@ -1,11 +1,12 @@
 import * as React from "react";
 import { Dropbox, DropboxAuth } from "dropbox";
 import { useCache } from "./cacheContext";
+import { makeRelativeUrl } from "../constants";
 
 const DropboxContext = React.createContext();
 const clientId = "ie394xarjsfdxr0";
 const dbxAuth = new DropboxAuth({ clientId });
-const REDIRECT_URI = `${window.location.origin}/auth`;
+const REDIRECT_URI = `${window.location.origin}${makeRelativeUrl("/auth")}`;
 
 function DropboxProvider({ authUrl, children }) {
   const cache = useCache();
