@@ -1,20 +1,20 @@
 {
   "files": {
     "main.css": "/dropbox-demo-tape-web/static/css/main.6dad8289.chunk.css",
-    "main.js": "/dropbox-demo-tape-web/static/js/main.c34388ad.chunk.js",
-    "main.js.map": "/dropbox-demo-tape-web/static/js/main.c34388ad.chunk.js.map",
+    "main.js": "/dropbox-demo-tape-web/static/js/main.62c09544.chunk.js",
+    "main.js.map": "/dropbox-demo-tape-web/static/js/main.62c09544.chunk.js.map",
     "runtime-main.js": "/dropbox-demo-tape-web/static/js/runtime-main.7d4d0827.js",
     "runtime-main.js.map": "/dropbox-demo-tape-web/static/js/runtime-main.7d4d0827.js.map",
-    "static/js/2.f6756e06.chunk.js": "/dropbox-demo-tape-web/static/js/2.f6756e06.chunk.js",
-    "static/js/2.f6756e06.chunk.js.map": "/dropbox-demo-tape-web/static/js/2.f6756e06.chunk.js.map",
+    "static/js/2.b60681c3.chunk.js": "/dropbox-demo-tape-web/static/js/2.b60681c3.chunk.js",
+    "static/js/2.b60681c3.chunk.js.map": "/dropbox-demo-tape-web/static/js/2.b60681c3.chunk.js.map",
     "index.html": "/dropbox-demo-tape-web/index.html",
     "static/css/main.6dad8289.chunk.css.map": "/dropbox-demo-tape-web/static/css/main.6dad8289.chunk.css.map",
-    "static/js/2.f6756e06.chunk.js.LICENSE.txt": "/dropbox-demo-tape-web/static/js/2.f6756e06.chunk.js.LICENSE.txt"
+    "static/js/2.b60681c3.chunk.js.LICENSE.txt": "/dropbox-demo-tape-web/static/js/2.b60681c3.chunk.js.LICENSE.txt"
   },
   "entrypoints": [
     "static/js/runtime-main.7d4d0827.js",
-    "static/js/2.f6756e06.chunk.js",
+    "static/js/2.b60681c3.chunk.js",
     "static/css/main.6dad8289.chunk.css",
-    "static/js/main.c34388ad.chunk.js"
+    "static/js/main.62c09544.chunk.js"
   ]
 }
