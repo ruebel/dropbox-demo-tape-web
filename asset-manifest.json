@@ -1,8 +1,8 @@
 {
   "files": {
     "main.css": "/dropbox-demo-tape-web/static/css/main.6dad8289.chunk.css",
-    "main.js": "/dropbox-demo-tape-web/static/js/main.62c09544.chunk.js",
-    "main.js.map": "/dropbox-demo-tape-web/static/js/main.62c09544.chunk.js.map",
+    "main.js": "/dropbox-demo-tape-web/static/js/main.11966f35.chunk.js",
+    "main.js.map": "/dropbox-demo-tape-web/static/js/main.11966f35.chunk.js.map",
     "runtime-main.js": "/dropbox-demo-tape-web/static/js/runtime-main.7d4d0827.js",
     "runtime-main.js.map": "/dropbox-demo-tape-web/static/js/runtime-main.7d4d0827.js.map",
     "static/js/2.b60681c3.chunk.js": "/dropbox-demo-tape-web/static/js/2.b60681c3.chunk.js",
@@ -15,6 +15,6 @@
     "static/js/runtime-main.7d4d0827.js",
     "static/js/2.b60681c3.chunk.js",
     "static/css/main.6dad8289.chunk.css",
-    "static/js/main.62c09544.chunk.js"
+    "static/js/main.11966f35.chunk.js"
   ]
 }
