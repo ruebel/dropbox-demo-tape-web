@@ -1,0 +1,70 @@
+.track {
+  align-items: center;
+  background: none;
+  background-color: var(--background);
+  border: none;
+  border-top: 1px solid var(--bg-highlight);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  font-size: 16px;
+  gap: 5px;
+  grid-template-columns: 40px auto 1fr auto;
+  margin: 0;
+  outline: none;
+  padding: var(--space-medium);
+  text-align: left;
+  width: 100%;
+}
+
+.track:hover {
+  background-color: var(--bg-highlight);
+
+  .play {
+    color: var(--white);
+    border-width: 1px;
+  }
+}
+
+.trackPlaying {
+  color: var(--highlight);
+
+  .play {
+    color: var(--highlight);
+    border-width: 0;
+  }
+}
+
+.play {
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  color: transparent;
+  display: flex;
+  height: 30px;
+  justify-content: center;
+  line-height: 20px;
+  width: 30px;
+}
+
+.trackName {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.updated {
+  color: var(--secondary);
+  display: grid;
+  font-size: 11px;
+  line-height: 15px;
+  text-align: right;
+
+  @media screen and (max-width: 768px) {
+    display: none;
+  }
+}
+
+.updatedBy {
+  color: var(--disabled);
+}

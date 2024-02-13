@@ -1,0 +1,31 @@
+.header {
+  align-items: center;
+  background-color: #2D323C;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  padding: 20px;
+}
+
+.inner {
+  align-items: center;
+  display: flex;
+  flex-direction: row;
+}
+
+.title {
+  font-size: 30px;
+  font-weight: 600;
+  padding-left: 10px;
+
+  @media screen and (max-width: 768px) {
+    font-size: 28px;
+  }
+}
+
+.menuButton {
+  border: none;
+  background: transparent;
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}

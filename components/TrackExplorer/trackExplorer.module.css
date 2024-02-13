@@ -1,0 +1,18 @@
+.header {
+  display: grid;
+  flex-direction: row;
+  gap: 20px;
+  grid-template-columns: 1fr auto;
+  padding: 20px;
+
+  @media screen and (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.actions {
+  align-items: center;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 20px;
+}

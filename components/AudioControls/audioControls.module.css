@@ -1,0 +1,84 @@
+.audioControls {
+  align-items: center;
+  background-color: var(--background-light);
+  bottom: 0;
+  display: grid;
+  grid-gap: 20px;
+  grid-template-columns: minmax(200px, 0.5fr) 1fr 150px;
+  padding: 10px 20px;
+  position: absolute;
+  width: 100%;
+
+  @media screen and (max-width: 768px) {
+    display: none;
+    grid-template-columns: auto 1fr;
+    padding: 10px;
+  }
+}
+
+.audioControlsPlaying {
+  @media screen and (max-width: 768px) {
+    display: grid;
+  }
+}
+
+.hideOnSmall {
+  display: block;
+
+  @media screen and (max-width: 768px) {
+    display: none !important;
+  }
+}
+
+.showOnSmall {
+  display: none;
+
+  @media screen and (max-width: 768px) {
+    display: block;
+  }
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+}
+
+.controlsInner {
+  display: grid;
+  flex: 1;
+  grid-gap: 5px;
+  max-width: 700px;
+}
+
+.buttons {
+  align-items: center;
+  display: grid;
+  grid-auto-flow: column;
+  grid-gap: 20px;
+  justify-content: center;
+}
+
+.sd_artist {
+  color: var(--secondary);
+  font-size: var(--fs-sm);
+}
+
+.sd_info {
+  display: grid;
+  gap: 2px;
+}
+
+.sd_trackName {
+  font-size: var(--fs-md);
+  font-weight: 500;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sd {
+  align-items: center;
+  display: grid;
+  gap: var(--space-medium);
+  grid-template-columns: 50px 1fr;
+}

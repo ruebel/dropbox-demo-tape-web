@@ -1,0 +1,11 @@
+.leftTime {
+  text-align: right;
+}
+
+.position {
+  align-items: center;
+  color: var(--primary);
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  gap: 5px;
+}

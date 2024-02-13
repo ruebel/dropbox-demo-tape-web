@@ -1,0 +1,12 @@
+.volume {
+  align-items: center;
+  color: var(--primary);
+  display: grid;
+  grid-gap: 10px;
+  grid-template-columns: 20px 1fr;
+  padding: 0 10px;
+}
+
+.volume path {
+  fill: var(--primary);
+}

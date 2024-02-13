@@ -1,0 +1,60 @@
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  padding: 20px;
+}
+
+.root {
+  display: grid;
+  width: 100%;
+}
+
+.playlist {
+  align-items: center;
+  background-color: var(--background);
+  border: none;
+  border-top: 1px solid var(--bg-highlight);
+  cursor: pointer;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 50px 1fr auto;
+  outline: none;
+  padding: var(--space-medium) var(--space-large);
+  text-align: left;
+}
+
+.playlist:hover {
+  background-color: var(--bg-highlight);
+}
+
+.playlistPlaying {
+  color: var(--highlight);
+}
+
+.title {
+  display: grid;
+  gap: 5px;
+  font-size: 19px;
+  font-weight: 400;
+}
+
+.modified {
+  color: var(--disabled);
+}
+
+.updated {
+  display: grid;
+  gap: 5px;
+  font-size: 14px;
+  font-weight: 400;
+  text-align: right;
+
+  @media (max-width: 768px) {
+    display: none;
+  }
+}
+
+.path {
+  color: var(--secondary);
+  font-size: 14px;
+}

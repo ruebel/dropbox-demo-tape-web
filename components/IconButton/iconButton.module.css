@@ -1,0 +1,51 @@
+.iconButton {
+  align-items: center;
+  background-color: var(--background);
+  border: 1px solid var(--white);
+  border-radius: 50%;
+  color: var(--white);
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  outline: none;
+  transition: var(--transition);
+}
+
+.iconButton:hover, .iconButton:focus {
+  background-color: var(--white);
+  color: var(--background);
+}
+
+.iconButton:disabled {
+  border-color: var(--transparent);
+  color: var(--disabled);
+  cursor: not-allowed;
+}
+
+.iconButton:disabled:hover, .iconButton:disabled:focus {
+  background-color: var(--background);
+  color: var(--disabled);
+}
+
+.iconButtonHideBackground {
+  background-color: var(--transparent);
+}
+
+.iconButtonHideBorder {
+  border: none;
+}
+
+.iconButtonSimple {
+  background-color: var(--transparent);
+  border: none;
+  color: inherit;
+}
+
+.iconButtonSimple:hover, .iconButtonSimple:focus {
+  color: var(--highlight);
+  background-color: var(--transparent);
+}
+
+.iconButtonSimple:hover path {
+  fill: var(--highlight);
+}

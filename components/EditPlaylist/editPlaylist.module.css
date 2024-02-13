@@ -1,0 +1,109 @@
+.root {
+  display: grid;
+  gap: 20px;
+  padding: 20px;
+}
+
+.header {
+  align-items: flex-start;
+  display: grid;
+  gap: 20px;
+  grid-template-columns: 1fr auto;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.actions {
+  align-items: center;
+  display: grid;
+  grid-auto-flow: column;
+  gap: 20px;
+}
+
+.imageEdit {
+  position: relative;
+
+  @media (max-width: 768px) {
+    justify-content: flex-start;
+    align-items: flex-start;
+  }
+}
+
+.imageEditHover {
+  align-items: center;
+  background-color: var(--background);
+  bottom: 0;
+  color: var(--white);
+  display: grid;
+  font-size: var(--fs-lg);
+  justify-content: center;
+  left: 0;
+  pointer-events: none;
+  opacity: 0;
+  padding: 0 5px;
+  position: absolute;
+  right: 0;
+  text-align: center;
+  top: 0;
+  transition: opacity 250ms ease-in-out;
+  z-index: 1;
+}
+
+.imageEdit:hover .imageEditHover {
+  opacity: 0.7;
+}
+
+.imageEditWrapper {
+  display: flex;
+}
+
+.inputWrapper {
+  display: grid;
+  gap: 20px;
+  grid-template-columns: auto 1fr;
+
+  @media (max-width: 768px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.input {
+  display: grid;
+  gap: 20px;
+}
+
+.emptyTracks {
+  border: 1px dashed var(--disabled);
+  border-radius: 10px;
+  padding: 20px;
+  margin: 20px;
+  width: calc(100% - 40px);
+  transition: var(--transition);
+  text-align: center;
+
+  @media screen and (max-width: 768px){
+    margin: 20px 0;
+    width: 100%;
+  }
+}
+
+.emptyTracks:hover {
+  border-color: var(--highlight);
+  border-style: solid;
+  background-color: var(--highlight);
+  color: var(--white);
+}
+
+.tracksHeader {
+  align-items: center;
+  display: grid;
+  grid-template-columns: 110px auto;
+  justify-content: flex-start;
+  padding-top: 20px;
+
+  @media (max-width: 768px) {
+    justify-content: space-between;
+  }
+}

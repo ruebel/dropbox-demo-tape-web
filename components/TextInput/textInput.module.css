@@ -1,0 +1,42 @@
+.wrapper {
+  color: var(--secondary);
+  position: relative;
+}
+
+.wrapper:focus-within {
+  color: var(--white);
+}
+
+.hasError {
+  border-color: var(--error);
+  color: var(--error);
+}
+
+.input {
+  background-color: var(--background);
+  border: 1px solid var(--primary);
+  border-radius: 10px;
+  color: inherit;
+  font-size: 16px;
+  line-height: 37px;
+  outline: none;
+  padding: 2px 15px;
+  width: 100%;
+}
+
+.title {
+  background-color: var(--background);
+  font-size: 12px;
+  font-weight: 600;
+  left: 10px;
+  padding: 0 5px;
+  position: absolute;
+  top: -6px;
+}
+
+.errorMessage {
+  border-color: var(--error);
+  color: var(--error);
+  font-size: var(--fs-sm);
+  font-weight: 700;
+}

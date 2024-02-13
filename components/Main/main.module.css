@@ -1,0 +1,16 @@
+.main {
+}
+
+.content {
+  background-color: var(--background);
+  padding-bottom: 113px;
+}
+
+.inner {
+  max-width: 1150px;
+  margin: 0 auto;
+}
+
+.auth {
+  width: 100%;
+}

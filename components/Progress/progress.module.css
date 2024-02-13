@@ -1,0 +1,62 @@
+.progress {
+  position: relative;
+  overflow: hidden;
+  height: 4px;
+  margin-bottom: -4px;
+  background-color: var(--highlight-dark);
+  width: 100%;
+}
+
+@keyframes bar1Animation {
+  0% {
+    left: -35%;
+    right: 100%;
+  }
+  60% {
+    left: 100%;
+    right: -90%;
+  }
+  100% {
+    left: 100%;
+    right: -90%;
+  }
+}
+
+.bar1 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background-color: var(--highlight);
+  transition: transform 0.2s ease;
+  width: auto;
+  z-index: 1;
+  animation: 2.1s cubic-bezier(0.65, 0.815, 0.735, 0.395) 0s infinite normal none running bar1Animation;
+}
+
+@keyframes bar2Animation {
+  0% {
+    left: -200%;
+    right: 100%;
+  }
+  60% {
+    left: 107%;
+    right: -8%;
+  }
+  100% {
+    left: 107%;
+    right: -8%;
+  }
+}
+
+.bar2 {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  background-color: var(--highlight);
+  transition: transform 0.2s ease;
+  width: auto;
+  z-index: 1;
+  animation: 2.1s cubic-bezier(0.165, 0.84, 0.44, 1) 0.15s infinite normal none running bar2Animation;
+}
