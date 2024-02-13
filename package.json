@@ -1,6 +1,6 @@
 {
   "name": "dropbox-demo-tape-web",
-  "homepage": "http://ruebel.github.io/dropbox-demo-tape-web",
+  "homepage": "https://dropbox-demo-tape-web.vercel.app/",
   "version": "0.1.0",
   "private": true,
   "scripts": {
