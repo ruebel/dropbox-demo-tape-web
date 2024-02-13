@@ -1,11 +1,12 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
-import "./globals.css";
-import { Header } from "@/components/Header/Header";
 import { Audio } from "@/components/Audio";
-import { Provider } from "jotai";
 import { AudioControls } from "@/components/AudioControls/AudioControls";
 import { FullAudioDetails } from "@/components/FullAudioDetails/FullAudioDetails";
+import { Header } from "@/components/Header/Header";
+import { Provider } from "jotai";
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import { Suspense } from "react";
+import "./globals.css";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -24,7 +25,9 @@ export default function RootLayout({
       <body className={inter.className}>
         <Provider>
           <main>
-            <Header />
+            <Suspense fallback={null}>
+              <Header />
+            </Suspense>
             <Audio />
             <div id="body">{children}</div>
             <AudioControls />
