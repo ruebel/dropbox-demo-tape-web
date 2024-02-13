@@ -1,10 +1,8 @@
-import { HOME } from "@/utils/constants";
-
 const PLAYLIST_URL = "/playlist";
 
 export function makeRelativeUrl(url: string) {
   if (process.env.NODE_ENV === "production") {
-    return `${HOME}${url}`;
+    return `${url}`;
   }
   return url;
 }
