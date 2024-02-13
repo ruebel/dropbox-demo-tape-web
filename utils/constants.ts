@@ -1,5 +1,4 @@
-export const HOME =
-  process.env.NODE_ENV === "production" ? "/dropbox-demo-tape-web" : "/";
+export const HOME = "/";
 
 export const DROPBOX_CLIENT_ID = "ie394xarjsfdxr0";
 
