@@ -1,9 +1,11 @@
+import { rootStorageAtom } from "@/state/dropbox";
 import { dbPlaylistAtomEffect } from "@/state/playlists";
-import { useAtom } from "jotai";
+import { useAtom, useSetAtom } from "jotai";
 import { useEffect } from "react";
 
 export function useCacheSync() {
   useAtom(dbPlaylistAtomEffect);
+  const setCache = useSetAtom(rootStorageAtom);
 
   // Initializes local cache if it doesn't exist yet
   useEffect(() => {
@@ -11,6 +13,7 @@ export function useCacheSync() {
 
     if (!cache) {
       localStorage.setItem("dt", JSON.stringify({}));
+      setCache({});
     }
   }, []);
 }
