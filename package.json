@@ -1,6 +1,6 @@
 {
   "name": "dropbox-demo-tape-web",
-  "homepage": "https://dropbox-demo-tape-web.vercel.app/",
+  "homepage": "https://dropbox-demo-tape.vercel.app/",
   "version": "0.1.0",
   "private": true,
   "scripts": {

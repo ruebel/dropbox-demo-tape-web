@@ -2,7 +2,7 @@
 
 > A collaborative playlist app built on Dropbox
 
-https://dropbox-demo-tape-web.vercel.app/
+https://dropbox-demo-tape.vercel.app/
 
 ## Overview
 
