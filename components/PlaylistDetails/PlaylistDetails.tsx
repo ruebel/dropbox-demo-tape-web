@@ -20,7 +20,7 @@ type PlaylistDetailsProps = {
 
 export function PlaylistDetails({ id }: PlaylistDetailsProps) {
   const playlist = useAtomValue(playlistAtom(id));
-  const { audioState, onPause, onPlay } = useAudio();
+  const { audioState, onPause, onPlay, track } = useAudio();
   const { isLoading, onDeletePlaylist } = useDeletePlaylist();
   const { push } = useRouter();
 
@@ -34,7 +34,7 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
   function handleTrackClick(id: string) {
     if (!playlist) return;
 
-    if (audioState === "playing") {
+    if (audioState === "playing" && id === track?.id) {
       onPause();
     } else {
       onPlay(playlist?.meta?.id || "", id);
