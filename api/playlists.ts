@@ -39,7 +39,7 @@ async function getPlaylistFiles(dbx: Dropbox, paths: string[]) {
 
         fr.addEventListener(
           "load",
-          (e) => {
+          () => {
             try {
               const text = fr.result as string;
               const data = JSON.parse(text);
