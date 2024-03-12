@@ -5,12 +5,17 @@
 .dragHandle {
   align-items: center;
   color: var(--primary);
+  cursor: grab;
   display: flex;
   height: 100%;
   justify-content: center;
   position: absolute;
   right: 10px;
   top: 0;
+}
+
+.dragHandle:focus {
+  outline: var(--outline);
 }
 
 .track {

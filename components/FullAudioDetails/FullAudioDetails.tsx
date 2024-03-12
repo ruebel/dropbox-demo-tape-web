@@ -3,18 +3,18 @@
 import { showFullDetailsAtom } from "@/state/audio";
 import { useAtom, useAtomValue } from "jotai";
 
-import styles from "./fullAudioDetails.module.css";
-import { useAudio } from "@/hooks/useAudio";
-import { IconButton } from "@/components/IconButton/IconButton";
-import { ChevronDownIcon } from "@/components/icons/ChevronDownIcon";
-import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
-import { removeExtension } from "@/utils/file";
 import { Position } from "@/components/AudioControls/Position";
+import { IconButton } from "@/components/IconButton/IconButton";
+import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { ChevronDownIcon } from "@/components/icons/ChevronDownIcon";
+import { NextIcon } from "@/components/icons/NextIcon";
 import { PauseIcon } from "@/components/icons/PauseIcon";
 import { PlayIcon } from "@/components/icons/PlayIcon";
-import { NextIcon } from "@/components/icons/NextIcon";
 import { PreviousIcon } from "@/components/icons/PreviousIcon";
+import { useAudio } from "@/hooks/useAudio";
 import { isAuthenticatedAtom } from "@/state/dropbox";
+import { removeExtension } from "@/utils/file";
+import styles from "./fullAudioDetails.module.css";
 
 export function FullAudioDetails() {
   const [showFullDetails, setShowFullDetails] = useAtom(showFullDetailsAtom);
@@ -47,7 +47,7 @@ export function FullAudioDetails() {
       </div>
       <PlaylistImage playlist={playlist} size="100%" />
       <div className={styles.info}>
-        <div className={styles.trackName}>{removeExtension(track.name)}</div>
+        <div className={styles.trackName}>{removeExtension(track?.name)}</div>
         <div className={styles.artist}>{playlist?.data?.artist}</div>
       </div>
       <Position />

@@ -12,7 +12,7 @@
   grid-template-columns: 40px auto 1fr auto;
   margin: 0;
   outline: none;
-  padding: var(--space-medium);
+  padding: var(--space-medium) var(--space-large) var(--space-medium) var(--space-medium);
   text-align: left;
   width: 100%;
 }
