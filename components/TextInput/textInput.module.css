@@ -1,5 +1,5 @@
 .wrapper {
-  color: var(--secondary);
+  color: var(--white);
   position: relative;
 }
 
@@ -14,7 +14,7 @@
 
 .input {
   background-color: var(--background);
-  border: 1px solid var(--primary);
+  border: 1px solid var(--white);
   border-radius: 10px;
   color: inherit;
   font-size: 16px;
@@ -22,6 +22,11 @@
   outline: none;
   padding: 2px 15px;
   width: 100%;
+}
+
+.input:focus {
+  border-color: var(--highlight);
+  outline: none;
 }
 
 .title {
