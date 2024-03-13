@@ -1,0 +1,42 @@
+.input {
+  background-color: var(--background);
+  border-radius: 10px;
+  border: 1px solid var(--primary);
+  color: inherit;
+  font-size: var(--fs-md);
+  line-height: 37px;
+  outline: none;
+  padding: 2px 40px;
+  width: 100%;
+}
+
+.wrapper {
+  position: relative;
+}
+
+.icon {
+  position: absolute;
+  left: var(--space-medium);
+  top: 50%;
+  transform: translateY(-40%);
+}
+
+.clear {
+  align-items: center;
+  background: none;
+  border: none;
+  color: var(--primary);
+  cursor: pointer;
+  display: flex;
+  font-size: var(--fs-md);
+  outline: none;
+  padding: 5px;
+  position: absolute;
+  right: var(--space-small);
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.clear:hover {
+  background-color: var(--bg-highlight);
+}

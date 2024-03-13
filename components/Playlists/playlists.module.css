@@ -1,6 +1,7 @@
 .actions {
   display: flex;
-  justify-content: flex-end;
+  gap: var(--space-medium);
+  justify-content: space-between;
   padding: 20px;
 }
 
@@ -11,9 +12,9 @@
 
 .playlist {
   align-items: center;
-  background-color: var(--background);
+  background: none;
   border: none;
-  border-top: 1px solid var(--bg-highlight);
+  background-color: transparent;
   cursor: pointer;
   display: grid;
   gap: 20px;
@@ -23,8 +24,19 @@
   text-align: left;
 }
 
-.playlist:hover {
+.playlistWrapper {
+  background-color: var(--background);
+  border-top: 1px solid var(--bg-highlight);
+}
+
+.playlistWrapper:hover,
+.playlistWrapper:focus-within {
   background-color: var(--bg-highlight);
+}
+
+.playlistWrapper:focus-within {
+  outline: 1px solid var(--highlight);
+  outline-offset: -1px;
 }
 
 .playlistPlaying {
@@ -57,4 +69,16 @@
 .path {
   color: var(--secondary);
   font-size: 14px;
+}
+
+.empty {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 20px;
+  margin: 20px auto;
+}
+
+.emptySearch {
+  padding: 20px;
 }
