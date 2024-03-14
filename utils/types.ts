@@ -46,3 +46,5 @@ export type DTStorage = {
 export type SortDir = "asc" | "desc";
 
 export type AudioState = "loading" | "paused" | "playing" | "stopped";
+
+export type PlaylistSortType = "artist" | "title" | "modified";

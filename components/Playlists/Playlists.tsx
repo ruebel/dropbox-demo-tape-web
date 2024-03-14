@@ -1,13 +1,19 @@
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
-import { loadableDBPlaylists, playlistsAtom } from "@/state/playlists";
+import {
+  loadableDBPlaylists,
+  playlistsAtom,
+  sortPlaylistsAtom,
+} from "@/state/playlists";
 import { formatRelative } from "date-fns/formatRelative";
 import { useAtomValue } from "jotai";
 
 import { List } from "@/components/List/List";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { SortPlaylists } from "@/components/Playlists/SortPlaylists";
 import { Progress } from "@/components/Progress/Progress";
 import { Search } from "@/components/Search/Search";
 import { usersAtom } from "@/state/users";
+import { sortPlaylists } from "@/utils/sorting";
 import { playlistUrl } from "@/utils/url";
 import Link from "next/link";
 import { useState } from "react";
@@ -18,10 +24,11 @@ export function Playlists() {
   const dbLoading = useAtomValue(loadableDBPlaylists);
   const users = useAtomValue(usersAtom);
   const [query, setQuery] = useState("");
+  const playlistSort = useAtomValue(sortPlaylistsAtom);
 
   const showLoading = dbLoading.state === "loading";
 
-  const playlists =
+  const playlists = sortPlaylists(
     rawPlaylists.length > 0 && query.length > 0
       ? rawPlaylists.filter((playlist) => {
           return (
@@ -29,7 +36,9 @@ export function Playlists() {
             playlist.data.title?.toLowerCase().includes(query.toLowerCase())
           );
         })
-      : rawPlaylists;
+      : rawPlaylists,
+    playlistSort
+  );
 
   const showEmpty = !showLoading && rawPlaylists.length === 0;
   const showEmptySearch =
@@ -46,6 +55,7 @@ export function Playlists() {
       ) : (
         <div className={styles.actions}>
           <Search onChange={setQuery} value={query} />
+          <SortPlaylists />
           <ButtonLink href="/playlist/new">Add</ButtonLink>
         </div>
       )}

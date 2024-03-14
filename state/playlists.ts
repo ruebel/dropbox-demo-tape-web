@@ -4,7 +4,7 @@ import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
-import { Playlist } from "@/utils/types";
+import { Playlist, PlaylistSortType } from "@/utils/types";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
 import { atomFamily, loadable } from "jotai/utils";
@@ -94,3 +94,5 @@ export const artistsAtom = atom((get) => {
     .filter(Boolean)
     .sort();
 });
+
+export const sortPlaylistsAtom = atom<PlaylistSortType>("modified");
