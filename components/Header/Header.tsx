@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { Avatar } from "@/components/Avatar/Avatar";
 import { Menu } from "@/components/Menu/Menu";
+import { ArrowLeftIcon } from "@/components/icons/ArrowLeftIcon";
 import { TapeIcon } from "@/components/icons/TapeIcon";
 import { useCacheSync } from "@/hooks/useCacheSync";
 import { useDropboxAuth } from "@/hooks/useDropboxAuth";
@@ -43,7 +44,11 @@ export function Header() {
     <nav className={styles.header}>
       <Link href={HOME}>
         <div className={styles.inner}>
-          <TapeIcon size={36} />
+          {path === "/" || path === "/auth" ? (
+            <TapeIcon size={36} />
+          ) : (
+            <ArrowLeftIcon size={36} />
+          )}
           <h1 className={styles.title}>Demo Tape</h1>
         </div>
       </Link>
