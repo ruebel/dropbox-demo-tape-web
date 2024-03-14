@@ -4,6 +4,7 @@ import styles from "./textInput.module.css";
 type TextInputProps = {
   error?: string;
   hasError?: boolean;
+  isRequired?: boolean;
   onChange: (val: string) => void;
   title: string;
   value: string;
@@ -12,16 +13,19 @@ type TextInputProps = {
 export function TextInput({
   error,
   hasError = false,
+  isRequired = false,
   onChange,
   title,
   value,
 }: TextInputProps) {
   return (
     <label
+      aria-required={isRequired}
       className={styleArray([styles.wrapper, hasError && styles.hasError])}
     >
       <input
         className={styles.input}
+        required={isRequired}
         onChange={(e) => onChange(e.target.value)}
         type="text"
         value={value}

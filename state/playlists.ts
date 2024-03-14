@@ -49,6 +49,9 @@ export const playlistsAtom = atom(
   }
 );
 
+/**
+ * Gets a single playlist by id
+ */
 export const playlistAtom = atomFamily((id: string | null) =>
   atom(
     (get) =>
@@ -81,3 +84,13 @@ export const playlistAtom = atomFamily((id: string | null) =>
     }
   )
 );
+
+/**
+ * Selector to get all of the artists from the playlists
+ */
+export const artistsAtom = atom((get) => {
+  const playlists = get(playlistsAtom);
+  return Array.from(new Set(playlists.map((p) => p.data.artist)))
+    .filter(Boolean)
+    .sort();
+});

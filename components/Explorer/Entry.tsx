@@ -28,7 +28,11 @@ export function Entry({ entry, onClick, isSelected = false }: EntryProps) {
   return (
     <button
       className={styleArray([styles.entry, isSelected && styles.entrySelected])}
-      onClick={() => onClick(entry)}
+      onClick={(e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        onClick(entry);
+      }}
     >
       <div className={styles.entryInner}>
         <Icon size={25} />

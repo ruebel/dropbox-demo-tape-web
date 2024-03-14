@@ -7,8 +7,9 @@ import { useState } from "react";
 
 import { uploadFile } from "@/api/file";
 import { Explorer } from "@/components/Explorer/Explorer";
+import { Typeahead } from "@/components/Typeahead/Typeahead";
 import { dbxAtom } from "@/state/dropbox";
-import { playlistsAtom } from "@/state/playlists";
+import { artistsAtom, playlistsAtom } from "@/state/playlists";
 import { Playlist, PlaylistData } from "@/utils/types";
 import { playlistUrl } from "@/utils/url";
 import { useAtom, useAtomValue } from "jotai";
@@ -21,11 +22,14 @@ export function AddPlaylist() {
   const [path, setPath] = useState("/");
   const dbx = useAtomValue(dbxAtom);
   const [playlists, savePlaylistLocally] = useAtom(playlistsAtom);
+  const artists = useAtomValue(artistsAtom);
   const { push } = useRouter();
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     e.stopPropagation();
+
+    if (!title || !artist || !path) return;
 
     const filePath = `${path}/${title}.${DEMO_FILE_EXT}`;
     const playlistData = {
@@ -56,8 +60,19 @@ export function AddPlaylist() {
         <ButtonLink type="submit">Save</ButtonLink>
         <ButtonLink href={HOME}>Cancel</ButtonLink>
       </div>
-      <TextInput onChange={setTitle} title="Title" value={title} />
-      <TextInput onChange={setArtist} title="Artist" value={artist} />
+      <TextInput
+        onChange={setTitle}
+        isRequired={true}
+        title="Title"
+        value={title}
+      />
+      <Typeahead
+        isRequired={true}
+        onChange={setArtist}
+        options={artists}
+        title="Artist"
+        value={artist}
+      />
       <div className={styles.explorerWrapper}>
         <div className={styles.explorerInner}>
           <Explorer onPathChange={setPath} />

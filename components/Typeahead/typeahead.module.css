@@ -1,0 +1,63 @@
+.wrapper {
+  color: var(--white);
+  position: relative;
+}
+
+.wrapper:focus-within {
+  color: var(--white);
+}
+
+.input {
+  background-color: var(--background);
+  border: 1px solid var(--white);
+  border-radius: 10px;
+  color: inherit;
+  font-size: 16px;
+  line-height: 37px;
+  outline: none;
+  padding: 2px 15px;
+  width: 100%;
+}
+
+.input:focus {
+  border-color: var(--highlight);
+  outline: none;
+}
+
+.title {
+  background-color: var(--background);
+  font-size: 12px;
+  font-weight: 600;
+  left: 10px;
+  padding: 0 5px;
+  position: absolute;
+  top: -6px;
+}
+
+.options {
+  -webkit-margin-start: 0;
+  -webkit-padding-start: 0;
+  background: var(--white);
+  border-radius: 10px;
+  color: var(--background);
+  display: grid;
+  list-style-type: none;
+  margin-block-end: 0;
+  margin-block-start: 0;
+  margin: var(--space-small) 0 0 0;
+  overflow: hidden;
+  padding-inline-start: 0;
+  padding: 0;
+  position: absolute;
+  z-index: 1;
+}
+
+.option {
+  padding: var(--space-medium);
+  outline: none;
+}
+
+.option:focus, .option:hover {
+  background-color: var(--highlight);
+  color: var(--white);
+}

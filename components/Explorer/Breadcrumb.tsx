@@ -8,7 +8,13 @@ type BreadcrumbProps = {
 
 export function Breadcrumb({ name, onClick, path }: BreadcrumbProps) {
   return (
-    <button className={styles.breadcrumb} onClick={() => onClick(path)}>
+    <button
+      className={styles.breadcrumb}
+      onClick={(e) => {
+        e.preventDefault();
+        onClick(path);
+      }}
+    >
       {name}
     </button>
   );

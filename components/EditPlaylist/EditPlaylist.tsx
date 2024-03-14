@@ -2,12 +2,13 @@
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import { TextInput } from "@/components/TextInput/TextInput";
-import { playlistAtom } from "@/state/playlists";
-import { useAtom } from "jotai";
+import { artistsAtom, playlistAtom } from "@/state/playlists";
+import { useAtom, useAtomValue } from "jotai";
 import { useState } from "react";
 
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { Typeahead } from "@/components/Typeahead/Typeahead";
 import { Playlist, PlaylistTrack } from "@/utils/types";
 import {
   editPlaylistImageUrl,
@@ -28,6 +29,8 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   const [artist, setArtist] = useState(playlist?.data.artist || "");
   const [title, setTitle] = useState(playlist?.data.title || "");
   const [tracks, setTracks] = useState(playlist?.data.tracks || []);
+  const artists = useAtomValue(artistsAtom);
+
   const { push } = useRouter();
 
   function handleArtistChange(newArtist: string) {
@@ -83,8 +86,9 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
         </div>
         <div className={styles.input}>
           <TextInput onChange={handleTitleChange} title="Title" value={title} />
-          <TextInput
+          <Typeahead
             onChange={handleArtistChange}
+            options={artists}
             title="Artist"
             value={artist}
           />
