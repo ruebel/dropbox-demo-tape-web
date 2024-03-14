@@ -3,8 +3,8 @@ import { AudioControls } from "@/components/AudioControls/AudioControls";
 import { FullAudioDetails } from "@/components/FullAudioDetails/FullAudioDetails";
 import { Header } from "@/components/Header/Header";
 import { Provider } from "jotai";
-import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import { Metadata } from "next/types";
 import { Suspense } from "react";
 import "./globals.css";
 

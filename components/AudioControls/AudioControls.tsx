@@ -3,15 +3,17 @@
 import { SongDetails } from "@/components/AudioControls/SongDetails";
 import { useAudio } from "@/hooks/useAudio";
 
-import styles from "./audioControls.module.css";
-import { IconButton } from "@/components/IconButton/IconButton";
-import { PreviousIcon } from "@/components/icons/PreviousIcon";
-import { PlayIcon } from "@/components/icons/PlayIcon";
-import { PauseIcon } from "@/components/icons/PauseIcon";
-import { NextIcon } from "@/components/icons/NextIcon";
-import { Volume } from "@/components/AudioControls/Volume";
 import { Position } from "@/components/AudioControls/Position";
+import { Volume } from "@/components/AudioControls/Volume";
+import { IconButton } from "@/components/IconButton/IconButton";
+import { NextIcon } from "@/components/icons/NextIcon";
+import { PauseIcon } from "@/components/icons/PauseIcon";
+import { PlayIcon } from "@/components/icons/PlayIcon";
+import { PreviousIcon } from "@/components/icons/PreviousIcon";
+import { removeExtension } from "@/utils/file";
 import { styleArray } from "@/utils/style";
+import { useEffect } from "react";
+import styles from "./audioControls.module.css";
 
 export function AudioControls() {
   const {
@@ -42,6 +44,19 @@ export function AudioControls() {
         <PlayIcon size={26} />
       </IconButton>
     );
+
+  // Updates the document title to show currently playing track name
+  useEffect(() => {
+    const title =
+      audioState === "playing"
+        ? `${removeExtension(track?.name)} - ${
+            playlist?.data?.artist || playlist?.data?.title
+          }`
+        : "Demo Tape";
+    // Next app routing no longer supports the <Head> component
+    // so we have to do this the old way
+    document.title = title;
+  }, [audioState, track?.name, playlist?.data?.artist, playlist?.data?.title]);
 
   return (
     <div
