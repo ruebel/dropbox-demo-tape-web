@@ -10,6 +10,7 @@ import { Progress } from "@/components/Progress/Progress";
 import styles from "./explorer.module.css";
 
 type ExplorerProps = {
+  initialFolder?: string;
   onPathChange?: (path: string) => void;
   onSelectionChange?: (entries: EnhancedFileMeta[]) => void;
   selectedEntries?: EnhancedFileMeta[];
@@ -19,6 +20,7 @@ type ExplorerProps = {
 };
 
 export function Explorer({
+  initialFolder = "",
   onPathChange,
   onSelectionChange,
   selectedEntries = [],
@@ -26,11 +28,16 @@ export function Explorer({
   showFiles = false,
   showImages = false,
 }: ExplorerProps) {
-  const [folder, setFolder] = useState("");
+  const [folder, setFolder] = useState(initialFolder);
   const [sortBy, setSortBy] = useState("");
   const [sortDir, setSortDir] = useState<SortDir | null>(null);
   const { files, isLoading } = useFiles({
     folder,
+    // If we cannot get a folder or a path is invalid
+    // then send the user back to their home folder
+    onError: () => {
+      if (folder.length > 0) setFolder("");
+    },
     showFiles,
     showImages,
     sortBy,

@@ -8,6 +8,7 @@ import { useState } from "react";
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import { Explorer } from "@/components/Explorer/Explorer";
 import { PlaylistHeader } from "@/components/PlaylistHeader/PlaylistHeader";
+import { getPathWithoutFileName } from "@/utils/file";
 import { playlistUrl } from "@/utils/url";
 import { useRouter } from "next/navigation";
 import styles from "./trackExplorer.module.css";
@@ -59,6 +60,7 @@ export function TrackExplorer({ id }: TrackExplorerProps) {
         </div>
       </div>
       <Explorer
+        initialFolder={getPathWithoutFileName(playlist.meta.path)}
         onSelectionChange={handleSelectionChange}
         selectedEntries={selectedTracks}
         showFiles={true}

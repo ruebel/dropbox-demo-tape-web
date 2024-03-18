@@ -13,6 +13,7 @@ import { useEffect, useState } from "react";
 
 type UseFilesProps = {
   folder?: string | null;
+  onError?: (error: Error) => void;
   showFiles?: boolean;
   showImages?: boolean;
   sortBy?: string | null;
@@ -21,6 +22,7 @@ type UseFilesProps = {
 
 export function useFiles({
   folder = "",
+  onError,
   showFiles = false,
   showImages = false,
   sortBy = "",
@@ -36,16 +38,24 @@ export function useFiles({
   useEffect(() => {
     async function fetchFiles() {
       setIsLoading(true);
-      const files = await getFiles(dbx, folder || "", showFiles, showImages);
+      try {
+        const files = await getFiles(dbx, folder || "", showFiles, showImages);
 
-      // Get all user ids of users who have modified listed files
-      const userIds = getModifiedUsersFromEntries(files.data);
-      fetchUsers(userIds);
+        // Get all user ids of users who have modified listed files
+        const userIds = getModifiedUsersFromEntries(files.data);
+        fetchUsers(userIds);
 
-      setFolderFileMap({
-        [folder || ""]: files,
-      });
-      setIsLoading(false);
+        setFolderFileMap({
+          [folder || ""]: files,
+        });
+      } catch (err) {
+        if (onError) {
+          onError(err as Error);
+        }
+        setFolderFileMap({});
+      } finally {
+        setIsLoading(false);
+      }
     }
 
     if (dbx && isAuthenticated) {

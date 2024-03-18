@@ -12,6 +12,10 @@ export function getExtension(name: string) {
   return name?.split(".")?.pop() || "";
 }
 
+export function getPathWithoutFileName(path: string) {
+  return path.substring(0, path.lastIndexOf("/"));
+}
+
 /**
  * Returns true if file name is an audio file
  */
