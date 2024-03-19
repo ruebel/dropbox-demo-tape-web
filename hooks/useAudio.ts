@@ -65,6 +65,22 @@ export function useAudio() {
     }
   }
 
+  function onSetTrackError(error: string | undefined) {
+    // Ensure that we are currently playing a track
+    if (playlist && track && trackIndex > -1) {
+      const updatedTrack = { ...track, error };
+
+      // Save the new duration in the playlist so we have it preloaded next time
+      setPlaylist({
+        ...playlist,
+        data: {
+          ...playlist.data,
+          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
+        },
+      });
+    }
+  }
+
   function onStop() {
     setAudioState("stopped");
   }
@@ -79,6 +95,7 @@ export function useAudio() {
     onPrevious,
     onResume,
     onSetTrackDuration,
+    onSetTrackError,
     onStop,
     playlist,
     track,

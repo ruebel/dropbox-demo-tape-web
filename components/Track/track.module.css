@@ -44,6 +44,21 @@
   }
 }
 
+.trackError {
+  color: var(--error);
+
+  .play {
+    border: none;
+    color: var(--error);
+  }
+}
+
+.trackError:hover {
+  .play {
+    color: var(--error);
+  }
+}
+
 .play {
   align-items: center;
   border: 1px solid currentColor;

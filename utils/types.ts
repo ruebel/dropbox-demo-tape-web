@@ -11,6 +11,7 @@ export type ImageMap = Record<string, string>;
 
 export type EnhancedFileMeta = FileMeta & {
   duration?: number;
+  error?: string;
   isAudioFile: boolean;
   isFolder: boolean;
   isPlaylist: boolean;

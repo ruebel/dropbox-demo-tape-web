@@ -1,5 +1,6 @@
 import { PlaylistTrack } from "@/utils/types";
 
+import { ErrorIcon } from "@/components/icons/ErrorIcon";
 import { HeadsetIcon } from "@/components/icons/HeadsetIcon";
 import { PauseIcon } from "@/components/icons/PauseIcon";
 import { PlayIcon } from "@/components/icons/PlayIcon";
@@ -26,11 +27,17 @@ export function Track({ index, onClick, track }: TrackProps) {
 
   return (
     <button
-      className={styleArray([styles.track, isPlaying && styles.trackPlaying])}
+      className={styleArray([
+        styles.track,
+        isPlaying && styles.trackPlaying,
+        !!track.error && styles.trackError,
+      ])}
       onClick={() => onClick(track.id)}
     >
       <div className={styles.play}>
-        {isPlaying ? (
+        {track.error ? (
+          <ErrorIcon size={20} />
+        ) : isPlaying ? (
           audioState === "playing" ? (
             <PauseIcon size={20} />
           ) : (

@@ -30,6 +30,7 @@ export function Audio() {
     onPrevious,
     onResume,
     onSetTrackDuration,
+    onSetTrackError,
     onStop,
     playlist,
     track,
@@ -164,13 +165,33 @@ export function Audio() {
 
       if (track && track.path_lower && audioState === "loading") {
         // This is not a resume so we need to load the file
-        const fileLink = await dbx.filesGetTemporaryLink({
-          path: track.path_lower,
-        });
-        player.setAttribute("src", fileLink?.result?.link);
+        try {
+          const fileLink = await dbx.filesGetTemporaryLink({
+            path: track.path_lower,
+          });
 
-        player.play();
-        setMediaState("playing");
+          player.setAttribute("src", fileLink?.result?.link);
+
+          player.play();
+          setMediaState("playing");
+
+          // If this track previously had an error we need to clear it
+          if (track.error) {
+            onSetTrackError(undefined);
+          }
+        } catch (error) {
+          // We failed to load the track so mark it as errored
+          console.error("Failed to load track", error);
+          onSetTrackError("Failed to load track");
+
+          if (hasNext) {
+            onNext();
+          } else {
+            setAudioState("stopped");
+          }
+
+          return;
+        }
       } else if (track && audioState === "playing") {
         player.play();
         setMediaState("playing");

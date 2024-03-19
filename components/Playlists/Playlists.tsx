@@ -68,7 +68,12 @@ export function Playlists() {
         getKey={(playlist) => playlist.meta.id}
         items={playlists}
         itemRenderer={(playlist) => {
-          const user = users?.[playlist.meta.modifiedBy];
+          const user =
+            users?.[
+              playlist.meta.modifiedBy ||
+                playlist.meta?.sharing_info?.modified_by ||
+                ""
+            ];
 
           return (
             <div className={styles.playlistWrapper}>
