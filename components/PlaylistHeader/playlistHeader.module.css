@@ -19,3 +19,8 @@
 .artistName {
   color: var(--primary)
 }
+
+.duration {
+  color: var(--secondary);
+  font-size: var(--fs-sm);
+}

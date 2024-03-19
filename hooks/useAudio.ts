@@ -4,14 +4,15 @@ import {
   playingTrackIdAtom,
 } from "@/state/audio";
 import { playlistAtom } from "@/state/playlists";
-import { useAtom, useAtomValue } from "jotai";
+import { replaceItemAtIndex } from "@/utils/list";
+import { useAtom } from "jotai";
 
 export function useAudio() {
   const [playingPlaylistId, setPlayingPlaylistId] = useAtom(
     playingPlaylistIdAtom
   );
   const [playingTrackId, setPlayingTrackId] = useAtom(playingTrackIdAtom);
-  const playlist = useAtomValue(playlistAtom(playingPlaylistId));
+  const [playlist, setPlaylist] = useAtom(playlistAtom(playingPlaylistId));
   const [audioState, setAudioState] = useAtom(audioStateAtom);
 
   const tracks = playlist?.data.tracks || [];
@@ -47,6 +48,23 @@ export function useAudio() {
     setAudioState("playing");
   }
 
+  function onSetTrackDuration(duration: number) {
+    // Ensure that we are currently playing a track and that the duration is different
+    // from what we have stored in the playlist
+    if (playlist && track && trackIndex > -1 && track.duration !== duration) {
+      const updatedTrack = { ...track, duration };
+
+      // Save the new duration in the playlist so we have it preloaded next time
+      setPlaylist({
+        ...playlist,
+        data: {
+          ...playlist.data,
+          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
+        },
+      });
+    }
+  }
+
   function onStop() {
     setAudioState("stopped");
   }
@@ -60,6 +78,7 @@ export function useAudio() {
     onPlay,
     onPrevious,
     onResume,
+    onSetTrackDuration,
     onStop,
     playlist,
     track,

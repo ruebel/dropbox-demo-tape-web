@@ -7,6 +7,7 @@ import { audioStateAtom, playingTrackIdAtom } from "@/state/audio";
 import { userByIdAtom } from "@/state/users";
 import { getModifiedBy, removeExtension } from "@/utils/file";
 import { styleArray } from "@/utils/style";
+import { getMMSSFromMs } from "@/utils/time";
 import { formatRelative } from "date-fns/formatRelative";
 import { useAtomValue } from "jotai";
 import styles from "./track.module.css";
@@ -41,6 +42,9 @@ export function Track({ index, onClick, track }: TrackProps) {
       </div>
       <span>{index}.</span>
       <span className={styles.trackName}>{removeExtension(track.name)}</span>
+      <span className={styles.duration}>
+        {track.duration ? getMMSSFromMs(track.duration * 1000) : "--:--"}
+      </span>
       <span className={styles.updated}>
         <span>
           Updated {formatRelative(new Date(track.server_modified), new Date())}

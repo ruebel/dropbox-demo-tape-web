@@ -29,6 +29,7 @@ export function Audio() {
     onPause,
     onPrevious,
     onResume,
+    onSetTrackDuration,
     onStop,
     playlist,
     track,
@@ -109,9 +110,11 @@ export function Audio() {
 
     const duration = el.duration;
 
+    // Will save the duration in the playlist if needed
+    onSetTrackDuration(duration);
     setMediaDuration({ duration });
     setAudioDuration(duration * 1000);
-  }, [setAudioDuration]);
+  }, [onSetTrackDuration, setAudioDuration]);
 
   const handleEnded = useCallback(() => {
     if (hasNext) {

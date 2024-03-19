@@ -9,3 +9,11 @@ export function reorderList<T>(
 
   return result;
 }
+
+export function replaceItemAtIndex<T>(
+  arr: Array<T>,
+  index: number,
+  newValue: T
+) {
+  return [...arr.slice(0, index), newValue, ...arr.slice(index + 1)];
+}
