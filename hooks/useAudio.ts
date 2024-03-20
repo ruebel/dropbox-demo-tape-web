@@ -4,7 +4,9 @@ import {
   playingTrackIdAtom,
 } from "@/state/audio";
 import { playlistAtom } from "@/state/playlists";
+import { fileMetaHasBeenUpdated } from "@/utils/file";
 import { replaceItemAtIndex } from "@/utils/list";
+import { FileMeta } from "@/utils/types";
 import { useAtom } from "jotai";
 
 export function useAudio() {
@@ -85,6 +87,35 @@ export function useAudio() {
     setAudioState("stopped");
   }
 
+  function onUpdateTrackMeta(meta: FileMeta) {
+    // Ensure that we are currently playing a track
+    if (
+      playlist &&
+      track &&
+      trackIndex > -1 &&
+      // If the track has been updated or has a cached error
+      // which we want to clear
+      (fileMetaHasBeenUpdated(meta, track) || track.error)
+    ) {
+      const updatedTrack = { ...track, ...meta, error: undefined };
+
+      // Save the new track meta
+      setPlaylist({
+        ...playlist,
+        data: {
+          ...playlist.data,
+          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
+        },
+      });
+
+      // The id can change when the server rev is updated
+      // so we want to update our playing track id
+      if (updatedTrack.id !== track.id) {
+        setPlayingTrackId(updatedTrack.id);
+      }
+    }
+  }
+
   return {
     audioState,
     hasNext,
@@ -97,6 +128,7 @@ export function useAudio() {
     onSetTrackDuration,
     onSetTrackError,
     onStop,
+    onUpdateTrackMeta,
     playlist,
     track,
   };

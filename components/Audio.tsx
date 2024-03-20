@@ -1,6 +1,7 @@
 "use client";
 
 import { useAudio } from "@/hooks/useAudio";
+import { logError } from "@/hooks/useErrorTracking";
 import {
   audioPostionAtom,
   audioStateAtom,
@@ -18,6 +19,7 @@ import {
   setMediaState,
   setMediaTrack,
 } from "@/utils/mediaSession";
+import { FileMeta } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useRef } from "react";
 
@@ -32,6 +34,7 @@ export function Audio() {
     onSetTrackDuration,
     onSetTrackError,
     onStop,
+    onUpdateTrackMeta,
     playlist,
     track,
   } = useAudio();
@@ -176,12 +179,11 @@ export function Audio() {
           setMediaState("playing");
 
           // If this track previously had an error we need to clear it
-          if (track.error) {
-            onSetTrackError(undefined);
-          }
+          // or if it was updated on the server
+          onUpdateTrackMeta(fileLink.result.metadata as FileMeta);
         } catch (error) {
           // We failed to load the track so mark it as errored
-          console.error("Failed to load track", error);
+          logError(error as Error);
           onSetTrackError("Failed to load track");
 
           if (hasNext) {
@@ -208,12 +210,15 @@ export function Audio() {
 
     updatePlayer();
   }, [
-    audioState,
-    isAuthenticated,
-    track?.id,
-    playlist?.meta?.id,
-    dbx,
     audioRef.current,
+    audioState,
+    dbx,
+    isAuthenticated,
+    onSetTrackDuration,
+    onSetTrackError,
+    onUpdateTrackMeta,
+    playlist?.meta?.id,
+    track?.id,
   ]);
 
   // Handle volume / mute changes

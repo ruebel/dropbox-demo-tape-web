@@ -64,6 +64,13 @@ export function transformFile(file: FileMeta): EnhancedFileMeta {
   };
 }
 
+export function fileMetaHasBeenUpdated(meta: FileMeta, prevMeta: FileMeta) {
+  return (
+    meta.server_modified !== prevMeta.server_modified ||
+    meta.rev !== prevMeta.rev
+  );
+}
+
 export function removeExtension(fileName = "") {
   return fileName.substring(0, fileName.lastIndexOf("."));
 }
