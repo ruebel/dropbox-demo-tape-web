@@ -1,6 +1,6 @@
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
-import { ImageMap, Playlist } from "@/utils/types";
+import { Playlist } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
 
@@ -20,8 +20,6 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
   useEffect(() => {
-    if (url && imageState !== "error") return;
-
     async function getImageUrl() {
       if (playlist?.data?.image?.path_lower) {
         const fileLink = await dbx.filesGetTemporaryLink({

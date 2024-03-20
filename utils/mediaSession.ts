@@ -14,7 +14,7 @@ const defaultArtwork: MediaImage[] = [
     type: "image/png",
   },
   {
-    src: `/android-icon-180x180.png`,
+    src: `/apple-icon-180x180.png`,
     sizes: "180x180",
     type: "image/png",
   },
