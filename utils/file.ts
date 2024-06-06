@@ -13,7 +13,7 @@ export function getExtension(name: string) {
 }
 
 export function getPathWithoutFileName(path: string) {
-  return path.substring(0, path.lastIndexOf("/"));
+  return path?.substring(0, path?.lastIndexOf("/"));
 }
 
 /**
