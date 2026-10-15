@@ -98,4 +98,19 @@ describe("dbPlaylistAtomEffect", () => {
       expect(screen.getByTestId("count").textContent).toBe("2")
     );
   });
+
+  // atomWithStorage loads the cache on mount, after the first render
+  it("shows cached playlists from storage before auth finishes", async () => {
+    localStorage.setItem(
+      "dt",
+      JSON.stringify({ playlists: [makePlaylist("a"), makePlaylist("b")] })
+    );
+    const store = createStore();
+    render(<App store={store} />);
+
+    await waitFor(() =>
+      expect(screen.getByTestId("count").textContent).toBe("2")
+    );
+    expect(fetchPlaylists).not.toHaveBeenCalled();
+  });
 });
