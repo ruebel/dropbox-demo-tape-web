@@ -4,7 +4,7 @@ import { FullAudioDetails } from "@/components/FullAudioDetails/FullAudioDetails
 import { Header } from "@/components/Header/Header";
 import { Provider } from "jotai";
 import { Inter } from "next/font/google";
-import { Metadata } from "next/types";
+import type { Metadata } from "next";
 import { Suspense } from "react";
 import "./globals.css";
 

@@ -1,9 +1,10 @@
 import { EditPlaylist } from "@/components/EditPlaylist/EditPlaylist";
 
-export default function EditPlaylistPage({
+export default async function EditPlaylistPage({
   params,
 }: {
-  params: { playlistId: string };
+  params: Promise<{ playlistId: string }>;
 }) {
-  return <EditPlaylist id={decodeURIComponent(params.playlistId)} />;
+  const { playlistId } = await params;
+  return <EditPlaylist id={decodeURIComponent(playlistId)} />;
 }
