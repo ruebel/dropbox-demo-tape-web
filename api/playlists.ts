@@ -2,7 +2,7 @@ import { logError } from "@/hooks/useErrorTracking";
 import { mapWithConcurrency, withRetry } from "@/utils/async";
 import { DEMO_FILE_EXT } from "@/utils/constants";
 import { transformFile } from "@/utils/file";
-import { FileMeta, Playlist } from "@/utils/types";
+import { Playlist } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
 export async function fetchPlaylists(dbx: Dropbox): Promise<Playlist[]> {
@@ -39,31 +39,23 @@ async function getPlaylistFiles(dbx: Dropbox, paths: string[]) {
 
   // Convert blobs to JSON
   const playlists = await Promise.all(
-    rawFiles.map((r) => {
-      return new Promise((resolve) => {
-        const fr = new FileReader();
+    rawFiles.map(async (r) => {
+      const { fileBlob, ...meta } = r.result;
 
-        fr.addEventListener(
-          "load",
-          () => {
-            try {
-              const text = fr.result as string;
-              const data = JSON.parse(text);
+      try {
+        if (!fileBlob) {
+          throw new Error(`No file content for ${meta.path_display}`);
+        }
 
-              resolve({ data, meta: transformFile(r.result as FileMeta) });
-            } catch (e: Error | unknown) {
-              // We hit an error parsing a file so log the error
-              logError(e as Error);
-              // and then return null we will filter it out later
-              resolve(null);
-            }
-          },
-          false
-        );
-
-        // @ts-expect-error .fileBlob is on the Dropbox result but not in the type
-        fr.readAsText(r.result.fileBlob);
-      });
+        const data = JSON.parse(await fileBlob.text());
+        // Download results are always files but come back without a ".tag"
+        return { data, meta: transformFile({ ...meta, ".tag": "file" }) };
+      } catch (e: Error | unknown) {
+        // We hit an error parsing a file so log the error
+        logError(e as Error);
+        // and then return null we will filter it out later
+        return null;
+      }
     })
   );
 
