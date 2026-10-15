@@ -2,7 +2,7 @@
 
 import { useDropboxLogout } from "@/hooks/useDropboxLogout";
 import { useAtomValue } from "jotai";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Avatar } from "@/components/Avatar/Avatar";
 import { Menu } from "@/components/Menu/Menu";
@@ -18,8 +18,7 @@ import { redirect, usePathname } from "next/navigation";
 import styles from "./header.module.css";
 
 export function Header() {
-  const menuRef = useRef(null);
-  const [isMenuOpen, setMenuOpen] = useState(false);
+  const [menuPosition, setMenuPosition] = useState<DOMRect | null>(null);
   const onLogout = useDropboxLogout();
   const currentUser = useAtomValue(currentUserAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -55,8 +54,10 @@ export function Header() {
       <span />
       <button
         className={styles.menuButton}
-        onClick={() => setMenuOpen((value) => !value)}
-        ref={menuRef}
+        onClick={(e) => {
+          const rect = e.currentTarget.getBoundingClientRect();
+          setMenuPosition((value) => (value ? null : rect));
+        }}
       >
         <Avatar
           initials={currentUser?.name.abbreviated_name}
@@ -65,7 +66,7 @@ export function Header() {
           url={currentUser?.profile_photo_url}
         />
       </button>
-      {isMenuOpen && (
+      {menuPosition && (
         <Menu
           items={[
             {
@@ -73,7 +74,7 @@ export function Header() {
               onClick: onLogout,
             },
           ]}
-          targetRef={menuRef}
+          position={menuPosition}
         />
       )}
     </nav>

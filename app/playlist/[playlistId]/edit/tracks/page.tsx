@@ -1,9 +1,10 @@
 import { TrackExplorer } from "@/components/TrackExplorer/TrackExplorer";
 
-export default function EditPlaylistTracksPage({
+export default async function EditPlaylistTracksPage({
   params,
 }: {
-  params: { playlistId: string };
+  params: Promise<{ playlistId: string }>;
 }) {
-  return <TrackExplorer id={decodeURIComponent(params.playlistId)} />;
+  const { playlistId } = await params;
+  return <TrackExplorer id={decodeURIComponent(playlistId)} />;
 }

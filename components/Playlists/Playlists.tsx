@@ -1,11 +1,14 @@
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import {
-  loadableDBPlaylists,
+  dbPlaylistFilesAtom,
+  isSyncingPlaylistsAtom,
+  loadableDBPlaylistFiles,
+  playlistSyncErrorAtom,
   playlistsAtom,
   sortPlaylistsAtom,
 } from "@/state/playlists";
 import { formatRelative } from "date-fns/formatRelative";
-import { useAtomValue } from "jotai";
+import { useAtomValue, useSetAtom } from "jotai";
 
 import { List } from "@/components/List/List";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
@@ -21,12 +24,16 @@ import styles from "./playlists.module.css";
 
 export function Playlists() {
   const rawPlaylists = useAtomValue(playlistsAtom);
-  const dbLoading = useAtomValue(loadableDBPlaylists);
+  const dbFiles = useAtomValue(loadableDBPlaylistFiles);
+  const isSyncing = useAtomValue(isSyncingPlaylistsAtom);
+  const syncError = useAtomValue(playlistSyncErrorAtom);
+  const refreshPlaylists = useSetAtom(dbPlaylistFilesAtom);
   const users = useAtomValue(usersAtom);
   const [query, setQuery] = useState("");
   const playlistSort = useAtomValue(sortPlaylistsAtom);
 
-  const showLoading = dbLoading.state === "loading";
+  const showLoading = dbFiles.state === "loading" || isSyncing;
+  const hasError = dbFiles.state === "hasError" || syncError !== null;
 
   const playlists = sortPlaylists(
     rawPlaylists.length > 0 && query.length > 0
@@ -48,10 +55,18 @@ export function Playlists() {
     <div className={styles.root}>
       {showLoading && <Progress />}
       {showEmpty ? (
-        <div className={styles.empty}>
-          <h2>No playlists found</h2>
-          <ButtonLink href="/playlist/new">Add your first playlist</ButtonLink>
-        </div>
+        hasError ? (
+          <div className={styles.empty} role="alert">
+            <h2>Couldn&apos;t load your playlists</h2>
+            <p>Check your connection and try again.</p>
+            <ButtonLink onClick={() => refreshPlaylists()}>Try again</ButtonLink>
+          </div>
+        ) : (
+          <div className={styles.empty}>
+            <h2>No playlists found</h2>
+            <ButtonLink href="/playlist/new">Add your first playlist</ButtonLink>
+          </div>
+        )
       ) : (
         <div className={styles.actions}>
           <Search onChange={setQuery} value={query} />

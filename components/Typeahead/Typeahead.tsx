@@ -19,10 +19,10 @@ export function Typeahead({
   value,
 }: TypeaheadProps) {
   const [showOptions, setShowOptions] = useState(false);
+  const [position, setPosition] = useState<DOMRect | null>(null);
   const ref = useRef<HTMLLabelElement>(null);
   const optionsRef = useRef<HTMLUListElement>(null);
 
-  const position = ref.current?.getBoundingClientRect();
   const filteredOptions =
     value && showOptions
       ? options.filter((option) =>
@@ -41,7 +41,10 @@ export function Typeahead({
           setShowOptions(false);
         }
       }}
-      onFocus={() => setShowOptions(true)}
+      onFocus={(e) => {
+        setPosition(e.currentTarget.getBoundingClientRect());
+        setShowOptions(true);
+      }}
       ref={ref}
     >
       <input

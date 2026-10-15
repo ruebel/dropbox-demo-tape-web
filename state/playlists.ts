@@ -1,43 +1,85 @@
 import { uploadFile } from "@/api/file";
-import { fetchPlaylists } from "@/api/playlists";
+import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
+import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
+import { loadable } from "@/utils/loadable";
+import { planPlaylistSync } from "@/utils/playlistSync";
 import { Playlist, PlaylistSortType } from "@/utils/types";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
-import { atomFamily, loadable } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 
-// Playlists from server
-export const dbPlaylistsAtom = atomWithRefresh(async (get) => {
+// Playlist files found on the server
+export const dbPlaylistFilesAtom = atomWithRefresh(async (get) => {
   const dbx = get(dbxAtom);
   const isAuthenticated = get(isAuthenticatedAtom);
 
   if (!isAuthenticated || !dbx) return [];
 
-  const playlists = await fetchPlaylists(dbx);
-  return playlists;
+  return searchPlaylistFiles(dbx);
 });
 
-export const loadableDBPlaylists = loadable(dbPlaylistsAtom);
+export const loadableDBPlaylistFiles = loadable(dbPlaylistFilesAtom);
 
-// Keeps the local cache in sync with the server
-// and keeps our local user cache up to date
+// True while changed playlists are downloading
+export const isSyncingPlaylistsAtom = atom(false);
+
+// The error from the last sync whose downloads failed, cleared when the next
+// sync starts
+export const playlistSyncErrorAtom = atom<unknown>(null);
+
+// Keeps the local cache in sync with the server by downloading only the
+// playlists that changed since they were cached, and keeps our local user
+// cache up to date
 export const dbPlaylistAtomEffect = atomEffect((get, set) => {
   const isAuthenticated = get(isAuthenticatedAtom);
-  const playlistLoadable = get(loadableDBPlaylists);
+  const filesLoadable = get(loadableDBPlaylistFiles);
 
-  if (!isAuthenticated) return;
+  if (!isAuthenticated || filesLoadable.state !== "hasData") return;
 
-  if (playlistLoadable.state === "hasData") {
-    const userIds = getModifiedUsersFromEntries(
-      playlistLoadable.data.map((p) => p.meta)
-    ).filter(Boolean) as string[];
-    set(getUnknownUsersAtom, userIds);
+  // Peek so that writing the cache does not run this effect again
+  const dbx = get.peek(dbxAtom);
+  const { reused, toDownload } = planPlaylistSync(
+    filesLoadable.data,
+    get.peek(playlistsAtom)
+  );
+  const controller = new AbortController();
 
-    set(playlistsAtom, playlistLoadable.data);
-  }
+  set(isSyncingPlaylistsAtom, true);
+  set(playlistSyncErrorAtom, null);
+
+  downloadPlaylists(dbx, toDownload, controller.signal)
+    .then((downloaded) => {
+      if (controller.signal.aborted) return;
+
+      const playlists = [...reused, ...downloaded];
+      const userIds = getModifiedUsersFromEntries(
+        playlists.map((p) => p.meta)
+      ).filter(Boolean) as string[];
+      set(getUnknownUsersAtom, userIds);
+
+      set(playlistsAtom, playlists);
+    })
+    .catch((error) => {
+      // Keep the cache as it is when a download fails
+      if (controller.signal.aborted) return;
+
+      logError(error);
+      set(playlistSyncErrorAtom, error);
+    })
+    .finally(() => {
+      if (!controller.signal.aborted) set(isSyncingPlaylistsAtom, false);
+    });
+
+  // Runs when the search results change or the effect unmounts, so a stale
+  // sync never overwrites a newer one
+  return () => {
+    controller.abort();
+    set(isSyncingPlaylistsAtom, false);
+  };
 });
 
 // Cached locally, but refreshed from server

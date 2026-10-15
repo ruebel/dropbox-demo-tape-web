@@ -61,7 +61,7 @@ export function Audio() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [audioState, audioRef.current, setPosition]);
+  }, [audioState, setPosition]);
 
   const onSeek = useCallback(
     (positionMs?: number, isForward?: boolean) => {
@@ -210,7 +210,6 @@ export function Audio() {
 
     updatePlayer();
   }, [
-    audioRef.current,
     audioState,
     dbx,
     isAuthenticated,

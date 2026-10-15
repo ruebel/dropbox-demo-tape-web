@@ -1,9 +1,10 @@
 import { ImageExplorer } from "@/components/ImageExplorer/ImageExplorer";
 
-export default function EditPlaylistImagePage({
+export default async function EditPlaylistImagePage({
   params,
 }: {
-  params: { playlistId: string };
+  params: Promise<{ playlistId: string }>;
 }) {
-  return <ImageExplorer id={decodeURIComponent(params.playlistId)} />;
+  const { playlistId } = await params;
+  return <ImageExplorer id={decodeURIComponent(playlistId)} />;
 }

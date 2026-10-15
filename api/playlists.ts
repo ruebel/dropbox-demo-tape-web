@@ -1,63 +1,88 @@
 import { logError } from "@/hooks/useErrorTracking";
+import { mapWithConcurrency, withRetry } from "@/utils/async";
 import { DEMO_FILE_EXT } from "@/utils/constants";
 import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
-export async function fetchPlaylists(dbx: Dropbox): Promise<Playlist[]> {
-  const filesMeta = await fileSearch(dbx, `.${DEMO_FILE_EXT}`);
+// The largest page size search allows
+const SEARCH_PAGE_SIZE = 1000;
 
-  if (!filesMeta?.result?.matches) return [];
-
-  const playlists = await getPlaylistFiles(
-    dbx,
-    filesMeta?.result?.matches.map(
-      (match) => match.metadata.path_display as string
-    )
-  );
-
-  return playlists;
-}
-
-function fileSearch(dbx: Dropbox, query: string) {
-  return dbx.filesSearch({
-    path: "",
-    query,
+/**
+ * Finds every playlist file in the user's Dropbox
+ */
+export async function searchPlaylistFiles(dbx: Dropbox): Promise<FileMeta[]> {
+  let { result } = await dbx.filesSearchV2({
+    query: `.${DEMO_FILE_EXT}`,
+    options: {
+      file_extensions: [DEMO_FILE_EXT],
+      filename_only: true,
+      max_results: SEARCH_PAGE_SIZE,
+    },
   });
+  const matches = [...result.matches];
+
+  while (result.has_more && result.cursor) {
+    ({ result } = await dbx.filesSearchContinueV2({ cursor: result.cursor }));
+    matches.push(...result.matches);
+  }
+
+  // Keep files only (not folders whose name happens to match), and only
+  // once each because pages can repeat a match
+  const files = new Map<string, FileMeta>();
+  for (const { metadata } of matches) {
+    if (metadata[".tag"] !== "metadata") continue;
+
+    const file = metadata.metadata;
+    if (file[".tag"] === "file" && !files.has(file.id)) {
+      files.set(file.id, file as FileMeta);
+    }
+  }
+
+  return [...files.values()];
 }
 
-async function getPlaylistFiles(dbx: Dropbox, paths: string[]) {
-  const rawFiles = await Promise.all(
-    paths.map((path) => dbx.filesDownload({ path }))
+// Dropbox rate limits parallel downloads (429), so cap them and retry
+const MAX_CONCURRENT_DOWNLOADS = 4;
+
+/**
+ * Downloads and parses playlist files. Files that are not valid playlists are
+ * logged and skipped.
+ */
+export async function downloadPlaylists(
+  dbx: Dropbox,
+  files: FileMeta[],
+  signal?: AbortSignal
+): Promise<Playlist[]> {
+  const rawFiles = await mapWithConcurrency(
+    files,
+    MAX_CONCURRENT_DOWNLOADS,
+    (file) =>
+      withRetry(
+        () => dbx.filesDownload({ path: file.path_display as string }, { signal }),
+        { signal }
+      )
   );
 
   // Convert blobs to JSON
   const playlists = await Promise.all(
-    rawFiles.map((r) => {
-      return new Promise((resolve) => {
-        const fr = new FileReader();
+    rawFiles.map(async (r) => {
+      const { fileBlob, ...meta } = r.result;
 
-        fr.addEventListener(
-          "load",
-          () => {
-            try {
-              const text = fr.result as string;
-              const data = JSON.parse(text);
+      try {
+        if (!fileBlob) {
+          throw new Error(`No file content for ${meta.path_display}`);
+        }
 
-              resolve({ data, meta: transformFile(r.result as FileMeta) });
-            } catch (e: Error | unknown) {
-              // We hit an error parsing a file so log the error
-              logError(e as Error);
-              // and then return null we will filter it out later
-              resolve(null);
-            }
-          },
-          false
-        );
-
-        // @ts-expect-error .fileBlob is on the Dropbox result but not in the type
-        fr.readAsText(r.result.fileBlob);
-      });
+        const data = JSON.parse(await fileBlob.text());
+        // Download results are always files but come back without a ".tag"
+        return { data, meta: transformFile({ ...meta, ".tag": "file" }) };
+      } catch (e: Error | unknown) {
+        // We hit an error parsing a file so log the error
+        logError(e as Error);
+        // and then return null we will filter it out later
+        return null;
+      }
     })
   );
 

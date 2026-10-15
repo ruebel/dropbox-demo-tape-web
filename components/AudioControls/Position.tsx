@@ -2,7 +2,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { audioPostionAtom, durationAtom, seekToAtom } from "@/state/audio";
 import { getMMSSFromMs } from "@/utils/time";
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useState } from "react";
+import { useRef, useState } from "react";
 
 import styles from "./position.module.css";
 
@@ -12,20 +12,41 @@ export function Position() {
   const position = useAtomValue(audioPostionAtom);
   const [seekTo, setSeekTo] = useAtom(seekToAtom);
   const [seekPosition, setSeekPosition] = useState(-1);
+  const [prevSeekTo, setPrevSeekTo] = useState(seekTo);
+  const isDraggingRef = useRef(false);
 
-  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
-    setSeekPosition(e.target.valueAsNumber);
-  }
-
-  function handleSeek() {
-    setSeekTo(seekPosition);
-  }
-
-  useEffect(() => {
+  // Clear the local drag value once a seek finishes
+  if (seekTo !== prevSeekTo) {
+    setPrevSeekTo(seekTo);
     if (seekTo === -1 && seekPosition > -1) {
       setSeekPosition(-1);
     }
-  }, [seekTo]);
+  }
+
+  function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
+    if (isDraggingRef.current) {
+      setSeekPosition(e.target.valueAsNumber);
+    } else {
+      // Keyboard and screen reader changes have no release event, so seek now
+      setSeekTo(e.target.valueAsNumber);
+    }
+  }
+
+  function handlePointerDown() {
+    isDraggingRef.current = true;
+    setSeekPosition(position);
+  }
+
+  function handlePointerUp() {
+    isDraggingRef.current = false;
+    setSeekTo(seekPosition);
+  }
+
+  // The browser took over the gesture (for example, to scroll), so drop the drag
+  function handlePointerCancel() {
+    isDraggingRef.current = false;
+    setSeekPosition(-1);
+  }
 
   const displayPos =
     seekPosition > -1 ? seekPosition : seekTo > -1 ? seekTo : position || 0;
@@ -35,18 +56,15 @@ export function Position() {
       <span className={styles.leftTime}>{getMMSSFromMs(displayPos)}</span>
       <input
         type="range"
+        aria-valuetext={getMMSSFromMs(displayPos)}
         disabled={!track}
         min={0}
         max={duration}
+        step={1000}
         onChange={handleChange}
-        onMouseDown={() => {
-          setSeekPosition(position);
-        }}
-        onMouseUp={handleSeek}
-        onTouchEnd={handleSeek}
-        onTouchStart={() => {
-          setSeekPosition(position);
-        }}
+        onPointerCancel={handlePointerCancel}
+        onPointerDown={handlePointerDown}
+        onPointerUp={handlePointerUp}
         value={displayPos}
       />
       <span>{getMMSSFromMs(duration)}</span>

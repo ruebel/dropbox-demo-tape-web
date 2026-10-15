@@ -1,11 +1,14 @@
 "use client";
 
+import { use } from "react";
+
 import { PlaylistDetails } from "@/components/PlaylistDetails/PlaylistDetails";
 
 export default function PlaylistPage({
   params,
 }: {
-  params: { playlistId: string };
+  params: Promise<{ playlistId: string }>;
 }) {
-  return <PlaylistDetails id={decodeURIComponent(params.playlistId)} />;
+  const { playlistId } = use(params);
+  return <PlaylistDetails id={decodeURIComponent(playlistId)} />;
 }

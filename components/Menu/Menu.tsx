@@ -7,16 +7,10 @@ type MenuItem = {
 
 type MenuProps = {
   items: MenuItem[];
-  targetRef: React.RefObject<HTMLDivElement>;
+  position: DOMRect;
 };
 
-export function Menu({ items, targetRef }: MenuProps) {
-  const target = targetRef.current;
-
-  if (!target) return null;
-
-  const position = target.getBoundingClientRect();
-
+export function Menu({ items, position }: MenuProps) {
   return (
     <div
       className={styles.menuWrapper}
