@@ -2,39 +2,49 @@ import { logError } from "@/hooks/useErrorTracking";
 import { mapWithConcurrency, withRetry } from "@/utils/async";
 import { DEMO_FILE_EXT } from "@/utils/constants";
 import { transformFile } from "@/utils/file";
-import { Playlist } from "@/utils/types";
+import { FileMeta, Playlist } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
 export async function fetchPlaylists(dbx: Dropbox): Promise<Playlist[]> {
-  const filesMeta = await fileSearch(dbx, `.${DEMO_FILE_EXT}`);
-
-  if (!filesMeta?.result?.matches) return [];
-
-  const playlists = await getPlaylistFiles(
-    dbx,
-    filesMeta?.result?.matches.map(
-      (match) => match.metadata.path_display as string
-    )
-  );
-
-  return playlists;
+  const files = await searchPlaylistFiles(dbx);
+  return downloadPlaylists(dbx, files);
 }
 
-function fileSearch(dbx: Dropbox, query: string) {
-  return dbx.filesSearch({
+/**
+ * Finds every playlist file in the user's Dropbox
+ */
+export async function searchPlaylistFiles(dbx: Dropbox): Promise<FileMeta[]> {
+  const filesMeta = await dbx.filesSearch({
     path: "",
-    query,
+    query: `.${DEMO_FILE_EXT}`,
   });
+
+  // Skip folders whose name happens to match
+  return (filesMeta?.result?.matches ?? [])
+    .map((match) => match.metadata)
+    .filter((metadata) => metadata[".tag"] === "file") as FileMeta[];
 }
 
 // Dropbox rate limits parallel downloads (429), so cap them and retry
 const MAX_CONCURRENT_DOWNLOADS = 4;
 
-async function getPlaylistFiles(dbx: Dropbox, paths: string[]) {
+/**
+ * Downloads and parses playlist files. Files that are not valid playlists are
+ * logged and skipped.
+ */
+export async function downloadPlaylists(
+  dbx: Dropbox,
+  files: FileMeta[],
+  signal?: AbortSignal
+): Promise<Playlist[]> {
   const rawFiles = await mapWithConcurrency(
-    paths,
+    files,
     MAX_CONCURRENT_DOWNLOADS,
-    (path) => withRetry(() => dbx.filesDownload({ path }))
+    (file) =>
+      withRetry(
+        () => dbx.filesDownload({ path: file.path_display as string }, { signal }),
+        { signal }
+      )
   );
 
   // Convert blobs to JSON
