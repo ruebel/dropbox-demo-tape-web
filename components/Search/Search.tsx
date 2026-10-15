@@ -13,11 +13,17 @@ export function Search({ onChange, value }: SearchProps) {
   const searchRef = useRef<HTMLInputElement>(null);
 
   // Focus the search input when the user presses Cmd+F or Ctrl+F
-  useHotkeys("mod+f, meta+f", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    searchRef.current?.focus();
-  });
+  useHotkeys(
+    "mod+f, meta+f",
+    (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      searchRef.current?.focus();
+    },
+    // Match the typed letter so the shortcut follows the keyboard layout,
+    // like the browser's own Cmd+F
+    { useKey: true }
+  );
 
   return (
     <div className={styles.wrapper}>
