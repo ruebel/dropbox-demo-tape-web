@@ -5,19 +5,41 @@ import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
+// The largest page size search allows
+const SEARCH_PAGE_SIZE = 1000;
+
 /**
  * Finds every playlist file in the user's Dropbox
  */
 export async function searchPlaylistFiles(dbx: Dropbox): Promise<FileMeta[]> {
-  const filesMeta = await dbx.filesSearch({
-    path: "",
+  let { result } = await dbx.filesSearchV2({
     query: `.${DEMO_FILE_EXT}`,
+    options: {
+      file_extensions: [DEMO_FILE_EXT],
+      filename_only: true,
+      max_results: SEARCH_PAGE_SIZE,
+    },
   });
+  const matches = [...result.matches];
 
-  // Skip folders whose name happens to match
-  return (filesMeta?.result?.matches ?? [])
-    .map((match) => match.metadata)
-    .filter((metadata) => metadata[".tag"] === "file") as FileMeta[];
+  while (result.has_more && result.cursor) {
+    ({ result } = await dbx.filesSearchContinueV2({ cursor: result.cursor }));
+    matches.push(...result.matches);
+  }
+
+  // Keep files only (not folders whose name happens to match), and only
+  // once each because pages can repeat a match
+  const files = new Map<string, FileMeta>();
+  for (const { metadata } of matches) {
+    if (metadata[".tag"] !== "metadata") continue;
+
+    const file = metadata.metadata;
+    if (file[".tag"] === "file" && !files.has(file.id)) {
+      files.set(file.id, file as FileMeta);
+    }
+  }
+
+  return [...files.values()];
 }
 
 // Dropbox rate limits parallel downloads (429), so cap them and retry
