@@ -1,4 +1,5 @@
 import { logError } from "@/hooks/useErrorTracking";
+import { mapWithConcurrency, withRetry } from "@/utils/async";
 import { DEMO_FILE_EXT } from "@/utils/constants";
 import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist } from "@/utils/types";
@@ -26,9 +27,14 @@ function fileSearch(dbx: Dropbox, query: string) {
   });
 }
 
+// Dropbox rate limits parallel downloads (429), so cap them and retry
+const MAX_CONCURRENT_DOWNLOADS = 4;
+
 async function getPlaylistFiles(dbx: Dropbox, paths: string[]) {
-  const rawFiles = await Promise.all(
-    paths.map((path) => dbx.filesDownload({ path }))
+  const rawFiles = await mapWithConcurrency(
+    paths,
+    MAX_CONCURRENT_DOWNLOADS,
+    (path) => withRetry(() => dbx.filesDownload({ path }))
   );
 
   // Convert blobs to JSON
