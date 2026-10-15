@@ -1,6 +1,7 @@
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import {
-  loadableDBPlaylists,
+  isSyncingPlaylistsAtom,
+  loadableDBPlaylistFiles,
   playlistsAtom,
   sortPlaylistsAtom,
 } from "@/state/playlists";
@@ -21,12 +22,13 @@ import styles from "./playlists.module.css";
 
 export function Playlists() {
   const rawPlaylists = useAtomValue(playlistsAtom);
-  const dbLoading = useAtomValue(loadableDBPlaylists);
+  const dbFiles = useAtomValue(loadableDBPlaylistFiles);
+  const isSyncing = useAtomValue(isSyncingPlaylistsAtom);
   const users = useAtomValue(usersAtom);
   const [query, setQuery] = useState("");
   const playlistSort = useAtomValue(sortPlaylistsAtom);
 
-  const showLoading = dbLoading.state === "loading";
+  const showLoading = dbFiles.state === "loading" || isSyncing;
 
   const playlists = sortPlaylists(
     rawPlaylists.length > 0 && query.length > 0

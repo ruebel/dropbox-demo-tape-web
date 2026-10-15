@@ -5,11 +5,6 @@ import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
-export async function fetchPlaylists(dbx: Dropbox): Promise<Playlist[]> {
-  const files = await searchPlaylistFiles(dbx);
-  return downloadPlaylists(dbx, files);
-}
-
 /**
  * Finds every playlist file in the user's Dropbox
  */
