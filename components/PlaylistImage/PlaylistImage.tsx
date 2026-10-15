@@ -19,6 +19,9 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   const [imageMap, setImageMap] = useAtom(imageMapAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
+  const mappedImage = imageId ? imageMap[imageId] : undefined;
+  const imageUrl = imageState !== "error" && mappedImage ? mappedImage : url;
+
   useEffect(() => {
     async function getImageUrl() {
       if (playlist?.data?.image?.path_lower) {
@@ -39,18 +42,14 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
       }
     }
 
-    const mappedImage = imageId ? imageMap[imageId] : undefined;
-
-    if (imageState !== "error" && mappedImage) {
-      setUrl(mappedImage);
-    } else {
+    if (imageState === "error" || !mappedImage) {
       getImageUrl();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [imageId, imageState, playlist?.meta?.id, isAuthenticated]);
 
   function handleError() {
-    if (url && imageState !== "fetched") {
+    if (imageUrl && imageState !== "fetched") {
       // we didn't fetch the image and there's an error
       // so force the fetch again
       setImageState("error");
@@ -62,7 +61,7 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
       alt={playlist?.data?.title}
       height={size === "100%" ? "auto" : size}
       onError={handleError}
-      src={url || `/android-icon-96x96.png`}
+      src={imageUrl || `/android-icon-96x96.png`}
       width={size}
     />
   );

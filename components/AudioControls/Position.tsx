@@ -2,7 +2,7 @@ import { useAudio } from "@/hooks/useAudio";
 import { audioPostionAtom, durationAtom, seekToAtom } from "@/state/audio";
 import { getMMSSFromMs } from "@/utils/time";
 import { useAtom, useAtomValue } from "jotai";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import styles from "./position.module.css";
 
@@ -12,6 +12,15 @@ export function Position() {
   const position = useAtomValue(audioPostionAtom);
   const [seekTo, setSeekTo] = useAtom(seekToAtom);
   const [seekPosition, setSeekPosition] = useState(-1);
+  const [prevSeekTo, setPrevSeekTo] = useState(seekTo);
+
+  // Clear the local drag value once a seek finishes
+  if (seekTo !== prevSeekTo) {
+    setPrevSeekTo(seekTo);
+    if (seekTo === -1 && seekPosition > -1) {
+      setSeekPosition(-1);
+    }
+  }
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement>) {
     setSeekPosition(e.target.valueAsNumber);
@@ -20,12 +29,6 @@ export function Position() {
   function handleSeek() {
     setSeekTo(seekPosition);
   }
-
-  useEffect(() => {
-    if (seekTo === -1 && seekPosition > -1) {
-      setSeekPosition(-1);
-    }
-  }, [seekTo]);
 
   const displayPos =
     seekPosition > -1 ? seekPosition : seekTo > -1 ? seekTo : position || 0;
