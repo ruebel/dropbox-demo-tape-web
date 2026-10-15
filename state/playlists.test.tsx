@@ -8,8 +8,10 @@ import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { useCacheSync } from "@/hooks/useCacheSync";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import {
+  dbPlaylistFilesAtom,
   isSyncingPlaylistsAtom,
   loadableDBPlaylistFiles,
+  playlistSyncErrorAtom,
   playlistsAtom,
 } from "@/state/playlists";
 import { transformFile } from "@/utils/file";
@@ -20,6 +22,7 @@ vi.mock("@/api/playlists", () => ({
   searchPlaylistFiles: vi.fn(),
 }));
 vi.mock("@/api/user", () => ({ getUsers: vi.fn().mockResolvedValue([]) }));
+vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
@@ -219,5 +222,23 @@ describe("dbPlaylistAtomEffect", () => {
     await act(() => sleep(150));
     expect(titles(store)).toEqual(["fresh", "fresh"]);
     expect(store.get(isSyncingPlaylistsAtom)).toBe(false);
+  });
+
+  it("records a failed sync and clears it when a retry succeeds", async () => {
+    const error = new Error("Failed to fetch");
+    vi.mocked(downloadPlaylists).mockRejectedValueOnce(error);
+    const store = createStore();
+    store.set(isAuthenticatedAtom, true);
+    render(<App store={store} />);
+
+    await waitFor(() => expect(store.get(playlistSyncErrorAtom)).toBe(error));
+    expect(store.get(playlistsAtom)).toEqual([]);
+    expect(store.get(isSyncingPlaylistsAtom)).toBe(false);
+
+    // Same as the "Try again" button
+    act(() => store.set(dbPlaylistFilesAtom));
+
+    await expectCount(2);
+    expect(store.get(playlistSyncErrorAtom)).toBeNull();
   });
 });

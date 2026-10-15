@@ -27,6 +27,10 @@ export const loadableDBPlaylistFiles = loadable(dbPlaylistFilesAtom);
 // True while changed playlists are downloading
 export const isSyncingPlaylistsAtom = atom(false);
 
+// The error from the last sync whose downloads failed, cleared when the next
+// sync starts
+export const playlistSyncErrorAtom = atom<unknown>(null);
+
 // Keeps the local cache in sync with the server by downloading only the
 // playlists that changed since they were cached, and keeps our local user
 // cache up to date
@@ -45,6 +49,7 @@ export const dbPlaylistAtomEffect = atomEffect((get, set) => {
   const controller = new AbortController();
 
   set(isSyncingPlaylistsAtom, true);
+  set(playlistSyncErrorAtom, null);
 
   downloadPlaylists(dbx, toDownload, controller.signal)
     .then((downloaded) => {
@@ -60,7 +65,10 @@ export const dbPlaylistAtomEffect = atomEffect((get, set) => {
     })
     .catch((error) => {
       // Keep the cache as it is when a download fails
-      if (!controller.signal.aborted) logError(error);
+      if (controller.signal.aborted) return;
+
+      logError(error);
+      set(playlistSyncErrorAtom, error);
     })
     .finally(() => {
       if (!controller.signal.aborted) set(isSyncingPlaylistsAtom, false);
