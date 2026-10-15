@@ -82,7 +82,7 @@ describe("withRetry", () => {
   it("throws the last error after the last retry", async () => {
     const fn = vi.fn().mockRejectedValue(new Error("429"));
 
-    const result = withRetry(fn, 3, 1000);
+    const result = withRetry(fn, { retries: 3, delayMs: 1000 });
     const assertion = expect(result).rejects.toThrow("429");
 
     // Waits 1s + 2s + 4s between the four attempts
@@ -90,5 +90,33 @@ describe("withRetry", () => {
 
     await assertion;
     expect(fn).toHaveBeenCalledTimes(4);
+  });
+
+  it("does not retry when the signal is already aborted", async () => {
+    const controller = new AbortController();
+    const fn = vi.fn().mockImplementation(async () => {
+      controller.abort();
+      throw new Error("aborted");
+    });
+
+    await expect(
+      withRetry(fn, { signal: controller.signal })
+    ).rejects.toThrow("aborted");
+    expect(fn).toHaveBeenCalledTimes(1);
+  });
+
+  it("stops waiting and rejects when the signal aborts between retries", async () => {
+    const controller = new AbortController();
+    const fn = vi.fn().mockRejectedValue(new Error("429"));
+
+    const result = withRetry(fn, { signal: controller.signal });
+    const assertion = expect(result).rejects.toThrow("stale download");
+
+    await vi.advanceTimersByTimeAsync(500);
+    controller.abort(new Error("stale download"));
+
+    await assertion;
+    await vi.advanceTimersByTimeAsync(10000);
+    expect(fn).toHaveBeenCalledTimes(1);
   });
 });

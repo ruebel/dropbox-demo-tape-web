@@ -24,21 +24,42 @@ export async function mapWithConcurrency<T, R>(
   return results;
 }
 
+type RetryOptions = {
+  retries?: number;
+  delayMs?: number;
+  // Stops retrying once aborted
+  signal?: AbortSignal;
+};
+
 /**
  * Calls `fn` and retries it when it throws. Waits `delayMs` before the first
  * retry and doubles the wait for each retry after that.
  */
 export async function withRetry<T>(
   fn: () => Promise<T>,
-  retries = 3,
-  delayMs = 1000
+  { retries = 3, delayMs = 1000, signal }: RetryOptions = {}
 ): Promise<T> {
   try {
     return await fn();
   } catch (error) {
-    if (retries <= 0) throw error;
+    if (retries <= 0 || signal?.aborted) throw error;
 
-    await new Promise((resolve) => setTimeout(resolve, delayMs));
-    return withRetry(fn, retries - 1, delayMs * 2);
+    await wait(delayMs, signal);
+    return withRetry(fn, { retries: retries - 1, delayMs: delayMs * 2, signal });
   }
+}
+
+// Resolves after `ms`, or rejects as soon as the signal aborts
+function wait(ms: number, signal?: AbortSignal) {
+  return new Promise<void>((resolve, reject) => {
+    const timer = setTimeout(resolve, ms);
+    signal?.addEventListener(
+      "abort",
+      () => {
+        clearTimeout(timer);
+        reject(signal.reason);
+      },
+      { once: true }
+    );
+  });
 }
