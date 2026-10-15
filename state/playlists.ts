@@ -4,10 +4,11 @@ import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
+import { loadable } from "@/utils/loadable";
 import { Playlist, PlaylistSortType } from "@/utils/types";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
-import { atomFamily, loadable } from "jotai/utils";
+import { atomFamily } from "jotai/utils";
 
 // Playlists from server
 export const dbPlaylistsAtom = atomWithRefresh(async (get) => {
