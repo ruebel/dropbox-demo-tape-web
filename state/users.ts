@@ -3,7 +3,7 @@ import { dbxAtom, rootStorageAtom } from "@/state/dropbox";
 import { UserMap } from "@/utils/types";
 import { users } from "dropbox";
 import { atom } from "jotai";
-import { atomFamily } from "jotai/utils";
+import { atomFamily } from "jotai-family";
 
 export const currentUserAtom = atom<users.FullAccount | null>(null);
 
