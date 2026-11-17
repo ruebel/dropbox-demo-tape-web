@@ -59,6 +59,38 @@
   }
 }
 
+.errorTooltip {
+  background-color: var(--background-light);
+  border-radius: 4px;
+  bottom: calc(100% + 8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: var(--primary);
+  display: none;
+  font-size: 14px;
+  left: 0;
+  line-height: 20px;
+  max-width: min(300px, 70vw);
+  padding: var(--space-small) var(--space-medium);
+  position: absolute;
+  width: max-content;
+  z-index: 1;
+}
+
+/* Arrow that points down at the center of the 30px icon */
+.errorTooltip::after {
+  border: 6px solid transparent;
+  border-top-color: var(--background-light);
+  content: "";
+  left: 9px;
+  position: absolute;
+  top: 100%;
+}
+
+.trackError:hover .errorTooltip,
+.trackError:focus-visible .errorTooltip {
+  display: block;
+}
+
 .play {
   align-items: center;
   border: 1px solid currentColor;
@@ -68,6 +100,7 @@
   height: 30px;
   justify-content: center;
   line-height: 20px;
+  position: relative;
   width: 30px;
 }
 

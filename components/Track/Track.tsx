@@ -11,6 +11,7 @@ import { styleArray } from "@/utils/style";
 import { getMMSSFromMs } from "@/utils/time";
 import { formatRelative } from "date-fns/formatRelative";
 import { useAtomValue } from "jotai";
+import { useId } from "react";
 import styles from "./track.module.css";
 
 type TrackProps = {
@@ -24,9 +25,11 @@ export function Track({ index, onClick, track }: TrackProps) {
   const playingTrackId = useAtomValue(playingTrackIdAtom);
   const isPlaying = playingTrackId === track.id;
   const audioState = useAtomValue(audioStateAtom);
+  const errorId = useId();
 
   return (
     <button
+      aria-describedby={track.error ? errorId : undefined}
       className={styleArray([
         styles.track,
         isPlaying && styles.trackPlaying,
@@ -36,7 +39,12 @@ export function Track({ index, onClick, track }: TrackProps) {
     >
       <div className={styles.play}>
         {track.error ? (
-          <ErrorIcon size={20} />
+          <>
+            <ErrorIcon size={20} />
+            <span className={styles.errorTooltip} id={errorId} role="tooltip">
+              {track.error}
+            </span>
+          </>
         ) : isPlaying ? (
           audioState === "playing" ? (
             <PauseIcon size={20} />
