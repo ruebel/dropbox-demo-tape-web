@@ -3,9 +3,11 @@ import { describe, expect, it } from "vitest";
 
 import {
   DEFAULT_TRACK_ERROR,
+  getMediaErrorMessage,
   getTrackErrorMessage,
   isPathNotFoundError,
   isTransientError,
+  MEDIA_ERROR,
 } from "@/utils/error";
 
 function dropboxError(status: number, body: unknown) {
@@ -94,5 +96,20 @@ describe("isTransientError", () => {
     expect(isTransientError(dropboxError(409, { error_summary: "path/not_found/.." }))).toBe(false);
     expect(isTransientError(dropboxError(409, { error_summary: "unsupported_file/.." }))).toBe(false);
     expect(isTransientError(new Error("boom"))).toBe(false);
+  });
+});
+
+describe("getMediaErrorMessage", () => {
+  it("explains each audio element error", () => {
+    expect(getMediaErrorMessage(MEDIA_ERROR.network)).toBe(
+      "The download stopped. Check your connection."
+    );
+    expect(getMediaErrorMessage(MEDIA_ERROR.decode)).toBe(
+      "This file is damaged or can't be read"
+    );
+    expect(getMediaErrorMessage(MEDIA_ERROR.notSupported)).toBe(
+      "This file can't be played in the browser"
+    );
+    expect(getMediaErrorMessage(99)).toBe(DEFAULT_TRACK_ERROR);
   });
 });

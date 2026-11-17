@@ -1,4 +1,4 @@
-import { act, cleanup, render } from "@testing-library/react";
+import { act, cleanup, fireEvent, render } from "@testing-library/react";
 import { DropboxResponseError } from "dropbox";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -15,6 +15,7 @@ import {
 } from "@/state/audio";
 import { isAuthenticatedAtom } from "@/state/dropbox";
 import { playlistsAtom } from "@/state/playlists";
+import { MEDIA_ERROR } from "@/utils/error";
 import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
@@ -241,5 +242,88 @@ describe("Audio", () => {
       playCalls
     );
     expect(audio.getAttribute("src")).toBe("https://dl.test/first.mp3");
+  });
+
+  describe("when the audio element reports an error", () => {
+    // Plays the first track, then makes the audio element fail with `code`
+    // 42 seconds in, the way an expired link or a bad file does. `reload` is
+    // the link the retry gets.
+    async function playThenFail(
+      code: number,
+      reload: Promise<LinkResult> = new Promise(() => {})
+    ) {
+      const firstLoad = deferredLink(first);
+      vi.mocked(getTrackLink)
+        .mockReturnValueOnce(firstLoad.promise)
+        .mockReturnValueOnce(reload);
+      const result = renderAudio();
+      await act(async () => firstLoad.resolve("https://dl.test/first.mp3"));
+      act(() => result.store.set(audioStateAtom, "playing"));
+
+      const { audio } = result;
+      audio.currentTime = 42;
+      Object.defineProperty(audio, "error", {
+        configurable: true,
+        value: { code },
+      });
+      fireEvent.error(audio);
+      return result;
+    }
+
+    it("reloads the track once with a fresh link at the same spot", async () => {
+      const reload = deferredLink(first);
+      const { audio, store } = await playThenFail(
+        MEDIA_ERROR.notSupported,
+        reload.promise
+      );
+
+      expect(store.get(audioStateAtom)).toBe("loading");
+      expect(vi.mocked(getTrackLink).mock.calls).toHaveLength(2);
+      expect(vi.mocked(getTrackLink).mock.lastCall?.[1].id).toBe(first.id);
+
+      // A new source starts at 0 until the reload puts it back
+      audio.currentTime = 0;
+      await act(async () => reload.resolve("https://dl.test/first-2.mp3"));
+
+      expect(audio.getAttribute("src")).toBe("https://dl.test/first-2.mp3");
+      expect(audio.currentTime).toBe(42);
+      expect(uploadFile).not.toHaveBeenCalled();
+    });
+
+    it("saves an error about the file when the reload fails too", async () => {
+      const reload = deferredLink(first);
+      const { audio, store } = await playThenFail(MEDIA_ERROR.notSupported, reload.promise);
+      await act(async () => reload.resolve("https://dl.test/first-2.mp3"));
+
+      fireEvent.error(audio);
+
+      await vi.waitFor(() => expect(uploadFile).toHaveBeenCalled());
+      const saved: PlaylistData = vi.mocked(uploadFile).mock.lastCall?.[1];
+      expect(saved.tracks[0].error).toBe(
+        "This file can't be played in the browser"
+      );
+      expect(store.get(playingTrackIdAtom)).toBe(second.id);
+    });
+
+    it("shows a dropped download for this session only", async () => {
+      const reload = deferredLink(first);
+      const { audio, store } = await playThenFail(MEDIA_ERROR.network, reload.promise);
+      await act(async () => reload.resolve("https://dl.test/first-2.mp3"));
+
+      fireEvent.error(audio);
+
+      expect(store.get(sessionTrackErrorsAtom)[first.id]).toBe(
+        "The download stopped. Check your connection."
+      );
+      expect(uploadFile).not.toHaveBeenCalled();
+      expect(store.get(playingTrackIdAtom)).toBe(second.id);
+    });
+
+    it("ignores an error from a source we replaced ourselves", async () => {
+      const { store } = await playThenFail(MEDIA_ERROR.aborted);
+
+      expect(store.get(audioStateAtom)).toBe("playing");
+      expect(vi.mocked(getTrackLink).mock.calls).toHaveLength(1);
+    });
   });
 });

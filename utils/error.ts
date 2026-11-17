@@ -26,6 +26,30 @@ export function isPathNotFoundError(error: unknown) {
   );
 }
 
+// MediaError codes from the audio element (MediaError.MEDIA_ERR_*)
+export const MEDIA_ERROR = {
+  aborted: 1,
+  network: 2,
+  decode: 3,
+  notSupported: 4,
+} as const;
+
+/**
+ * Turns the audio element's error code into a short message to show the user
+ */
+export function getMediaErrorMessage(code: number) {
+  switch (code) {
+    case MEDIA_ERROR.network:
+      return "The download stopped. Check your connection.";
+    case MEDIA_ERROR.decode:
+      return "This file is damaged or can't be read";
+    case MEDIA_ERROR.notSupported:
+      return "This file can't be played in the browser";
+    default:
+      return DEFAULT_TRACK_ERROR;
+  }
+}
+
 /**
  * Whether the error says nothing about the file itself, so trying again later
  * may work: the request never reached Dropbox, Dropbox is limiting requests

@@ -14,9 +14,11 @@ import {
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
 import {
+  getMediaErrorMessage,
   getTrackErrorMessage,
   isPathNotFoundError,
   isTransientError,
+  MEDIA_ERROR,
 } from "@/utils/error";
 import { removeExtension } from "@/utils/file";
 import {
@@ -27,7 +29,13 @@ import {
 } from "@/utils/mediaSession";
 import { FileMeta, TrackErrorCode } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useEffectEvent, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
 
 type TrackFailure = {
   errorCode?: TrackErrorCode;
@@ -40,6 +48,13 @@ export function Audio() {
   const audioRef = useRef<HTMLAudioElement>(null);
   // The track whose link is the audio element's source
   const loadedTrackIdRef = useRef<string | undefined>(undefined);
+  // The track that already got a fresh link after an audio error, so a
+  // second error fails it instead of retrying forever
+  const retriedTrackIdRef = useRef<string | undefined>(undefined);
+  // Where to pick up after reloading a track that stopped with an error
+  const resumeAtRef = useRef<number | undefined>(undefined);
+  // Bumped to load the current track again even when already "loading"
+  const [reloadCount, setReloadCount] = useState(0);
   const {
     hasNext,
     onNext,
@@ -148,6 +163,12 @@ export function Audio() {
     setAudioState("playing");
   }, [setAudioState, setPosition]);
 
+  // Playback really started, so the track can get a fresh link again if it
+  // fails later (for example, its link expires during a long pause)
+  const handlePlaybackStarted = useCallback(() => {
+    retriedTrackIdRef.current = undefined;
+  }, []);
+
   const handleProgress = useCallback(() => {
     const player = audioRef.current;
     if (!player) return;
@@ -210,6 +231,40 @@ export function Audio() {
     });
   });
 
+  // The audio element could not load or play its source
+  function handleMediaError() {
+    const player = audioRef.current;
+    const code = player?.error?.code;
+
+    // Aborted means we changed the source ourselves. A source that belongs
+    // to another track is an old load that no longer matters.
+    if (
+      !player ||
+      !track ||
+      !code ||
+      code === MEDIA_ERROR.aborted ||
+      loadedTrackIdRef.current !== track.id
+    ) {
+      return;
+    }
+
+    if (retriedTrackIdRef.current !== track.id) {
+      // First error: the link may have expired (they last about 4 hours), so
+      // get a fresh one and pick up where playback stopped
+      retriedTrackIdRef.current = track.id;
+      resumeAtRef.current = player.currentTime;
+      setReloadCount((count) => count + 1);
+      setAudioState("loading");
+      return;
+    }
+
+    logError(new Error(`Audio element error ${code}`));
+    failTrack({
+      message: getMediaErrorMessage(code),
+      isTransient: code === MEDIA_ERROR.network,
+    });
+  }
+
   const handlePlayRejected = useEffectEvent((error: unknown) => {
     const name = error instanceof DOMException ? error.name : "";
 
@@ -259,6 +314,12 @@ export function Audio() {
           // Loading a renamed file switches the playing track to the new id
           loadedTrackIdRef.current = fileLink.metadata.id;
 
+          if (resumeAtRef.current !== undefined) {
+            // Reloaded after an error, so continue from the same spot
+            player.currentTime = resumeAtRef.current;
+            resumeAtRef.current = undefined;
+          }
+
           startPlayback(player);
 
           handleTrackLoaded(fileLink.metadata as FileMeta);
@@ -291,7 +352,14 @@ export function Audio() {
     return () => {
       isStale = true;
     };
-  }, [audioState, dbx, isAuthenticated, playlist?.meta?.id, track?.id]);
+  }, [
+    audioState,
+    dbx,
+    isAuthenticated,
+    playlist?.meta?.id,
+    reloadCount,
+    track?.id,
+  ]);
 
   // Handle volume / mute changes
   useEffect(() => {
@@ -313,7 +381,9 @@ export function Audio() {
     <audio
       onDurationChange={handleDurationChange}
       onEnded={handleEnded}
+      onError={handleMediaError}
       onPlay={handlePlaying}
+      onPlaying={handlePlaybackStarted}
       onProgress={handleProgress}
       ref={audioRef}
     />
