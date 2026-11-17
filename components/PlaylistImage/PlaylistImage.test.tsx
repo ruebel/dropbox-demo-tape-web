@@ -50,7 +50,20 @@ function renderImage(playlist: Playlist, imageMap: Record<string, string> = {}) 
 }
 
 function image() {
-  return screen.getByRole("img") as HTMLImageElement;
+  return screen.getByAltText(/^Playlist /) as HTMLImageElement;
+}
+
+// The tooltip that goes with the error badge. Returns null when there is no
+// error, and checks that the image points to it when there is one.
+function errorBadge() {
+  const tooltip = screen.queryByRole("tooltip", { hidden: true });
+  if (tooltip) {
+    expect(tooltip.textContent).toBe("Couldn't load the playlist image");
+    expect(image().getAttribute("aria-describedby")).toBe(tooltip.id);
+  } else {
+    expect(image().getAttribute("aria-describedby")).toBeNull();
+  }
+  return tooltip;
 }
 
 describe("PlaylistImage", () => {
@@ -72,15 +85,18 @@ describe("PlaylistImage", () => {
 
     await waitFor(() => expect(image().src).toBe(FRESH_URL));
     expect(filesGetTemporaryLink).toHaveBeenCalledTimes(1);
+    expect(errorBadge()).toBeNull();
   });
 
-  it("shows the fallback icon when a fresh link fails", async () => {
+  it("shows the fallback icon and an error badge when a fresh link fails", async () => {
     renderImage(makePlaylist("a"));
     await waitFor(() => expect(image().src).toBe(FRESH_URL));
+    expect(errorBadge()).toBeNull();
 
     fireEvent.error(image());
 
     expect(image().getAttribute("src")).toBe(FALLBACK_IMAGE);
+    expect(errorBadge()).not.toBeNull();
     expect(filesGetTemporaryLink).toHaveBeenCalledTimes(1);
   });
 
@@ -111,12 +127,26 @@ describe("PlaylistImage", () => {
     await waitFor(() => expect(image().src).toBe(otherUrl));
   });
 
-  it("shows the fallback icon and logs when the link request fails", async () => {
+  it("shows the fallback icon and an error badge and logs when the link request fails", async () => {
     filesGetTemporaryLink.mockRejectedValue(new Error("path/not_found"));
 
     renderImage(makePlaylist("a"));
 
     await waitFor(() => expect(logError).toHaveBeenCalledTimes(1));
     expect(image().getAttribute("src")).toBe(FALLBACK_IMAGE);
+    expect(errorBadge()).not.toBeNull();
+  });
+
+  it("shows the fallback icon without a badge when the playlist has no image", async () => {
+    const playlist = makePlaylist("a");
+    playlist.data.image = undefined;
+
+    renderImage(playlist);
+
+    await waitFor(() =>
+      expect(image().getAttribute("src")).toBe(FALLBACK_IMAGE)
+    );
+    expect(errorBadge()).toBeNull();
+    expect(filesGetTemporaryLink).not.toHaveBeenCalled();
   });
 });

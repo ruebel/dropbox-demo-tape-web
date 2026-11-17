@@ -1,4 +1,31 @@
+/* Holds the error badge over the image. line-height: 0 removes the gap that
+   an inline image leaves under itself. */
+.root {
+  display: inline-block;
+  line-height: 0;
+  position: relative;
+}
+
 .image {
   aspect-ratio: 1;
   object-fit: cover;
+}
+
+/* Just inside the bottom-right corner, so a parent that hides overflow
+   cannot cut it off */
+.errorBadge {
+  align-items: center;
+  background-color: var(--background);
+  border-radius: 50%;
+  bottom: 2px;
+  color: var(--error);
+  display: flex;
+  justify-content: center;
+  position: absolute;
+  right: 2px;
+}
+
+/* Shows the error Tooltip above the image */
+.root:hover {
+  --tooltip-display: block;
 }
