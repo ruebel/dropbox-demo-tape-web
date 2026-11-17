@@ -12,7 +12,7 @@ import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useId, useState } from "react";
 import styles from "./playlistImage.module.css";
 
-const FALLBACK_IMAGE = "/android-icon-96x96.png";
+const FALLBACK_IMAGE = "/playlist-fallback.svg";
 const IMAGE_ERROR = "Couldn't load the playlist image";
 
 type PlaylistImageProps = {

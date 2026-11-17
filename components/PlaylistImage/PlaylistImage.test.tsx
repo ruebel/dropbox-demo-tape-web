@@ -18,7 +18,7 @@ import { Playlist } from "@/utils/types";
 
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 
-const FALLBACK_IMAGE = "/android-icon-96x96.png";
+const FALLBACK_IMAGE = "/playlist-fallback.svg";
 const CACHED_URL = "https://dl.dropbox.test/cached.jpg";
 const FRESH_URL = "https://dl.dropbox.test/fresh.jpg";
 
