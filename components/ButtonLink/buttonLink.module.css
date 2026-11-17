@@ -25,3 +25,9 @@
   background-color: var(--white);
   color: var(--background);
 }
+
+.small {
+  border-radius: 8px;
+  font-size: 12px;
+  padding: 5px 12px;
+}
