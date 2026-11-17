@@ -1,4 +1,11 @@
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import {
+  act,
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { Dropbox } from "dropbox";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -16,6 +23,8 @@ const CACHED_URL = "https://dl.dropbox.test/cached.jpg";
 const FRESH_URL = "https://dl.dropbox.test/fresh.jpg";
 
 const filesGetTemporaryLink = vi.fn();
+
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function makePlaylist(id: string) {
   return {
@@ -148,5 +157,42 @@ describe("PlaylistImage", () => {
     );
     expect(errorBadge()).toBeNull();
     expect(filesGetTemporaryLink).not.toHaveBeenCalled();
+  });
+
+  it("stops fetching links when two copies of the same image are broken", async () => {
+    // Each request returns a new temporary link, like Dropbox does
+    let requests = 0;
+    filesGetTemporaryLink.mockImplementation(async () => ({
+      result: { link: `https://dl.dropbox.test/${++requests}.jpg` },
+    }));
+    const playlist = makePlaylist("a");
+    const store = createStore();
+    store.set(isAuthenticatedAtom, true);
+    store.set(dbxAtom, { filesGetTemporaryLink } as unknown as Dropbox);
+    store.set(imageMapAtom, {});
+    // Like the playlist header and the player bar on a playlist page
+    render(
+      <Provider store={store}>
+        <PlaylistImage playlist={playlist} />
+        <PlaylistImage playlist={playlist} />
+      </Provider>
+    );
+
+    // The file is not a loadable image, so every link fails to load
+    for (let round = 0; round < 10; round++) {
+      await act(() => sleep(5));
+      for (const img of screen.getAllByAltText("Playlist a")) {
+        if (img.getAttribute("src") !== FALLBACK_IMAGE) {
+          fireEvent.error(img);
+        }
+      }
+    }
+
+    // One request per copy at most, then both give up
+    expect(filesGetTemporaryLink.mock.calls.length).toBeLessThanOrEqual(2);
+    for (const img of screen.getAllByAltText("Playlist a")) {
+      expect(img.getAttribute("src")).toBe(FALLBACK_IMAGE);
+    }
+    expect(screen.getAllByRole("tooltip", { hidden: true })).toHaveLength(2);
   });
 });

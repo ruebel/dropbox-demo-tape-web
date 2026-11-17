@@ -2,7 +2,11 @@ import { ErrorIcon } from "@/components/icons/ErrorIcon";
 import { Tooltip } from "@/components/Tooltip/Tooltip";
 import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
-import { imageMapAtom } from "@/state/image";
+import {
+  brokenImageIdsAtom,
+  freshImageLinksAtom,
+  imageMapAtom,
+} from "@/state/image";
 import { Playlist } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useId, useState } from "react";
@@ -25,49 +29,52 @@ function getBadgeSize(size: number | string) {
     : 32;
 }
 
+// Returns a copy of `set` with `value` added
+function addTo(set: ReadonlySet<string>, value: string) {
+  return new Set(set).add(value);
+}
+
 export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   const [url, setUrl] = useState("");
-  const [failedUrl, setFailedUrl] = useState("");
-  // The image whose link request failed, so the badge resets when the
-  // playlist changes
-  const [failedImageId, setFailedImageId] = useState("");
   const [imageState, setImageState] = useState<ImageState>("none");
   const dbx = useAtomValue(dbxAtom);
   const imageId = playlist?.data?.image?.id;
   const [imageMap, setImageMap] = useAtom(imageMapAtom);
+  // Shared with every other PlaylistImage, so copies of the same image (the
+  // playlist header and the player bar) agree on which links are fresh and
+  // which images are broken, and do not keep fetching new links
+  const [freshLinks, setFreshLinks] = useAtom(freshImageLinksAtom);
+  const [brokenImageIds, setBrokenImageIds] = useAtom(brokenImageIdsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
   const mappedImage = imageId ? imageMap[imageId] : undefined;
   const imageUrl = imageState !== "error" && mappedImage ? mappedImage : url;
-  const showFallback = !imageUrl || imageUrl === failedUrl;
   // The playlist has an image, but it could not be shown
-  const hasError =
-    !!imageId &&
-    showFallback &&
-    ((!!failedUrl && imageUrl === failedUrl) || failedImageId === imageId);
+  const isBroken = !!imageId && brokenImageIds.has(imageId);
+  const showFallback = isBroken || !imageUrl;
 
   useEffect(() => {
     async function getImageUrl() {
-      if (playlist?.data?.image?.path_lower) {
+      const image = playlist?.data?.image;
+
+      if (image?.path_lower) {
         try {
           const fileLink = await dbx.filesGetTemporaryLink({
-            path: playlist.data.image.path_lower,
+            path: image.path_lower,
           });
+          const link = fileLink.result.link;
 
-          setUrl(fileLink?.result?.link);
-          setFailedImageId("");
-
-          setImageMap({
-            ...imageMap,
-            [playlist?.data?.image?.id]: fileLink?.result?.link,
-          });
+          setFreshLinks((links) => addTo(links, link));
+          setUrl(link);
+          // Updates from the latest map, because other images save theirs too
+          setImageMap((map) => ({ ...map, [image.id]: link }));
           setImageState("fetched");
         } catch (error) {
           // The Dropbox client has no token until sign-in finishes,
-          // so only log failures after sign-in
+          // so only log and give up after sign-in
           if (isAuthenticated) {
             logError(error as Error);
-            setFailedImageId(playlist.data.image.id);
+            setBrokenImageIds((ids) => addTo(ids, image.id));
           }
           setUrl("");
         }
@@ -77,21 +84,24 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
       }
     }
 
-    if (imageState === "error" || !mappedImage) {
+    if (!isBroken && (imageState === "error" || !mappedImage)) {
       getImageUrl();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [imageId, imageState, playlist?.meta?.id, isAuthenticated]);
+  }, [imageId, imageState, isBroken, playlist?.meta?.id, isAuthenticated]);
 
   function handleError() {
-    if (showFallback) {
+    // The fallback icon itself failed, so there is nothing left to try
+    if (showFallback || !imageId) {
       return;
     }
-    if (imageUrl === url) {
-      // A freshly fetched link failed, so stop retrying and show the fallback
-      setFailedUrl(url);
+    if (freshLinks.has(imageUrl)) {
+      // A link fetched this session failed, so the image itself is broken.
+      // Stop fetching links for it here and in every other copy.
+      setBrokenImageIds((ids) => addTo(ids, imageId));
     } else {
-      // A cached link failed (likely expired), so fetch a fresh one
+      // A link from an earlier session failed (likely expired), so fetch
+      // a fresh one
       setImageState("error");
     }
   }
@@ -106,14 +116,14 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
     >
       <img
         alt={playlist?.data?.title}
-        aria-describedby={hasError ? errorId : undefined}
+        aria-describedby={isBroken ? errorId : undefined}
         className={styles.image}
         height={size === "100%" ? "auto" : size}
         onError={handleError}
         src={showFallback ? FALLBACK_IMAGE : imageUrl}
         width={size}
       />
-      {hasError && (
+      {isBroken && (
         <>
           <span
             className={styles.errorBadge}
