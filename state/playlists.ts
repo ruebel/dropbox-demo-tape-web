@@ -5,9 +5,10 @@ import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
+import { replaceItemAtIndex } from "@/utils/list";
 import { loadable } from "@/utils/loadable";
 import { planPlaylistSync } from "@/utils/playlistSync";
-import { Playlist, PlaylistSortType } from "@/utils/types";
+import { Playlist, PlaylistSortType, PlaylistTrack } from "@/utils/types";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
 import { atomFamily } from "jotai-family";
@@ -125,6 +126,53 @@ export const playlistAtom = atomFamily((id: string | null) =>
       set(playlistsAtom, newPlaylists);
     }
   )
+);
+
+type PlaylistTrackUpdate = {
+  playlistId: string;
+  trackId: string;
+  // Returns the changed track, or undefined when nothing needs saving
+  update: (track: PlaylistTrack) => PlaylistTrack | undefined;
+};
+
+// The last save queued for each playlist. Each store gets its own map.
+const trackSaveQueuesAtom = atom(() => new Map<string, Promise<void>>());
+
+/**
+ * Updates one track in a playlist and saves the playlist. Saves to the same
+ * playlist run one at a time, and each one applies its update to the latest
+ * saved playlist, so two updates close together cannot overwrite each other.
+ */
+export const updatePlaylistTrackAtom = atom(
+  null,
+  (get, set, { playlistId, trackId, update }: PlaylistTrackUpdate) => {
+    const queues = get(trackSaveQueuesAtom);
+    const previous = queues.get(playlistId) ?? Promise.resolve();
+
+    const save = previous
+      // A failed save must not block the saves queued after it
+      .catch(() => {})
+      .then(async () => {
+        const playlist = get(playlistAtom(playlistId));
+        const tracks = playlist?.data.tracks || [];
+        const index = tracks.findIndex((t) => t.id === trackId);
+        if (!playlist || index === -1) return;
+
+        const updatedTrack = update(tracks[index]);
+        if (!updatedTrack) return;
+
+        await set(playlistAtom(playlistId), {
+          ...playlist,
+          data: {
+            ...playlist.data,
+            tracks: replaceItemAtIndex(tracks, index, updatedTrack),
+          },
+        });
+      });
+
+    queues.set(playlistId, save);
+    return save;
+  }
 );
 
 /**

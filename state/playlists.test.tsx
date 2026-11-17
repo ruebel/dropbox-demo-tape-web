@@ -4,6 +4,7 @@ import { createStore, Provider, useAtomValue } from "jotai";
 import { StrictMode, Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+import { uploadFile } from "@/api/file";
 import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { useCacheSync } from "@/hooks/useCacheSync";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
@@ -13,14 +14,16 @@ import {
   loadableDBPlaylistFiles,
   playlistSyncErrorAtom,
   playlistsAtom,
+  updatePlaylistTrackAtom,
 } from "@/state/playlists";
 import { transformFile } from "@/utils/file";
-import { FileMeta, Playlist } from "@/utils/types";
+import { FileMeta, Playlist, PlaylistTrack } from "@/utils/types";
 
 vi.mock("@/api/playlists", () => ({
   downloadPlaylists: vi.fn(),
   searchPlaylistFiles: vi.fn(),
 }));
+vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/user", () => ({ getUsers: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 
@@ -240,5 +243,118 @@ describe("dbPlaylistAtomEffect", () => {
 
     await expectCount(2);
     expect(store.get(playlistSyncErrorAtom)).toBeNull();
+  });
+});
+
+describe("updatePlaylistTrackAtom", () => {
+  const playlistFile = makeFile("a");
+
+  function makeTrack(): PlaylistTrack {
+    return {
+      ...transformFile({
+        ".tag": "file",
+        id: "id:track",
+        name: "Song.mp3",
+        path_display: "/Demos/Song.mp3",
+        path_lower: "/demos/song.mp3",
+        rev: "1",
+        server_modified: "2026-10-01T12:00:00Z",
+      } as FileMeta),
+      duration: 168.07,
+      error: "Failed to load track",
+    };
+  }
+
+  function makeStore() {
+    const store = createStore();
+    const playlist = makePlaylist(playlistFile);
+    playlist.data.tracks = [makeTrack()];
+    store.set(playlistsAtom, [playlist]);
+    return store;
+  }
+
+  function savedTrack(store: ReturnType<typeof createStore>) {
+    return store.get(playlistsAtom)[0].data.tracks[0];
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    // Like a real upload, finishes some time after it starts
+    vi.mocked(uploadFile).mockImplementation(async () => {
+      await sleep(20);
+      return playlistFile;
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("keeps both changes when two updates start back to back", async () => {
+    const store = makeStore();
+    const playlistId = playlistFile.id;
+    const trackId = "id:track";
+
+    // Like a moved file being found and then its duration loading
+    const moved = store.set(updatePlaylistTrackAtom, {
+      playlistId,
+      trackId,
+      update: (t) => ({ ...t, error: undefined, path_lower: "/archive/song.mp3" }),
+    });
+    const timed = store.set(updatePlaylistTrackAtom, {
+      playlistId,
+      trackId,
+      update: (t) => ({ ...t, duration: 168 }),
+    });
+    await Promise.all([moved, timed]);
+
+    expect(uploadFile).toHaveBeenCalledTimes(2);
+    const [, lastUpload] = vi.mocked(uploadFile).mock.calls[1];
+    expect(lastUpload.tracks[0]).toMatchObject({
+      duration: 168,
+      error: undefined,
+      path_lower: "/archive/song.mp3",
+    });
+    expect(savedTrack(store)).toMatchObject({
+      duration: 168,
+      error: undefined,
+      path_lower: "/archive/song.mp3",
+    });
+  });
+
+  it("does not upload when the update changes nothing", async () => {
+    const store = makeStore();
+
+    await store.set(updatePlaylistTrackAtom, {
+      playlistId: playlistFile.id,
+      trackId: "id:track",
+      update: () => undefined,
+    });
+
+    expect(uploadFile).not.toHaveBeenCalled();
+  });
+
+  it("runs the next update after a failed save", async () => {
+    const store = makeStore();
+    vi.mocked(uploadFile).mockRejectedValueOnce(new Error("Failed to fetch"));
+
+    const failed = store.set(updatePlaylistTrackAtom, {
+      playlistId: playlistFile.id,
+      trackId: "id:track",
+      update: (t) => ({ ...t, error: "Dropbox error: too_many_write_operations" }),
+    });
+    const next = store.set(updatePlaylistTrackAtom, {
+      playlistId: playlistFile.id,
+      trackId: "id:track",
+      update: (t) => ({ ...t, duration: 168 }),
+    });
+
+    await expect(failed).rejects.toThrow("Failed to fetch");
+    await next;
+
+    expect(savedTrack(store)).toMatchObject({
+      duration: 168,
+      error: "Failed to load track",
+    });
   });
 });

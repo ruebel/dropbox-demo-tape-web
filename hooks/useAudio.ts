@@ -3,18 +3,18 @@ import {
   playingPlaylistIdAtom,
   playingTrackIdAtom,
 } from "@/state/audio";
-import { playlistAtom } from "@/state/playlists";
+import { playlistAtom, updatePlaylistTrackAtom } from "@/state/playlists";
 import { updateTrackMeta } from "@/utils/file";
-import { replaceItemAtIndex } from "@/utils/list";
-import { FileMeta } from "@/utils/types";
-import { useAtom } from "jotai";
+import { FileMeta, PlaylistTrack } from "@/utils/types";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function useAudio() {
   const [playingPlaylistId, setPlayingPlaylistId] = useAtom(
     playingPlaylistIdAtom
   );
   const [playingTrackId, setPlayingTrackId] = useAtom(playingTrackIdAtom);
-  const [playlist, setPlaylist] = useAtom(playlistAtom(playingPlaylistId));
+  const playlist = useAtomValue(playlistAtom(playingPlaylistId));
+  const updatePlaylistTrack = useSetAtom(updatePlaylistTrackAtom);
   const [audioState, setAudioState] = useAtom(audioStateAtom);
 
   const tracks = playlist?.data.tracks || [];
@@ -50,37 +50,30 @@ export function useAudio() {
     setAudioState("playing");
   }
 
-  function onSetTrackDuration(duration: number) {
-    // Ensure that we are currently playing a track and that the duration is different
-    // from what we have stored in the playlist
-    if (playlist && track && trackIndex > -1 && track.duration !== duration) {
-      const updatedTrack = { ...track, duration };
+  // Saves a change to the playing track. The update runs against the latest
+  // saved track, not the one from this render, so changes made close together
+  // do not overwrite each other.
+  function updatePlayingTrack(
+    update: (track: PlaylistTrack) => PlaylistTrack | undefined
+  ) {
+    if (!playlist || !track) return;
 
-      // Save the new duration in the playlist so we have it preloaded next time
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
-    }
+    updatePlaylistTrack({
+      playlistId: playlist.meta.id,
+      trackId: track.id,
+      update,
+    });
+  }
+
+  function onSetTrackDuration(duration: number) {
+    // Save the new duration in the playlist so we have it preloaded next time
+    updatePlayingTrack((t) =>
+      t.duration === duration ? undefined : { ...t, duration }
+    );
   }
 
   function onSetTrackError(error: string | undefined) {
-    // Ensure that we are currently playing a track
-    if (playlist && track && trackIndex > -1) {
-      const updatedTrack = { ...track, error };
-
-      // Save the new duration in the playlist so we have it preloaded next time
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
-    }
+    updatePlayingTrack((t) => (t.error === error ? undefined : { ...t, error }));
   }
 
   function onStop() {
@@ -88,27 +81,15 @@ export function useAudio() {
   }
 
   function onUpdateTrackMeta(meta: FileMeta) {
-    // Ensure that we are currently playing a track
-    if (!playlist || !track || trackIndex === -1) return;
+    if (!track) return;
 
     // Undefined when the track is unchanged and has no error to clear
-    const updatedTrack = updateTrackMeta(track, meta);
+    updatePlayingTrack((t) => updateTrackMeta(t, meta));
 
-    if (updatedTrack) {
-      // Save the new track meta
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
-
-      // The id can change when the server rev is updated
-      // so we want to update our playing track id
-      if (updatedTrack.id !== track.id) {
-        setPlayingTrackId(updatedTrack.id);
-      }
+    // The id can change when the server rev is updated
+    // so we want to update our playing track id
+    if (meta.id !== track.id) {
+      setPlayingTrackId(meta.id);
     }
   }
 
