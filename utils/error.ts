@@ -17,17 +17,27 @@ function getErrorSummary(error: DropboxResponseError<unknown>) {
 }
 
 /**
+ * Whether Dropbox could not find a file at the requested path
+ */
+export function isPathNotFoundError(error: unknown) {
+  return (
+    error instanceof DropboxResponseError &&
+    getErrorSummary(error).startsWith("path/not_found")
+  );
+}
+
+/**
  * Turns an error from loading a track into a short message to show the user.
  * The message is saved in the shared playlist file, so it includes at most
  * the Dropbox error code, never the response body or a stack trace.
  */
 export function getTrackErrorMessage(error: unknown) {
+  if (isPathNotFoundError(error)) {
+    return "This file was moved or deleted in Dropbox";
+  }
+
   if (error instanceof DropboxResponseError) {
     const summary = getErrorSummary(error);
-
-    if (summary.startsWith("path/not_found")) {
-      return "This file was moved or deleted in Dropbox";
-    }
 
     if (error.status === 429) {
       return "Dropbox is limiting requests. Try again in a minute.";

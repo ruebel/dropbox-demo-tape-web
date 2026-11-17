@@ -1,5 +1,6 @@
 "use client";
 
+import { getTrackLink } from "@/api/track";
 import { useAudio } from "@/hooks/useAudio";
 import { logError } from "@/hooks/useErrorTracking";
 import {
@@ -170,18 +171,16 @@ export function Audio() {
       if (track && track.path_lower && audioState === "loading") {
         // This is not a resume so we need to load the file
         try {
-          const fileLink = await dbx.filesGetTemporaryLink({
-            path: track.path_lower,
-          });
+          const fileLink = await getTrackLink(dbx, track);
 
-          player.setAttribute("src", fileLink?.result?.link);
+          player.setAttribute("src", fileLink.link);
 
           player.play();
           setMediaState("playing");
 
           // If this track previously had an error we need to clear it
-          // or if it was updated on the server
-          onUpdateTrackMeta(fileLink.result.metadata as FileMeta);
+          // or if it was updated or moved on the server
+          onUpdateTrackMeta(fileLink.metadata as FileMeta);
         } catch (error) {
           // We failed to load the track so mark it as errored
           logError(error as Error);

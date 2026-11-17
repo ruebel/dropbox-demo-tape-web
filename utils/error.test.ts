@@ -1,7 +1,11 @@
 import { DropboxResponseError } from "dropbox";
 import { describe, expect, it } from "vitest";
 
-import { DEFAULT_TRACK_ERROR, getTrackErrorMessage } from "@/utils/error";
+import {
+  DEFAULT_TRACK_ERROR,
+  getTrackErrorMessage,
+  isPathNotFoundError,
+} from "@/utils/error";
 
 function dropboxError(status: number, body: unknown) {
   return new DropboxResponseError(status, {}, body);
@@ -52,5 +56,21 @@ describe("getTrackErrorMessage", () => {
   it("falls back for any other error", () => {
     expect(getTrackErrorMessage(new Error("boom"))).toBe(DEFAULT_TRACK_ERROR);
     expect(getTrackErrorMessage("boom")).toBe(DEFAULT_TRACK_ERROR);
+  });
+});
+
+describe("isPathNotFoundError", () => {
+  it("is true for a Dropbox path/not_found error", () => {
+    const error = dropboxError(409, { error_summary: "path/not_found/.." });
+
+    expect(isPathNotFoundError(error)).toBe(true);
+  });
+
+  it("is false for other errors", () => {
+    expect(
+      isPathNotFoundError(dropboxError(409, { error_summary: "path/malformed_path/.." }))
+    ).toBe(false);
+    expect(isPathNotFoundError(dropboxError(500, "Internal Server Error"))).toBe(false);
+    expect(isPathNotFoundError(new TypeError("Failed to fetch"))).toBe(false);
   });
 });

@@ -1,4 +1,10 @@
-import { EnhancedFileMeta, FileMeta, SortDir, UserMap } from "@/utils/types";
+import {
+  EnhancedFileMeta,
+  FileMeta,
+  PlaylistTrack,
+  SortDir,
+  UserMap,
+} from "@/utils/types";
 
 export function getModifiedBy(entry: FileMeta) {
   return entry?.sharing_info?.modified_by || "";
@@ -69,6 +75,32 @@ export function fileMetaHasBeenUpdated(meta: FileMeta, prevMeta: FileMeta) {
     meta.server_modified !== prevMeta.server_modified ||
     meta.rev !== prevMeta.rev
   );
+}
+
+/**
+ * Applies fresh Dropbox metadata to a saved playlist track and clears its
+ * error. Returns undefined when the track has no error and nothing it stores
+ * has changed, so the playlist does not need saving.
+ */
+export function updateTrackMeta(
+  track: PlaylistTrack,
+  meta: FileMeta
+): PlaylistTrack | undefined {
+  const hasChanged =
+    fileMetaHasBeenUpdated(meta, track) ||
+    // A moved or renamed file keeps its rev but has a new path
+    meta.path_lower !== track.path_lower;
+
+  if (!hasChanged && !track.error) {
+    return undefined;
+  }
+
+  return {
+    ...track,
+    // Link metadata comes back without a ".tag"
+    ...transformFile({ ...meta, ".tag": "file" }),
+    error: undefined,
+  };
 }
 
 export function removeExtension(fileName = "") {
