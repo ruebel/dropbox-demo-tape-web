@@ -12,6 +12,7 @@ import {
   dbPlaylistFilesAtom,
   isSyncingPlaylistsAtom,
   loadableDBPlaylistFiles,
+  playlistAtom,
   playlistSyncErrorAtom,
   playlistsAtom,
   updatePlaylistAtom,
@@ -377,5 +378,38 @@ describe("updatePlaylistTrackAtom", () => {
     const [, lastUpload] = vi.mocked(uploadFile).mock.calls[1];
     expect(lastUpload.title).toBe("Renamed");
     expect(lastUpload.tracks[0].duration).toBe(168);
+  });
+});
+
+describe("playlistAtom", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("keeps a save to another playlist that finished during this one", async () => {
+    localStorage.clear();
+    const fileA = makeFile("a");
+    const fileB = makeFile("b");
+    const store = createStore();
+    store.set(playlistsAtom, [makePlaylist(fileA), makePlaylist(fileB)]);
+    // Playlist a uploads slowly, so playlist b finishes first
+    vi.mocked(uploadFile).mockImplementation(async (_dbx, _data, path) => {
+      await sleep(path === fileA.path_lower ? 40 : 5);
+      return path === fileA.path_lower ? fileA : fileB;
+    });
+
+    const [a, b] = store.get(playlistsAtom);
+    await Promise.all([
+      store.set(playlistAtom(fileA.id), {
+        ...a,
+        data: { ...a.data, title: "a renamed" },
+      }),
+      store.set(playlistAtom(fileB.id), {
+        ...b,
+        data: { ...b.data, title: "b renamed" },
+      }),
+    ]);
+
+    expect(titles(store)).toEqual(["a renamed", "b renamed"]);
   });
 });

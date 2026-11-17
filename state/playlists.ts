@@ -100,9 +100,7 @@ export const playlistAtom = atomFamily((id: string | null) =>
     (get) =>
       id ? get(playlistsAtom).find((p) => p.meta.id === id) || null : null,
     async (get, set, playlist: Playlist) => {
-      const playlists = get(playlistsAtom);
       const dbx = get(dbxAtom);
-      const index = playlists.findIndex((p) => p.meta.id === playlist.meta.id);
 
       // update file to dropbox and get new meta
       const meta = await uploadFile(
@@ -114,7 +112,11 @@ export const playlistAtom = atomFamily((id: string | null) =>
       // Create new playlist shape with updated meta
       const newPlaylist = { ...playlist, meta } as Playlist;
 
-      let newPlaylists = [...playlists];
+      // Read the list after the upload, so a save to another playlist that
+      // finished in the meantime is kept
+      const playlists = get(playlistsAtom);
+      const index = playlists.findIndex((p) => p.meta.id === playlist.meta.id);
+      const newPlaylists = [...playlists];
       if (index > -1) {
         // Updating an existing playlis
         newPlaylists[index] = newPlaylist;
