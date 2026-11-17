@@ -5,7 +5,11 @@ import { HeadsetIcon } from "@/components/icons/HeadsetIcon";
 import { PauseIcon } from "@/components/icons/PauseIcon";
 import { PlayIcon } from "@/components/icons/PlayIcon";
 import { Tooltip } from "@/components/Tooltip/Tooltip";
-import { audioStateAtom, playingTrackIdAtom } from "@/state/audio";
+import {
+  audioStateAtom,
+  playingTrackIdAtom,
+  sessionTrackErrorsAtom,
+} from "@/state/audio";
 import { userByIdAtom } from "@/state/users";
 import { getModifiedBy, removeExtension } from "@/utils/file";
 import { styleArray } from "@/utils/style";
@@ -34,7 +38,10 @@ export function Track({
   const isPlaying = playingTrackId === track.id;
   const audioState = useAtomValue(audioStateAtom);
   const errorId = useId();
-  const hasErrorTooltip = !!track.error && showErrorTooltip;
+  // A saved error, or one from this session (such as a dropped connection)
+  const sessionError = useAtomValue(sessionTrackErrorsAtom)[track.id];
+  const error = track.error || sessionError;
+  const hasErrorTooltip = !!error && showErrorTooltip;
 
   return (
     <button
@@ -42,15 +49,15 @@ export function Track({
       className={styleArray([
         styles.track,
         isPlaying && styles.trackPlaying,
-        !!track.error && styles.trackError,
+        !!error && styles.trackError,
       ])}
       onClick={() => onClick(track.id)}
     >
       <div className={styles.play}>
-        {track.error ? (
+        {error ? (
           <>
             <ErrorIcon size={20} />
-            {hasErrorTooltip && <Tooltip id={errorId}>{track.error}</Tooltip>}
+            {hasErrorTooltip && <Tooltip id={errorId}>{error}</Tooltip>}
           </>
         ) : isPlaying ? (
           audioState === "playing" ? (

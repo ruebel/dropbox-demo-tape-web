@@ -2,6 +2,7 @@ import {
   audioStateAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
+  sessionTrackErrorsAtom,
 } from "@/state/audio";
 import { playlistAtom, updatePlaylistTrackAtom } from "@/state/playlists";
 import { updateTrackMeta } from "@/utils/file";
@@ -15,6 +16,7 @@ export function useAudio() {
   const [playingTrackId, setPlayingTrackId] = useAtom(playingTrackIdAtom);
   const playlist = useAtomValue(playlistAtom(playingPlaylistId));
   const updatePlaylistTrack = useSetAtom(updatePlaylistTrackAtom);
+  const setSessionTrackErrors = useSetAtom(sessionTrackErrorsAtom);
   const [audioState, setAudioState] = useAtom(audioStateAtom);
 
   const tracks = playlist?.data.tracks || [];
@@ -72,12 +74,20 @@ export function useAudio() {
     );
   }
 
+  // Saves the error in the shared playlist, for errors about the file itself
   function onSetTrackError(error: string, errorCode?: TrackErrorCode) {
     updatePlayingTrack((t) =>
       t.error === error && t.errorCode === errorCode
         ? undefined
         : { ...t, error, errorCode }
     );
+  }
+
+  // Shows the error for this session only, for errors that say nothing about
+  // the file, such as a dropped connection
+  function onSetSessionTrackError(error: string) {
+    if (!track) return;
+    setSessionTrackErrors((errors) => ({ ...errors, [track.id]: error }));
   }
 
   function onStop() {
@@ -89,6 +99,15 @@ export function useAudio() {
 
     // Undefined when the track is unchanged and has no error to clear
     updatePlayingTrack((t) => updateTrackMeta(t, meta));
+
+    // The track loaded, so a session error from an earlier try is out of date
+    const trackId = track.id;
+    setSessionTrackErrors((errors) => {
+      if (!(trackId in errors)) return errors;
+      const remaining = { ...errors };
+      delete remaining[trackId];
+      return remaining;
+    });
 
     // The id can change when the server rev is updated
     // so we want to update our playing track id
@@ -106,6 +125,7 @@ export function useAudio() {
     onPlay,
     onPrevious,
     onResume,
+    onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
     onStop,

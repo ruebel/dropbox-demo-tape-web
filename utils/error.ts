@@ -27,9 +27,25 @@ export function isPathNotFoundError(error: unknown) {
 }
 
 /**
+ * Whether the error says nothing about the file itself, so trying again later
+ * may work: the request never reached Dropbox, Dropbox is limiting requests
+ * (429), or Dropbox had a server error (5xx). These are not saved in the
+ * shared playlist, so one person's bad connection does not mark the track as
+ * failed for everyone.
+ */
+export function isTransientError(error: unknown) {
+  if (error instanceof DropboxResponseError) {
+    return error.status === 429 || error.status >= 500;
+  }
+
+  // fetch rejects with a TypeError when the request never reaches the server
+  return error instanceof TypeError;
+}
+
+/**
  * Turns an error from loading a track into a short message to show the user.
- * The message is saved in the shared playlist file, so it includes at most
- * the Dropbox error code, never the response body or a stack trace.
+ * The message can be saved in the shared playlist file, so it includes at
+ * most the Dropbox error code, never the response body or a stack trace.
  */
 export function getTrackErrorMessage(error: unknown) {
   if (isPathNotFoundError(error)) {
@@ -41,6 +57,10 @@ export function getTrackErrorMessage(error: unknown) {
 
     if (error.status === 429) {
       return "Dropbox is limiting requests. Try again in a minute.";
+    }
+
+    if (error.status >= 500) {
+      return "Dropbox is having trouble. Try again later.";
     }
 
     return summary ? `Dropbox error: ${summary}` : DEFAULT_TRACK_ERROR;

@@ -13,7 +13,11 @@ import {
 } from "@/state/audio";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
-import { getTrackErrorMessage, isPathNotFoundError } from "@/utils/error";
+import {
+  getTrackErrorMessage,
+  isPathNotFoundError,
+  isTransientError,
+} from "@/utils/error";
 import { removeExtension } from "@/utils/file";
 import {
   setMediaDuration,
@@ -21,9 +25,16 @@ import {
   setMediaState,
   setMediaTrack,
 } from "@/utils/mediaSession";
-import { FileMeta } from "@/utils/types";
+import { FileMeta, TrackErrorCode } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useCallback, useEffect, useEffectEvent, useRef } from "react";
+
+type TrackFailure = {
+  errorCode?: TrackErrorCode;
+  // Says nothing about the file, so it is not saved in the shared playlist
+  isTransient: boolean;
+  message: string;
+};
 
 export function Audio() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -33,6 +44,7 @@ export function Audio() {
     onPause,
     onPrevious,
     onResume,
+    onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
     onStop,
@@ -161,6 +173,23 @@ export function Audio() {
     }
   }, [track?.id, imagePath, playlist?.meta?.id]);
 
+  // Records why the playing track failed, then moves to the next track or
+  // stops. Errors about the file are saved in the shared playlist. Transient
+  // errors (connection, rate limit, server) are shown for this session only.
+  function failTrack({ errorCode, isTransient, message }: TrackFailure) {
+    if (isTransient) {
+      onSetSessionTrackError(message);
+    } else {
+      onSetTrackError(message, errorCode);
+    }
+
+    if (hasNext) {
+      onNext();
+    } else {
+      setAudioState("stopped");
+    }
+  }
+
   // Called when a load finishes. They read the latest state when they run,
   // so they are not dependencies of the effect below and do not restart it.
   const handleTrackLoaded = useEffectEvent((meta: FileMeta) => {
@@ -170,19 +199,13 @@ export function Audio() {
   });
 
   const handleTrackFailed = useEffectEvent((error: unknown) => {
-    // We failed to load the track so mark it as errored
     logError(error as Error);
-    onSetTrackError(
-      getTrackErrorMessage(error),
+    failTrack({
+      message: getTrackErrorMessage(error),
       // The file is gone at its path and its id, so offer to replace it
-      isPathNotFoundError(error) ? "not_found" : undefined
-    );
-
-    if (hasNext) {
-      onNext();
-    } else {
-      setAudioState("stopped");
-    }
+      errorCode: isPathNotFoundError(error) ? "not_found" : undefined,
+      isTransient: isTransientError(error),
+    });
   });
 
   // Updates playing track when changes

@@ -3,6 +3,7 @@ import { createStore, Provider } from "jotai";
 import { afterEach, describe, expect, it } from "vitest";
 
 import { Track } from "@/components/Track/Track";
+import { sessionTrackErrorsAtom } from "@/state/audio";
 import { PlaylistTrack } from "@/utils/types";
 
 function makeTrack(error?: string) {
@@ -58,5 +59,21 @@ describe("Track", () => {
 
     expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
     expect(screen.getByRole("button").getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("shows an error from this session that is not saved on the track", () => {
+    const store = createStore();
+    store.set(sessionTrackErrorsAtom, {
+      "track-1": "Couldn't reach Dropbox. Check your connection.",
+    });
+    render(
+      <Provider store={store}>
+        <Track index={1} onClick={() => {}} track={makeTrack()} />
+      </Provider>
+    );
+
+    expect(screen.getByRole("tooltip", { hidden: true }).textContent).toBe(
+      "Couldn't reach Dropbox. Check your connection."
+    );
   });
 });

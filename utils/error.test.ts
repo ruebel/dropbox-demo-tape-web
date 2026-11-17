@@ -5,6 +5,7 @@ import {
   DEFAULT_TRACK_ERROR,
   getTrackErrorMessage,
   isPathNotFoundError,
+  isTransientError,
 } from "@/utils/error";
 
 function dropboxError(status: number, body: unknown) {
@@ -42,9 +43,15 @@ describe("getTrackErrorMessage", () => {
   });
 
   it("falls back when a Dropbox error has no JSON body", () => {
-    const error = dropboxError(500, "Internal Server Error");
+    const error = dropboxError(409, "Conflict");
 
     expect(getTrackErrorMessage(error)).toBe(DEFAULT_TRACK_ERROR);
+  });
+
+  it("explains a Dropbox server error", () => {
+    expect(getTrackErrorMessage(dropboxError(503, "Service Unavailable"))).toBe(
+      "Dropbox is having trouble. Try again later."
+    );
   });
 
   it("explains a network failure", () => {
@@ -72,5 +79,20 @@ describe("isPathNotFoundError", () => {
     ).toBe(false);
     expect(isPathNotFoundError(dropboxError(500, "Internal Server Error"))).toBe(false);
     expect(isPathNotFoundError(new TypeError("Failed to fetch"))).toBe(false);
+  });
+});
+
+describe("isTransientError", () => {
+  it("is true for errors that say nothing about the file", () => {
+    expect(isTransientError(new TypeError("Failed to fetch"))).toBe(true);
+    expect(isTransientError(dropboxError(429, { error_summary: "too_many_requests/.." }))).toBe(true);
+    expect(isTransientError(dropboxError(500, "Internal Server Error"))).toBe(true);
+    expect(isTransientError(dropboxError(503, "Service Unavailable"))).toBe(true);
+  });
+
+  it("is false for errors about the file", () => {
+    expect(isTransientError(dropboxError(409, { error_summary: "path/not_found/.." }))).toBe(false);
+    expect(isTransientError(dropboxError(409, { error_summary: "unsupported_file/.." }))).toBe(false);
+    expect(isTransientError(new Error("boom"))).toBe(false);
   });
 });

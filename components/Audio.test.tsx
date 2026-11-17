@@ -1,4 +1,5 @@
 import { act, cleanup, render } from "@testing-library/react";
+import { DropboxResponseError } from "dropbox";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -9,12 +10,13 @@ import {
   audioStateAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
+  sessionTrackErrorsAtom,
   volumeAtom,
 } from "@/state/audio";
 import { isAuthenticatedAtom } from "@/state/dropbox";
 import { playlistsAtom } from "@/state/playlists";
 import { transformFile } from "@/utils/file";
-import { FileMeta, Playlist } from "@/utils/types";
+import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/track", () => ({ getTrackLink: vi.fn() }));
@@ -36,13 +38,17 @@ const playlistFile = file("/Band/Stuck In Heaven.mix");
 const first = transformFile(file("/Band/First.mp3"));
 const second = transformFile(file("/Band/Second.mp3"));
 
+function notFound() {
+  return new DropboxResponseError(409, {}, { error_summary: "path/not_found/.." });
+}
+
 type LinkResult = Awaited<ReturnType<typeof getTrackLink>>;
 
 // A link request for `track` that the test finishes by hand. Its metadata
 // matches the track, as Dropbox's does.
 function deferredLink(track: FileMeta) {
   let resolve!: (link: string) => void;
-  let reject!: (error: Error) => void;
+  let reject!: (error: unknown) => void;
   const promise = new Promise<LinkResult>((res, rej) => {
     resolve = (link) => res({ link, metadata: track } as LinkResult);
     reject = rej;
@@ -86,6 +92,10 @@ describe("Audio", () => {
     vi.spyOn(HTMLMediaElement.prototype, "play").mockResolvedValue();
     vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
     vi.mocked(uploadFile).mockResolvedValue(playlistFile);
+    // Loads a test does not set up never finish, so they cannot affect it
+    vi.mocked(getTrackLink)
+      .mockReset()
+      .mockImplementation(() => new Promise(() => {}));
   });
 
   afterEach(() => {
@@ -132,11 +142,53 @@ describe("Audio", () => {
 
     playTrack(store, second.id);
     await act(async () => secondLoad.resolve("https://dl.test/second.mp3"));
-    await act(async () => firstLoad.reject(new TypeError("Failed to fetch")));
+    await act(async () => firstLoad.reject(notFound()));
 
     // No error saved on the first track, and the player stays on the second
     expect(uploadFile).not.toHaveBeenCalled();
     expect(store.get(playingTrackIdAtom)).toBe(second.id);
     expect(store.get(audioStateAtom)).toBe("loading");
+  });
+
+  it("keeps a connection failure out of the shared playlist", async () => {
+    vi.mocked(getTrackLink).mockRejectedValueOnce(new TypeError("Failed to fetch"));
+    const { store } = renderAudio();
+
+    await vi.waitFor(() =>
+      expect(store.get(sessionTrackErrorsAtom)[first.id]).toBe(
+        "Couldn't reach Dropbox. Check your connection."
+      )
+    );
+    expect(uploadFile).not.toHaveBeenCalled();
+    // Moves on to the next track
+    expect(store.get(playingTrackIdAtom)).toBe(second.id);
+  });
+
+  it("saves an error about the file in the shared playlist", async () => {
+    vi.mocked(getTrackLink).mockRejectedValueOnce(notFound());
+    const { store } = renderAudio();
+
+    await vi.waitFor(() => expect(uploadFile).toHaveBeenCalledTimes(1));
+    const saved: PlaylistData = vi.mocked(uploadFile).mock.calls[0][1];
+    expect(saved.tracks[0]).toMatchObject({
+      error: "This file was moved or deleted in Dropbox",
+      errorCode: "not_found",
+    });
+    expect(store.get(sessionTrackErrorsAtom)).toEqual({});
+  });
+
+  it("clears a session error when the track loads", async () => {
+    const load = deferredLink(first);
+    vi.mocked(getTrackLink).mockReturnValue(load.promise);
+    const { store } = renderAudio();
+    act(() =>
+      store.set(sessionTrackErrorsAtom, {
+        [first.id]: "Couldn't reach Dropbox. Check your connection.",
+      })
+    );
+
+    await act(async () => load.resolve("https://dl.test/first.mp3"));
+
+    expect(store.get(sessionTrackErrorsAtom)).toEqual({});
   });
 });

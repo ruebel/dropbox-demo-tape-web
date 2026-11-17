@@ -18,3 +18,10 @@ export const volumeAtom = atom(0.9);
 export const seekToAtom = atom(-1);
 
 export const showFullDetailsAtom = atom(false);
+
+// Track errors that say nothing about the file, such as a dropped connection,
+// by track id. Shown like saved errors, but kept out of the shared playlist
+// so they do not mark the track as failed for everyone. A reload clears them.
+export const sessionTrackErrorsAtom = atom<Readonly<Record<string, string>>>(
+  {}
+);
