@@ -12,6 +12,7 @@ import {
 } from "@/state/audio";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
+import { getTrackErrorMessage } from "@/utils/error";
 import { removeExtension } from "@/utils/file";
 import {
   setMediaDuration,
@@ -184,7 +185,7 @@ export function Audio() {
         } catch (error) {
           // We failed to load the track so mark it as errored
           logError(error as Error);
-          onSetTrackError("Failed to load track");
+          onSetTrackError(getTrackErrorMessage(error));
 
           if (hasNext) {
             onNext();
