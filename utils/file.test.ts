@@ -1,6 +1,10 @@
 import { describe, expect, it } from "vitest";
 
-import { transformFile, updateTrackMeta } from "@/utils/file";
+import {
+  getImageMimeType,
+  transformFile,
+  updateTrackMeta,
+} from "@/utils/file";
 import { FileMeta, PlaylistTrack } from "@/utils/types";
 
 const meta = {
@@ -55,5 +59,22 @@ describe("updateTrackMeta", () => {
     expect(updated).toBeDefined();
     expect(updated?.error).toBeUndefined();
     expect(updated?.errorCode).toBeUndefined();
+  });
+});
+
+describe("getImageMimeType", () => {
+  it("returns the type for each playlist image extension", () => {
+    expect(getImageMimeType("cover.jpg")).toBe("image/jpeg");
+    expect(getImageMimeType("cover.jpeg")).toBe("image/jpeg");
+    expect(getImageMimeType("cover.png")).toBe("image/png");
+  });
+
+  it("ignores the case of the extension", () => {
+    expect(getImageMimeType("COVER.JPG")).toBe("image/jpeg");
+  });
+
+  it("returns undefined for other files", () => {
+    expect(getImageMimeType("cover.gif")).toBeUndefined();
+    expect(getImageMimeType("song.mp3")).toBeUndefined();
   });
 });

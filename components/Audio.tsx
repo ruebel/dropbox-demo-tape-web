@@ -12,7 +12,7 @@ import {
   volumeAtom,
 } from "@/state/audio";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
-import { imageMapAtom } from "@/state/image";
+import { brokenImageIdsAtom, imageMapAtom } from "@/state/image";
 import {
   getMediaErrorMessage,
   getTrackErrorMessage,
@@ -20,7 +20,7 @@ import {
   isTransientError,
   MEDIA_ERROR,
 } from "@/utils/error";
-import { removeExtension } from "@/utils/file";
+import { getImageMimeType, removeExtension } from "@/utils/file";
 import {
   setMediaDuration,
   setMediaHandlers,
@@ -73,13 +73,18 @@ export function Audio() {
   const [position, setPosition] = useAtom(audioPostionAtom);
   const [audioDuration, setAudioDuration] = useAtom(durationAtom);
   const imageMap = useAtomValue(imageMapAtom);
+  const brokenImageIds = useAtomValue(brokenImageIdsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const dbx = useAtomValue(dbxAtom);
   const isMuted = useAtomValue(isMutedAtom);
   const volume = useAtomValue(volumeAtom);
   const [seekTo, setSeekTo] = useAtom(seekToAtom);
 
-  const imagePath = imageMap[playlist?.data?.image?.id || ""];
+  const image = playlist?.data?.image;
+  // A broken image would leave the lock screen blank, so use the app icons
+  const imagePath =
+    image && !brokenImageIds.has(image.id) ? imageMap[image.id] : undefined;
+  const imageType = image ? getImageMimeType(image.name) : undefined;
 
   // Track playing time since Chrome has a bug where it doesn't allways
   // fire the progress event
@@ -183,18 +188,15 @@ export function Audio() {
         title: removeExtension(track?.name),
         artist: playlist?.data?.artist || playlist?.data?.title,
         album: playlist?.data?.title || "Demo Tape",
+        // Without artwork, setMediaTrack uses the app icons. The image's size
+        // is not known, so `sizes` is left out rather than guessed, and so
+        // is `type` when the extension is not a known image type.
         artwork: imagePath
-          ? [
-              {
-                src: imagePath,
-                sizes: "50x50",
-                type: "image/png",
-              },
-            ]
+          ? [{ src: imagePath, ...(imageType && { type: imageType }) }]
           : undefined,
       });
     }
-  }, [track?.id, imagePath, playlist?.meta?.id]);
+  }, [track?.id, imagePath, imageType, playlist?.meta?.id]);
 
   // Records why the playing track failed, then moves to the next track or
   // stops. Errors about the file are saved in the shared playlist. Transient

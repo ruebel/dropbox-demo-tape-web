@@ -14,14 +14,22 @@ import {
   volumeAtom,
 } from "@/state/audio";
 import { isAuthenticatedAtom } from "@/state/dropbox";
+import { brokenImageIdsAtom, imageMapAtom } from "@/state/image";
 import { playlistsAtom } from "@/state/playlists";
 import { MEDIA_ERROR } from "@/utils/error";
 import { transformFile } from "@/utils/file";
+import { setMediaTrack } from "@/utils/mediaSession";
 import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/track", () => ({ getTrackLink: vi.fn() }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
+vi.mock("@/utils/mediaSession", () => ({
+  setMediaDuration: vi.fn(),
+  setMediaHandlers: vi.fn(),
+  setMediaState: vi.fn(),
+  setMediaTrack: vi.fn(),
+}));
 
 function file(path: string) {
   return {
@@ -57,15 +65,28 @@ function deferredLink(track: FileMeta) {
   return { promise, reject, resolve };
 }
 
-function renderAudio() {
+type Store = ReturnType<typeof createStore>;
+
+// `image` is the playlist's image, and `setUp` changes the store before the
+// player mounts
+function renderAudio({
+  image,
+  setUp,
+}: { image?: FileMeta; setUp?: (store: Store) => void } = {}) {
   const store = createStore();
   store.set(isAuthenticatedAtom, true);
   store.set(playlistsAtom, [
     {
-      data: { artist: "Band", title: "Stuck In Heaven", tracks: [first, second] },
+      data: {
+        artist: "Band",
+        image: image && transformFile(image),
+        title: "Stuck In Heaven",
+        tracks: [first, second],
+      },
       meta: transformFile(playlistFile),
     } as Playlist,
   ]);
+  setUp?.(store);
   store.set(playingPlaylistIdAtom, playlistFile.id);
   store.set(playingTrackIdAtom, first.id);
   store.set(audioStateAtom, "loading");
@@ -80,7 +101,7 @@ function renderAudio() {
 }
 
 // Switches tracks the way useAudio's onPlay does
-function playTrack(store: ReturnType<typeof createStore>, trackId: string) {
+function playTrack(store: Store, trackId: string) {
   act(() => {
     store.set(playingTrackIdAtom, trackId);
     store.set(audioStateAtom, "loading");
@@ -324,6 +345,37 @@ describe("Audio", () => {
 
       expect(store.get(audioStateAtom)).toBe("playing");
       expect(vi.mocked(getTrackLink).mock.calls).toHaveLength(1);
+    });
+  });
+
+  describe("lock screen artwork", () => {
+    const cover = file("/Band/Cover.JPG");
+    const coverLink = "https://dl.test/cover.jpg";
+
+    function lastArtwork() {
+      return vi.mocked(setMediaTrack).mock.lastCall?.[0].artwork;
+    }
+
+    it("uses the playlist image with its real type and no guessed size", () => {
+      renderAudio({
+        image: cover,
+        setUp: (store) => store.set(imageMapAtom, { [cover.id]: coverLink }),
+      });
+
+      expect(lastArtwork()).toEqual([{ src: coverLink, type: "image/jpeg" }]);
+    });
+
+    it("uses the app icons when the playlist image is broken", () => {
+      renderAudio({
+        image: cover,
+        setUp: (store) => {
+          store.set(imageMapAtom, { [cover.id]: coverLink });
+          store.set(brokenImageIdsAtom, new Set([cover.id]));
+        },
+      });
+
+      // No artwork tells setMediaTrack to use its default app icons
+      expect(lastArtwork()).toBeUndefined();
     });
   });
 });

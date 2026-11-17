@@ -29,8 +29,23 @@ export function isAudioFile(name: string) {
   return ["mp3", "m4a", "ovw", "wav"].includes(getExtension(name));
 }
 
+// The image types a playlist image can be, by file extension
+const IMAGE_TYPES: Record<string, string> = {
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+};
+
 export function isImage(name: string) {
-  return ["png", "jpg", "jpeg"].includes(getExtension(name));
+  return Object.hasOwn(IMAGE_TYPES, getExtension(name));
+}
+
+/**
+ * The MIME type of an image file from its name, or undefined when the
+ * extension is not a known image type
+ */
+export function getImageMimeType(name: string): string | undefined {
+  return IMAGE_TYPES[getExtension(name).toLowerCase()];
 }
 
 export function isFile(entry: FileMeta) {
