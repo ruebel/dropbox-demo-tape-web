@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import {
+  getExtension,
   getImageMimeType,
+  isAudioFile,
+  isImage,
+  isPlaylist,
   transformFile,
   updateTrackMeta,
 } from "@/utils/file";
@@ -76,5 +80,32 @@ describe("getImageMimeType", () => {
   it("returns undefined for other files", () => {
     expect(getImageMimeType("cover.gif")).toBeUndefined();
     expect(getImageMimeType("song.mp3")).toBeUndefined();
+  });
+});
+
+describe("getExtension", () => {
+  it("returns the extension in lowercase", () => {
+    expect(getExtension("Song.mp3")).toBe("mp3");
+    expect(getExtension("Song.MP3")).toBe("mp3");
+    expect(getExtension("Song v2.final.WAV")).toBe("wav");
+  });
+
+  it("returns an empty string when the name has no extension", () => {
+    expect(getExtension("mp3")).toBe("");
+    expect(getExtension("")).toBe("");
+  });
+});
+
+describe("file types", () => {
+  it("ignores the case of the extension", () => {
+    expect(isAudioFile("Song.MP3")).toBe(true);
+    expect(isImage("Cover.JPG")).toBe(true);
+    expect(isPlaylist("Set.MIX")).toBe(true);
+  });
+
+  it("does not treat a name without an extension as a type", () => {
+    expect(isAudioFile("mp3")).toBe(false);
+    expect(isImage("png")).toBe(false);
+    expect(isPlaylist("mix")).toBe(false);
   });
 });

@@ -1,3 +1,4 @@
+import { DEMO_FILE_EXT } from "@/utils/constants";
 import {
   EnhancedFileMeta,
   FileMeta,
@@ -15,7 +16,10 @@ export function getModifiedUsersFromEntries(entries: FileMeta[]) {
 }
 
 export function getExtension(name: string) {
-  return name?.split(".")?.pop() || "";
+  // Lowercase so "Song.MP3" and "song.mp3" are the same type. Empty when the
+  // name has no extension.
+  const dot = name?.lastIndexOf(".") ?? -1;
+  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
 export function getPathWithoutFileName(path: string) {
@@ -45,7 +49,7 @@ export function isImage(name: string) {
  * extension is not a known image type
  */
 export function getImageMimeType(name: string): string | undefined {
-  return IMAGE_TYPES[getExtension(name).toLowerCase()];
+  return IMAGE_TYPES[getExtension(name)];
 }
 
 export function isFile(entry: FileMeta) {
@@ -65,7 +69,7 @@ export function isImageOrFolder(entry: FileMeta) {
 }
 
 export function isPlaylist(name: string) {
-  return getExtension(name) === "mix";
+  return getExtension(name) === DEMO_FILE_EXT;
 }
 
 /**
