@@ -1,8 +1,11 @@
+import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
 import { Playlist } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
+
+const FALLBACK_IMAGE = "/android-icon-96x96.png";
 
 type PlaylistImageProps = {
   playlist: Playlist | null;
@@ -13,6 +16,7 @@ type ImageState = "none" | "fetched" | "error";
 
 export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   const [url, setUrl] = useState("");
+  const [failedUrl, setFailedUrl] = useState("");
   const [imageState, setImageState] = useState<ImageState>("none");
   const dbx = useAtomValue(dbxAtom);
   const imageId = playlist?.data?.image?.id;
@@ -21,21 +25,31 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
 
   const mappedImage = imageId ? imageMap[imageId] : undefined;
   const imageUrl = imageState !== "error" && mappedImage ? mappedImage : url;
+  const showFallback = !imageUrl || imageUrl === failedUrl;
 
   useEffect(() => {
     async function getImageUrl() {
       if (playlist?.data?.image?.path_lower) {
-        const fileLink = await dbx.filesGetTemporaryLink({
-          path: playlist.data.image.path_lower,
-        });
+        try {
+          const fileLink = await dbx.filesGetTemporaryLink({
+            path: playlist.data.image.path_lower,
+          });
 
-        setUrl(fileLink?.result?.link);
+          setUrl(fileLink?.result?.link);
 
-        setImageMap({
-          ...imageMap,
-          [playlist?.data?.image?.id]: fileLink?.result?.link,
-        });
-        setImageState("fetched");
+          setImageMap({
+            ...imageMap,
+            [playlist?.data?.image?.id]: fileLink?.result?.link,
+          });
+          setImageState("fetched");
+        } catch (error) {
+          // The Dropbox client has no token until sign-in finishes,
+          // so only log failures after sign-in
+          if (isAuthenticated) {
+            logError(error as Error);
+          }
+          setUrl("");
+        }
       } else {
         setUrl("");
         setImageState("error");
@@ -49,9 +63,14 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   }, [imageId, imageState, playlist?.meta?.id, isAuthenticated]);
 
   function handleError() {
-    if (imageUrl && imageState !== "fetched") {
-      // we didn't fetch the image and there's an error
-      // so force the fetch again
+    if (showFallback) {
+      return;
+    }
+    if (imageUrl === url) {
+      // A freshly fetched link failed, so stop retrying and show the fallback
+      setFailedUrl(url);
+    } else {
+      // A cached link failed (likely expired), so fetch a fresh one
       setImageState("error");
     }
   }
@@ -61,7 +80,7 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
       alt={playlist?.data?.title}
       height={size === "100%" ? "auto" : size}
       onError={handleError}
-      src={imageUrl || `/android-icon-96x96.png`}
+      src={showFallback ? FALLBACK_IMAGE : imageUrl}
       width={size}
     />
   );
