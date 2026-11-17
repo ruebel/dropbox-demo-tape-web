@@ -191,4 +191,55 @@ describe("Audio", () => {
 
     expect(store.get(sessionTrackErrorsAtom)).toEqual({});
   });
+
+  it("ignores a play request that a newer load interrupted", async () => {
+    vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(
+      new DOMException("interrupted by a new load request", "AbortError")
+    );
+    const load = deferredLink(first);
+    vi.mocked(getTrackLink).mockReturnValueOnce(load.promise);
+    const { store } = renderAudio();
+
+    await act(async () => load.resolve("https://dl.test/first.mp3"));
+
+    expect(store.get(audioStateAtom)).toBe("loading");
+    expect(store.get(sessionTrackErrorsAtom)).toEqual({});
+    expect(uploadFile).not.toHaveBeenCalled();
+  });
+
+  it("shows the play button when the browser blocks playback", async () => {
+    vi.mocked(HTMLMediaElement.prototype.play).mockRejectedValueOnce(
+      new DOMException("play() needs a user gesture", "NotAllowedError")
+    );
+    const load = deferredLink(first);
+    vi.mocked(getTrackLink).mockReturnValueOnce(load.promise);
+    const { store } = renderAudio();
+
+    await act(async () => load.resolve("https://dl.test/first.mp3"));
+
+    expect(store.get(audioStateAtom)).toBe("paused");
+  });
+
+  it("loads the current track when resuming after its load was cancelled", async () => {
+    const firstLoad = deferredLink(first);
+    vi.mocked(getTrackLink).mockReturnValueOnce(firstLoad.promise);
+    const { audio, store } = renderAudio();
+    await act(async () => firstLoad.resolve("https://dl.test/first.mp3"));
+    act(() => store.set(audioStateAtom, "playing"));
+
+    // Switch tracks, then pause before the second track's link arrives
+    playTrack(store, second.id);
+    act(() => store.set(audioStateAtom, "paused"));
+    const playCalls = vi.mocked(HTMLMediaElement.prototype.play).mock.calls.length;
+
+    act(() => store.set(audioStateAtom, "playing"));
+
+    // Loads the second track again instead of playing the first track's file
+    expect(store.get(audioStateAtom)).toBe("loading");
+    expect(vi.mocked(getTrackLink).mock.lastCall?.[1].id).toBe(second.id);
+    expect(vi.mocked(HTMLMediaElement.prototype.play).mock.calls).toHaveLength(
+      playCalls
+    );
+    expect(audio.getAttribute("src")).toBe("https://dl.test/first.mp3");
+  });
 });

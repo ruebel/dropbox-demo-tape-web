@@ -38,6 +38,8 @@ type TrackFailure = {
 
 export function Audio() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  // The track whose link is the audio element's source
+  const loadedTrackIdRef = useRef<string | undefined>(undefined);
   const {
     hasNext,
     onNext,
@@ -208,11 +210,39 @@ export function Audio() {
     });
   });
 
+  const handlePlayRejected = useEffectEvent((error: unknown) => {
+    const name = error instanceof DOMException ? error.name : "";
+
+    if (name === "AbortError") {
+      // A newer load or a pause replaced this play request, which is expected
+      return;
+    }
+
+    if (name === "NotAllowedError") {
+      // The browser blocks playback the user did not start, such as the next
+      // track in a background tab. Show the play button so they can start it.
+      setAudioState("paused");
+      return;
+    }
+
+    // Problems with the file itself also fire the audio element's error
+    // event, which reports them, so only log here to avoid reporting twice
+    logError(error as Error);
+  });
+
   // Updates playing track when changes
   useEffect(() => {
     // Set when the effect runs again, so a late result from this run is
     // ignored. Otherwise a stale load could still set the source or an error.
     let isStale = false;
+
+    // play() returns a promise that rejects when playback cannot start
+    function startPlayback(player: HTMLAudioElement) {
+      player.play().catch((error: unknown) => {
+        if (!isStale) handlePlayRejected(error);
+      });
+      setMediaState("playing");
+    }
 
     async function updatePlayer() {
       const player = audioRef.current;
@@ -226,9 +256,10 @@ export function Audio() {
           if (isStale) return;
 
           player.setAttribute("src", fileLink.link);
+          // Loading a renamed file switches the playing track to the new id
+          loadedTrackIdRef.current = fileLink.metadata.id;
 
-          player.play();
-          setMediaState("playing");
+          startPlayback(player);
 
           handleTrackLoaded(fileLink.metadata as FileMeta);
         } catch (error) {
@@ -237,8 +268,13 @@ export function Audio() {
           return;
         }
       } else if (track && audioState === "playing") {
-        player.play();
-        setMediaState("playing");
+        if (loadedTrackIdRef.current !== track.id) {
+          // The source is another track's, because this track's load was
+          // cancelled (for example, paused while loading), so load it now
+          setAudioState("loading");
+          return;
+        }
+        startPlayback(player);
       } else if (audioState === "paused") {
         player.pause();
         setMediaState("paused");
