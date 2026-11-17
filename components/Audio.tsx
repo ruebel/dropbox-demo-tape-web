@@ -1,5 +1,6 @@
 "use client";
 
+import { getTrackLink } from "@/api/track";
 import { useAudio } from "@/hooks/useAudio";
 import { logError } from "@/hooks/useErrorTracking";
 import {
@@ -11,26 +12,56 @@ import {
   volumeAtom,
 } from "@/state/audio";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
-import { imageMapAtom } from "@/state/image";
-import { removeExtension } from "@/utils/file";
+import { brokenImageIdsAtom, imageMapAtom } from "@/state/image";
+import {
+  getMediaErrorMessage,
+  getTrackErrorMessage,
+  isPathNotFoundError,
+  isTransientError,
+  MEDIA_ERROR,
+} from "@/utils/error";
+import { getImageMimeType, removeExtension } from "@/utils/file";
 import {
   setMediaDuration,
   setMediaHandlers,
   setMediaState,
   setMediaTrack,
 } from "@/utils/mediaSession";
-import { FileMeta } from "@/utils/types";
+import { FileMeta, TrackErrorCode } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import {
+  useCallback,
+  useEffect,
+  useEffectEvent,
+  useRef,
+  useState,
+} from "react";
+
+type TrackFailure = {
+  errorCode?: TrackErrorCode;
+  // Says nothing about the file, so it is not saved in the shared playlist
+  isTransient: boolean;
+  message: string;
+};
 
 export function Audio() {
   const audioRef = useRef<HTMLAudioElement>(null);
+  // The track whose link is the audio element's source
+  const loadedTrackIdRef = useRef<string | undefined>(undefined);
+  // The track that already got a fresh link after an audio error, so a
+  // second error fails it instead of retrying forever
+  const retriedTrackIdRef = useRef<string | undefined>(undefined);
+  // Where to pick up after reloading a track that stopped with an error
+  const resumeAtRef = useRef<number | undefined>(undefined);
+  // Bumped to load the current track again even when already "loading"
+  const [reloadCount, setReloadCount] = useState(0);
   const {
     hasNext,
     onNext,
     onPause,
     onPrevious,
     onResume,
+    onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
     onStop,
@@ -42,13 +73,18 @@ export function Audio() {
   const [position, setPosition] = useAtom(audioPostionAtom);
   const [audioDuration, setAudioDuration] = useAtom(durationAtom);
   const imageMap = useAtomValue(imageMapAtom);
+  const brokenImageIds = useAtomValue(brokenImageIdsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const dbx = useAtomValue(dbxAtom);
   const isMuted = useAtomValue(isMutedAtom);
   const volume = useAtomValue(volumeAtom);
   const [seekTo, setSeekTo] = useAtom(seekToAtom);
 
-  const imagePath = imageMap[playlist?.data?.image?.id || ""];
+  const image = playlist?.data?.image;
+  // A broken image would leave the lock screen blank, so use the app icons
+  const imagePath =
+    image && !brokenImageIds.has(image.id) ? imageMap[image.id] : undefined;
+  const imageType = image ? getImageMimeType(image.name) : undefined;
 
   // Track playing time since Chrome has a bug where it doesn't allways
   // fire the progress event
@@ -132,6 +168,12 @@ export function Audio() {
     setAudioState("playing");
   }, [setAudioState, setPosition]);
 
+  // Playback really started, so the track can get a fresh link again if it
+  // fails later (for example, its link expires during a long pause)
+  const handlePlaybackStarted = useCallback(() => {
+    retriedTrackIdRef.current = undefined;
+  }, []);
+
   const handleProgress = useCallback(() => {
     const player = audioRef.current;
     if (!player) return;
@@ -146,21 +188,119 @@ export function Audio() {
         title: removeExtension(track?.name),
         artist: playlist?.data?.artist || playlist?.data?.title,
         album: playlist?.data?.title || "Demo Tape",
+        // Without artwork, setMediaTrack uses the app icons. The image's size
+        // is not known, so `sizes` is left out rather than guessed, and so
+        // is `type` when the extension is not a known image type.
         artwork: imagePath
-          ? [
-              {
-                src: imagePath,
-                sizes: "50x50",
-                type: "image/png",
-              },
-            ]
+          ? [{ src: imagePath, ...(imageType && { type: imageType }) }]
           : undefined,
       });
     }
-  }, [track?.id, imagePath, playlist?.meta?.id]);
+  }, [track?.id, imagePath, imageType, playlist?.meta?.id]);
+
+  // Records why the playing track failed, then moves to the next track or
+  // stops. Errors about the file are saved in the shared playlist. Transient
+  // errors (connection, rate limit, server) are shown for this session only.
+  function failTrack({ errorCode, isTransient, message }: TrackFailure) {
+    if (isTransient) {
+      onSetSessionTrackError(message);
+    } else {
+      onSetTrackError(message, errorCode);
+    }
+
+    if (hasNext) {
+      onNext();
+    } else {
+      setAudioState("stopped");
+    }
+  }
+
+  // Called when a load finishes. They read the latest state when they run,
+  // so they are not dependencies of the effect below and do not restart it.
+  const handleTrackLoaded = useEffectEvent((meta: FileMeta) => {
+    // If this track previously had an error we need to clear it
+    // or if it was updated or moved on the server
+    onUpdateTrackMeta(meta);
+  });
+
+  const handleTrackFailed = useEffectEvent((error: unknown) => {
+    logError(error as Error);
+    failTrack({
+      message: getTrackErrorMessage(error),
+      // The file is gone at its path and its id, so offer to replace it
+      errorCode: isPathNotFoundError(error) ? "not_found" : undefined,
+      isTransient: isTransientError(error),
+    });
+  });
+
+  // The audio element could not load or play its source
+  function handleMediaError() {
+    const player = audioRef.current;
+    const code = player?.error?.code;
+
+    // Aborted means we changed the source ourselves. A source that belongs
+    // to another track is an old load that no longer matters.
+    if (
+      !player ||
+      !track ||
+      !code ||
+      code === MEDIA_ERROR.aborted ||
+      loadedTrackIdRef.current !== track.id
+    ) {
+      return;
+    }
+
+    if (retriedTrackIdRef.current !== track.id) {
+      // First error: the link may have expired (they last about 4 hours), so
+      // get a fresh one and pick up where playback stopped
+      retriedTrackIdRef.current = track.id;
+      resumeAtRef.current = player.currentTime;
+      setReloadCount((count) => count + 1);
+      setAudioState("loading");
+      return;
+    }
+
+    logError(new Error(`Audio element error ${code}`));
+    failTrack({
+      message: getMediaErrorMessage(code),
+      isTransient: code === MEDIA_ERROR.network,
+    });
+  }
+
+  const handlePlayRejected = useEffectEvent((error: unknown) => {
+    const name = error instanceof DOMException ? error.name : "";
+
+    if (name === "AbortError") {
+      // A newer load or a pause replaced this play request, which is expected
+      return;
+    }
+
+    if (name === "NotAllowedError") {
+      // The browser blocks playback the user did not start, such as the next
+      // track in a background tab. Show the play button so they can start it.
+      setAudioState("paused");
+      return;
+    }
+
+    // Problems with the file itself also fire the audio element's error
+    // event, which reports them, so only log here to avoid reporting twice
+    logError(error as Error);
+  });
 
   // Updates playing track when changes
   useEffect(() => {
+    // Set when the effect runs again, so a late result from this run is
+    // ignored. Otherwise a stale load could still set the source or an error.
+    let isStale = false;
+
+    // play() returns a promise that rejects when playback cannot start
+    function startPlayback(player: HTMLAudioElement) {
+      player.play().catch((error: unknown) => {
+        if (!isStale) handlePlayRejected(error);
+      });
+      setMediaState("playing");
+    }
+
     async function updatePlayer() {
       const player = audioRef.current;
 
@@ -169,34 +309,35 @@ export function Audio() {
       if (track && track.path_lower && audioState === "loading") {
         // This is not a resume so we need to load the file
         try {
-          const fileLink = await dbx.filesGetTemporaryLink({
-            path: track.path_lower,
-          });
+          const fileLink = await getTrackLink(dbx, track);
+          if (isStale) return;
 
-          player.setAttribute("src", fileLink?.result?.link);
+          player.setAttribute("src", fileLink.link);
+          // Loading a renamed file switches the playing track to the new id
+          loadedTrackIdRef.current = fileLink.metadata.id;
 
-          player.play();
-          setMediaState("playing");
-
-          // If this track previously had an error we need to clear it
-          // or if it was updated on the server
-          onUpdateTrackMeta(fileLink.result.metadata as FileMeta);
-        } catch (error) {
-          // We failed to load the track so mark it as errored
-          logError(error as Error);
-          onSetTrackError("Failed to load track");
-
-          if (hasNext) {
-            onNext();
-          } else {
-            setAudioState("stopped");
+          if (resumeAtRef.current !== undefined) {
+            // Reloaded after an error, so continue from the same spot
+            player.currentTime = resumeAtRef.current;
+            resumeAtRef.current = undefined;
           }
 
+          startPlayback(player);
+
+          handleTrackLoaded(fileLink.metadata as FileMeta);
+        } catch (error) {
+          if (isStale) return;
+          handleTrackFailed(error);
           return;
         }
       } else if (track && audioState === "playing") {
-        player.play();
-        setMediaState("playing");
+        if (loadedTrackIdRef.current !== track.id) {
+          // The source is another track's, because this track's load was
+          // cancelled (for example, paused while loading), so load it now
+          setAudioState("loading");
+          return;
+        }
+        startPlayback(player);
       } else if (audioState === "paused") {
         player.pause();
         setMediaState("paused");
@@ -209,14 +350,16 @@ export function Audio() {
     }
 
     updatePlayer();
+
+    return () => {
+      isStale = true;
+    };
   }, [
     audioState,
     dbx,
     isAuthenticated,
-    onSetTrackDuration,
-    onSetTrackError,
-    onUpdateTrackMeta,
     playlist?.meta?.id,
+    reloadCount,
     track?.id,
   ]);
 
@@ -240,7 +383,9 @@ export function Audio() {
     <audio
       onDurationChange={handleDurationChange}
       onEnded={handleEnded}
+      onError={handleMediaError}
       onPlay={handlePlaying}
+      onPlaying={handlePlaybackStarted}
       onProgress={handleProgress}
       ref={audioRef}
     />

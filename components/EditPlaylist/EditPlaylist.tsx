@@ -2,14 +2,19 @@
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import { TextInput } from "@/components/TextInput/TextInput";
-import { artistsAtom, playlistAtom } from "@/state/playlists";
-import { useAtom, useAtomValue } from "jotai";
+import {
+  artistsAtom,
+  playlistAtom,
+  updatePlaylistAtom,
+} from "@/state/playlists";
+import { mergeEditedTracks } from "@/utils/playlist";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
-import { Playlist, PlaylistTrack } from "@/utils/types";
+import { PlaylistTrack } from "@/utils/types";
 import {
   editPlaylistImageUrl,
   editPlaylistTracksUrl,
@@ -24,7 +29,8 @@ type EditPlaylistProps = {
 };
 
 export function EditPlaylist({ id }: EditPlaylistProps) {
-  const [playlist, savePlaylist] = useAtom(playlistAtom(id));
+  const playlist = useAtomValue(playlistAtom(id));
+  const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [isDirty, setIsDirty] = useState(false);
   const [artist, setArtist] = useState(playlist?.data.artist || "");
   const [title, setTitle] = useState(playlist?.data.title || "");
@@ -51,15 +57,20 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   async function handleSave() {
     if (!playlist) return;
 
-    await savePlaylist({
-      ...playlist,
-      data: {
-        ...playlist.data,
-        artist,
-        title,
-        tracks,
-      },
-    } as Playlist);
+    // Applies only this page's edits to the latest saved playlist, so changes
+    // the player saved while the page was open are kept
+    await updatePlaylist({
+      playlistId: id,
+      update: (latest) => ({
+        ...latest,
+        data: {
+          ...latest.data,
+          artist,
+          title,
+          tracks: mergeEditedTracks(latest.data.tracks, tracks),
+        },
+      }),
+    });
 
     push(playlistUrl(id));
   }

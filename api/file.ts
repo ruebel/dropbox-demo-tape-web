@@ -4,8 +4,8 @@ import {
   isImageOrFolder,
   transformFile,
 } from "@/utils/file";
-import { EnhancedFileMeta } from "@/utils/types";
-import { Dropbox } from "dropbox";
+import { EnhancedFileMeta, FileMeta } from "@/utils/types";
+import { Dropbox, files } from "dropbox";
 
 export async function getFiles(
   dbx: Dropbox,
@@ -58,4 +58,41 @@ export async function uploadFile(dbx: Dropbox, data: any, path: string) {
   });
 
   return result;
+}
+
+// The largest page size search allows
+const SEARCH_PAGE_SIZE = 1000;
+
+/**
+ * Searches the user's Dropbox and reads every page of results. Returns files
+ * only (not folders whose name happens to match), and each file only once
+ * because pages can repeat a match.
+ */
+export async function searchFiles(
+  dbx: Dropbox,
+  query: string,
+  options: Omit<files.SearchOptions, "max_results"> = {}
+): Promise<FileMeta[]> {
+  let { result } = await dbx.filesSearchV2({
+    query,
+    options: { ...options, max_results: SEARCH_PAGE_SIZE },
+  });
+  const matches = [...result.matches];
+
+  while (result.has_more && result.cursor) {
+    ({ result } = await dbx.filesSearchContinueV2({ cursor: result.cursor }));
+    matches.push(...result.matches);
+  }
+
+  const found = new Map<string, FileMeta>();
+  for (const { metadata } of matches) {
+    if (metadata[".tag"] !== "metadata") continue;
+
+    const file = metadata.metadata;
+    if (file[".tag"] === "file" && !found.has(file.id)) {
+      found.set(file.id, file as FileMeta);
+    }
+  }
+
+  return [...found.values()];
 }

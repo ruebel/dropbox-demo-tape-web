@@ -2,19 +2,21 @@ import {
   audioStateAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
+  sessionTrackErrorsAtom,
 } from "@/state/audio";
-import { playlistAtom } from "@/state/playlists";
-import { fileMetaHasBeenUpdated } from "@/utils/file";
-import { replaceItemAtIndex } from "@/utils/list";
-import { FileMeta } from "@/utils/types";
-import { useAtom } from "jotai";
+import { playlistAtom, updatePlaylistTrackAtom } from "@/state/playlists";
+import { updateTrackMeta } from "@/utils/file";
+import { FileMeta, PlaylistTrack, TrackErrorCode } from "@/utils/types";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function useAudio() {
   const [playingPlaylistId, setPlayingPlaylistId] = useAtom(
     playingPlaylistIdAtom
   );
   const [playingTrackId, setPlayingTrackId] = useAtom(playingTrackIdAtom);
-  const [playlist, setPlaylist] = useAtom(playlistAtom(playingPlaylistId));
+  const playlist = useAtomValue(playlistAtom(playingPlaylistId));
+  const updatePlaylistTrack = useSetAtom(updatePlaylistTrackAtom);
+  const setSessionTrackErrors = useSetAtom(sessionTrackErrorsAtom);
   const [audioState, setAudioState] = useAtom(audioStateAtom);
 
   const tracks = playlist?.data.tracks || [];
@@ -50,37 +52,42 @@ export function useAudio() {
     setAudioState("playing");
   }
 
-  function onSetTrackDuration(duration: number) {
-    // Ensure that we are currently playing a track and that the duration is different
-    // from what we have stored in the playlist
-    if (playlist && track && trackIndex > -1 && track.duration !== duration) {
-      const updatedTrack = { ...track, duration };
+  // Saves a change to the playing track. The update runs against the latest
+  // saved track, not the one from this render, so changes made close together
+  // do not overwrite each other.
+  function updatePlayingTrack(
+    update: (track: PlaylistTrack) => PlaylistTrack | undefined
+  ) {
+    if (!playlist || !track) return;
 
-      // Save the new duration in the playlist so we have it preloaded next time
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
-    }
+    updatePlaylistTrack({
+      playlistId: playlist.meta.id,
+      trackId: track.id,
+      update,
+    });
   }
 
-  function onSetTrackError(error: string | undefined) {
-    // Ensure that we are currently playing a track
-    if (playlist && track && trackIndex > -1) {
-      const updatedTrack = { ...track, error };
+  function onSetTrackDuration(duration: number) {
+    // Save the new duration in the playlist so we have it preloaded next time
+    updatePlayingTrack((t) =>
+      t.duration === duration ? undefined : { ...t, duration }
+    );
+  }
 
-      // Save the new duration in the playlist so we have it preloaded next time
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
-    }
+  // Saves the error in the shared playlist, for errors about the file itself
+  function onSetTrackError(error: string, errorCode?: TrackErrorCode) {
+    updatePlayingTrack((t) =>
+      t.error === error && t.errorCode === errorCode
+        ? undefined
+        : { ...t, error, errorCode }
+    );
+  }
+
+  // Shows the error for this session only, for errors that say nothing about
+  // the file, such as a dropped connection
+  function onSetSessionTrackError(error: string) {
+    if (!track) return;
+    setSessionTrackErrors((errors) => ({ ...errors, [track.id]: error }));
   }
 
   function onStop() {
@@ -88,31 +95,24 @@ export function useAudio() {
   }
 
   function onUpdateTrackMeta(meta: FileMeta) {
-    // Ensure that we are currently playing a track
-    if (
-      playlist &&
-      track &&
-      trackIndex > -1 &&
-      // If the track has been updated or has a cached error
-      // which we want to clear
-      (fileMetaHasBeenUpdated(meta, track) || track.error)
-    ) {
-      const updatedTrack = { ...track, ...meta, error: undefined };
+    if (!track) return;
 
-      // Save the new track meta
-      setPlaylist({
-        ...playlist,
-        data: {
-          ...playlist.data,
-          tracks: replaceItemAtIndex(tracks, trackIndex, updatedTrack),
-        },
-      });
+    // Undefined when the track is unchanged and has no error to clear
+    updatePlayingTrack((t) => updateTrackMeta(t, meta));
 
-      // The id can change when the server rev is updated
-      // so we want to update our playing track id
-      if (updatedTrack.id !== track.id) {
-        setPlayingTrackId(updatedTrack.id);
-      }
+    // The track loaded, so a session error from an earlier try is out of date
+    const trackId = track.id;
+    setSessionTrackErrors((errors) => {
+      if (!(trackId in errors)) return errors;
+      const remaining = { ...errors };
+      delete remaining[trackId];
+      return remaining;
+    });
+
+    // The id can change when the server rev is updated
+    // so we want to update our playing track id
+    if (meta.id !== track.id) {
+      setPlayingTrackId(meta.id);
     }
   }
 
@@ -125,6 +125,7 @@ export function useAudio() {
     onPlay,
     onPrevious,
     onResume,
+    onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
     onStop,

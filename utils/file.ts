@@ -1,4 +1,11 @@
-import { EnhancedFileMeta, FileMeta, SortDir, UserMap } from "@/utils/types";
+import { DEMO_FILE_EXT } from "@/utils/constants";
+import {
+  EnhancedFileMeta,
+  FileMeta,
+  PlaylistTrack,
+  SortDir,
+  UserMap,
+} from "@/utils/types";
 
 export function getModifiedBy(entry: FileMeta) {
   return entry?.sharing_info?.modified_by || "";
@@ -9,7 +16,10 @@ export function getModifiedUsersFromEntries(entries: FileMeta[]) {
 }
 
 export function getExtension(name: string) {
-  return name?.split(".")?.pop() || "";
+  // Lowercase so "Song.MP3" and "song.mp3" are the same type. Empty when the
+  // name has no extension.
+  const dot = name?.lastIndexOf(".") ?? -1;
+  return dot === -1 ? "" : name.slice(dot + 1).toLowerCase();
 }
 
 export function getPathWithoutFileName(path: string) {
@@ -23,8 +33,23 @@ export function isAudioFile(name: string) {
   return ["mp3", "m4a", "ovw", "wav"].includes(getExtension(name));
 }
 
+// The image types a playlist image can be, by file extension
+const IMAGE_TYPES: Record<string, string> = {
+  jpeg: "image/jpeg",
+  jpg: "image/jpeg",
+  png: "image/png",
+};
+
 export function isImage(name: string) {
-  return ["png", "jpg", "jpeg"].includes(getExtension(name));
+  return Object.hasOwn(IMAGE_TYPES, getExtension(name));
+}
+
+/**
+ * The MIME type of an image file from its name, or undefined when the
+ * extension is not a known image type
+ */
+export function getImageMimeType(name: string): string | undefined {
+  return IMAGE_TYPES[getExtension(name)];
 }
 
 export function isFile(entry: FileMeta) {
@@ -44,7 +69,7 @@ export function isImageOrFolder(entry: FileMeta) {
 }
 
 export function isPlaylist(name: string) {
-  return getExtension(name) === "mix";
+  return getExtension(name) === DEMO_FILE_EXT;
 }
 
 /**
@@ -69,6 +94,33 @@ export function fileMetaHasBeenUpdated(meta: FileMeta, prevMeta: FileMeta) {
     meta.server_modified !== prevMeta.server_modified ||
     meta.rev !== prevMeta.rev
   );
+}
+
+/**
+ * Applies fresh Dropbox metadata to a saved playlist track and clears its
+ * error. Returns undefined when the track has no error and nothing it stores
+ * has changed, so the playlist does not need saving.
+ */
+export function updateTrackMeta(
+  track: PlaylistTrack,
+  meta: FileMeta
+): PlaylistTrack | undefined {
+  const hasChanged =
+    fileMetaHasBeenUpdated(meta, track) ||
+    // A moved or renamed file keeps its rev but has a new path
+    meta.path_lower !== track.path_lower;
+
+  if (!hasChanged && !track.error && !track.errorCode) {
+    return undefined;
+  }
+
+  return {
+    ...track,
+    // Link metadata comes back without a ".tag"
+    ...transformFile({ ...meta, ".tag": "file" }),
+    error: undefined,
+    errorCode: undefined,
+  };
 }
 
 export function removeExtension(fileName = "") {

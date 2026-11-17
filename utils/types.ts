@@ -9,9 +9,14 @@ export type FileMeta = files.FileMetadata & {
 
 export type ImageMap = Record<string, string>;
 
+// Why a track failed to load, for the app to act on. `error` holds the
+// message for the user.
+export type TrackErrorCode = "not_found";
+
 export type EnhancedFileMeta = FileMeta & {
   duration?: number;
   error?: string;
+  errorCode?: TrackErrorCode;
   isAudioFile: boolean;
   isFolder: boolean;
   isPlaylist: boolean;

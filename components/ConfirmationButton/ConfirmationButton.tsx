@@ -1,15 +1,17 @@
-import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
+import { ButtonLink, ButtonSize } from "@/components/ButtonLink/ButtonLink";
 import { useState, useEffect } from "react";
 
 type ConfirmationButtonProps = {
   message?: string;
   onClick: () => void;
+  size?: ButtonSize;
 };
 
 export function ConfirmationButton({
   children,
   message,
   onClick,
+  size,
 }: ConfirmationButtonProps & React.PropsWithChildren) {
   const [isConfirming, setIsConfirming] = useState(false);
 
@@ -27,10 +29,16 @@ export function ConfirmationButton({
   }
 
   return isConfirming ? (
-    <ButtonLink onBlur={() => setIsConfirming(false)} onClick={onClick}>
+    <ButtonLink
+      onBlur={() => setIsConfirming(false)}
+      onClick={onClick}
+      size={size}
+    >
       {message || "Are you sure?"}
     </ButtonLink>
   ) : (
-    <ButtonLink onClick={onConfirm}>{children}</ButtonLink>
+    <ButtonLink onClick={onConfirm} size={size}>
+      {children}
+    </ButtonLink>
   );
 }

@@ -3,6 +3,7 @@ import { ConfirmationButton } from "@/components/ConfirmationButton/Confirmation
 import { List } from "@/components/List/List";
 import { PlaylistHeader } from "@/components/PlaylistHeader/PlaylistHeader";
 import { Progress } from "@/components/Progress/Progress";
+import { ReplaceTrack } from "@/components/ReplaceTrack/ReplaceTrack";
 import { Track } from "@/components/Track/Track";
 import { useAudio } from "@/hooks/useAudio";
 import { useDeletePlaylist } from "@/hooks/useDeletePlaylist";
@@ -61,9 +62,27 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
       <List
         getKey={(t) => t.id}
         items={playlist.data.tracks}
-        itemRenderer={(track, index) => (
-          <Track index={index + 1} onClick={handleTrackClick} track={track} />
-        )}
+        itemRenderer={(track, index) => {
+          // The replace row under a missing track shows its error message
+          const isMissing = track.errorCode === "not_found";
+          const row = (
+            <Track
+              index={index + 1}
+              onClick={handleTrackClick}
+              showErrorTooltip={!isMissing}
+              track={track}
+            />
+          );
+
+          return isMissing ? (
+            <div className={styles.missingTrack}>
+              {row}
+              <ReplaceTrack playlist={playlist} track={track} />
+            </div>
+          ) : (
+            row
+          );
+        }}
       />
     </div>
   );

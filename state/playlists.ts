@@ -5,9 +5,10 @@ import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
+import { replaceItemAtIndex } from "@/utils/list";
 import { loadable } from "@/utils/loadable";
 import { planPlaylistSync } from "@/utils/playlistSync";
-import { Playlist, PlaylistSortType } from "@/utils/types";
+import { Playlist, PlaylistSortType, PlaylistTrack } from "@/utils/types";
 import { atom } from "jotai";
 import { atomEffect } from "jotai-effect";
 import { atomFamily } from "jotai-family";
@@ -99,9 +100,7 @@ export const playlistAtom = atomFamily((id: string | null) =>
     (get) =>
       id ? get(playlistsAtom).find((p) => p.meta.id === id) || null : null,
     async (get, set, playlist: Playlist) => {
-      const playlists = get(playlistsAtom);
       const dbx = get(dbxAtom);
-      const index = playlists.findIndex((p) => p.meta.id === playlist.meta.id);
 
       // update file to dropbox and get new meta
       const meta = await uploadFile(
@@ -113,7 +112,11 @@ export const playlistAtom = atomFamily((id: string | null) =>
       // Create new playlist shape with updated meta
       const newPlaylist = { ...playlist, meta } as Playlist;
 
-      let newPlaylists = [...playlists];
+      // Read the list after the upload, so a save to another playlist that
+      // finished in the meantime is kept
+      const playlists = get(playlistsAtom);
+      const index = playlists.findIndex((p) => p.meta.id === playlist.meta.id);
+      const newPlaylists = [...playlists];
       if (index > -1) {
         // Updating an existing playlis
         newPlaylists[index] = newPlaylist;
@@ -125,6 +128,79 @@ export const playlistAtom = atomFamily((id: string | null) =>
       set(playlistsAtom, newPlaylists);
     }
   )
+);
+
+type PlaylistUpdate = {
+  playlistId: string;
+  // Returns the changed playlist, or undefined when nothing needs saving
+  update: (playlist: Playlist) => Playlist | undefined;
+};
+
+// The last save queued for each playlist. Each store gets its own map.
+const playlistSaveQueuesAtom = atom(() => new Map<string, Promise<void>>());
+
+/**
+ * Updates a playlist and saves it. Saves to the same playlist run one at a
+ * time, and each one applies its update to the latest saved playlist, so two
+ * updates close together cannot overwrite each other.
+ */
+export const updatePlaylistAtom = atom(
+  null,
+  (get, set, { playlistId, update }: PlaylistUpdate) => {
+    const queues = get(playlistSaveQueuesAtom);
+    const previous = queues.get(playlistId) ?? Promise.resolve();
+
+    const save = previous
+      // A failed save must not block the saves queued after it
+      .catch(() => {})
+      .then(async () => {
+        const playlist = get(playlistAtom(playlistId));
+        if (!playlist) return;
+
+        const updatedPlaylist = update(playlist);
+        if (!updatedPlaylist) return;
+
+        await set(playlistAtom(playlistId), updatedPlaylist);
+      });
+
+    queues.set(playlistId, save);
+    return save;
+  }
+);
+
+type PlaylistTrackUpdate = {
+  playlistId: string;
+  trackId: string;
+  // Returns the changed track, or undefined when nothing needs saving
+  update: (track: PlaylistTrack) => PlaylistTrack | undefined;
+};
+
+/**
+ * Updates one track in a playlist and saves the playlist, in the same queue
+ * as updatePlaylistAtom
+ */
+export const updatePlaylistTrackAtom = atom(
+  null,
+  (_get, set, { playlistId, trackId, update }: PlaylistTrackUpdate) =>
+    set(updatePlaylistAtom, {
+      playlistId,
+      update: (playlist) => {
+        const tracks = playlist.data.tracks;
+        const index = tracks.findIndex((t) => t.id === trackId);
+        if (index === -1) return undefined;
+
+        const updatedTrack = update(tracks[index]);
+        if (!updatedTrack) return undefined;
+
+        return {
+          ...playlist,
+          data: {
+            ...playlist.data,
+            tracks: replaceItemAtIndex(tracks, index, updatedTrack),
+          },
+        };
+      },
+    })
 );
 
 /**

@@ -1,7 +1,7 @@
 .track {
   align-items: center;
+  /* Transparent so a block around the track (a missing track) shows through */
   background: none;
-  background-color: var(--background);
   border: none;
   border-top: 1px solid var(--bg-highlight);
   color: inherit;
@@ -59,6 +59,12 @@
   }
 }
 
+/* Shows the Tooltip on the error icon */
+.trackError:hover,
+.trackError:focus-visible {
+  --tooltip-display: block;
+}
+
 .play {
   align-items: center;
   border: 1px solid currentColor;
@@ -68,6 +74,7 @@
   height: 30px;
   justify-content: center;
   line-height: 20px;
+  position: relative;
   width: 30px;
 }
 

@@ -1,8 +1,9 @@
 "use client";
 
-import { playlistAtom } from "@/state/playlists";
-import { EnhancedFileMeta, Playlist } from "@/utils/types";
-import { useAtom } from "jotai";
+import { playlistAtom, updatePlaylistAtom } from "@/state/playlists";
+import { mergeEditedTracks } from "@/utils/playlist";
+import { EnhancedFileMeta } from "@/utils/types";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
@@ -18,7 +19,8 @@ type TrackExplorerProps = {
 };
 
 export function TrackExplorer({ id }: TrackExplorerProps) {
-  const [playlist, savePlaylist] = useAtom(playlistAtom(id));
+  const playlist = useAtomValue(playlistAtom(id));
+  const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [selectedTracks, setSelectedTracks] = useState(
     playlist?.data.tracks || []
   );
@@ -28,13 +30,18 @@ export function TrackExplorer({ id }: TrackExplorerProps) {
   async function handleSave() {
     if (!playlist) return;
 
-    await savePlaylist({
-      ...playlist,
-      data: {
-        ...playlist.data,
-        tracks: selectedTracks,
-      },
-    } as Playlist);
+    // Applies only the track selection to the latest saved playlist, so
+    // changes the player saved while the page was open are kept
+    await updatePlaylist({
+      playlistId: id,
+      update: (latest) => ({
+        ...latest,
+        data: {
+          ...latest.data,
+          tracks: mergeEditedTracks(latest.data.tracks, selectedTracks),
+        },
+      }),
+    });
 
     push(playlistUrl(id));
   }
