@@ -2,9 +2,9 @@
 
 import { Explorer } from "@/components/Explorer/Explorer";
 import { PlaylistHeader } from "@/components/PlaylistHeader/PlaylistHeader";
-import { playlistAtom } from "@/state/playlists";
-import { EnhancedFileMeta, Playlist } from "@/utils/types";
-import { useAtom } from "jotai";
+import { playlistAtom, updatePlaylistAtom } from "@/state/playlists";
+import { EnhancedFileMeta } from "@/utils/types";
+import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
@@ -17,7 +17,8 @@ type ImageExplorerProps = {
 };
 
 export function ImageExplorer({ id }: ImageExplorerProps) {
-  const [playlist, savePlaylist] = useAtom(playlistAtom(id));
+  const playlist = useAtomValue(playlistAtom(id));
+  const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [selectedImage, setSelectedImage] = useState<
     EnhancedFileMeta | undefined
   >(playlist?.data?.image);
@@ -34,13 +35,15 @@ export function ImageExplorer({ id }: ImageExplorerProps) {
   async function handleSave() {
     if (!playlist) return;
 
-    await savePlaylist({
-      ...playlist,
-      data: {
-        ...playlist.data,
-        image: selectedImage,
-      },
-    } as Playlist);
+    // Applies only the image to the latest saved playlist, so changes the
+    // player saved while the page was open are kept
+    await updatePlaylist({
+      playlistId: id,
+      update: (latest) => ({
+        ...latest,
+        data: { ...latest.data, image: selectedImage },
+      }),
+    });
 
     push(playlistUrl(id));
   }
