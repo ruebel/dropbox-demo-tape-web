@@ -13,7 +13,7 @@ import {
 } from "@/state/audio";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import { imageMapAtom } from "@/state/image";
-import { getTrackErrorMessage } from "@/utils/error";
+import { getTrackErrorMessage, isPathNotFoundError } from "@/utils/error";
 import { removeExtension } from "@/utils/file";
 import {
   setMediaDuration,
@@ -184,7 +184,11 @@ export function Audio() {
         } catch (error) {
           // We failed to load the track so mark it as errored
           logError(error as Error);
-          onSetTrackError(getTrackErrorMessage(error));
+          onSetTrackError(
+            getTrackErrorMessage(error),
+            // The file is gone at its path and its id, so offer to replace it
+            isPathNotFoundError(error) ? "not_found" : undefined
+          );
 
           if (hasNext) {
             onNext();

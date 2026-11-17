@@ -1,11 +1,12 @@
 import { Dropbox, DropboxResponseError } from "dropbox";
 import { afterEach, describe, expect, it, vi } from "vitest";
 
-import { getTrackLink } from "@/api/track";
-import { PlaylistTrack } from "@/utils/types";
+import { findFilesByName, getTrackLink } from "@/api/track";
+import { FileMeta, PlaylistTrack } from "@/utils/types";
 
 const filesGetTemporaryLink = vi.fn();
-const dbx = { filesGetTemporaryLink } as unknown as Dropbox;
+const filesSearchV2 = vi.fn();
+const dbx = { filesGetTemporaryLink, filesSearchV2 } as unknown as Dropbox;
 
 const track = {
   id: "id:abc123",
@@ -68,5 +69,100 @@ describe("getTrackLink", () => {
 
     await expect(getTrackLink(dbx, track)).rejects.toBeInstanceOf(TypeError);
     expect(filesGetTemporaryLink).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("findFilesByName", () => {
+  const SHARED_FOLDER = "12889118";
+
+  function file(
+    path: string,
+    { modified = "2026-10-01T12:00:00Z", sharedFolder = "" } = {}
+  ) {
+    return {
+      ".tag": "file",
+      id: `id:${path}`,
+      name: path.split("/").pop(),
+      path_lower: path.toLowerCase(),
+      server_modified: modified,
+      ...(sharedFolder && {
+        sharing_info: { parent_shared_folder_id: sharedFolder, read_only: false },
+      }),
+    } as FileMeta;
+  }
+
+  function searchResult(files: FileMeta[]) {
+    return {
+      result: {
+        has_more: false,
+        matches: files.map((metadata) => ({
+          metadata: { ".tag": "metadata", metadata },
+        })),
+      },
+    };
+  }
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("searches file names by the name without its extension", async () => {
+    filesSearchV2.mockResolvedValue(searchResult([]));
+
+    await findFilesByName(dbx, "Love So Big.mp3");
+
+    expect(filesSearchV2).toHaveBeenCalledWith({
+      query: "Love So Big",
+      options: {
+        file_extensions: ["mp3"],
+        filename_only: true,
+        max_results: 1000,
+      },
+    });
+  });
+
+  it("keeps only exact name matches, ignoring case", async () => {
+    filesSearchV2.mockResolvedValue(
+      searchResult([
+        file("/Demos/love so big.mp3"),
+        file("/Demos/Love So Big (live).mp3"),
+        file("/Demos/Love So Big v2.mp3"),
+      ])
+    );
+
+    const matches = await findFilesByName(dbx, "Love So Big.mp3");
+
+    expect(matches.map((m) => m.path_lower)).toEqual(["/demos/love so big.mp3"]);
+  });
+
+  it("lists files in the shared folder first, then the newest first", async () => {
+    filesSearchV2.mockResolvedValue(
+      searchResult([
+        file("/Private/old/Song.mp3", { modified: "2026-09-01T12:00:00Z" }),
+        file("/Private/new/Song.mp3", { modified: "2026-11-01T12:00:00Z" }),
+        file("/Band/old/Song.mp3", {
+          modified: "2026-08-01T12:00:00Z",
+          sharedFolder: SHARED_FOLDER,
+        }),
+        file("/Band/new/Song.mp3", {
+          modified: "2026-10-01T12:00:00Z",
+          sharedFolder: SHARED_FOLDER,
+        }),
+        file("/Other share/Song.mp3", {
+          modified: "2026-11-02T12:00:00Z",
+          sharedFolder: "999",
+        }),
+      ])
+    );
+
+    const matches = await findFilesByName(dbx, "Song.mp3", SHARED_FOLDER);
+
+    expect(matches.map((m) => m.path_lower)).toEqual([
+      "/band/new/song.mp3",
+      "/band/old/song.mp3",
+      "/other share/song.mp3",
+      "/private/new/song.mp3",
+      "/private/old/song.mp3",
+    ]);
   });
 });

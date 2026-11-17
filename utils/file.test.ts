@@ -44,11 +44,16 @@ describe("updateTrackMeta", () => {
 
   it("clears an error when nothing else changed", () => {
     const updated = updateTrackMeta(
-      { ...track, error: "Failed to load track" },
+      {
+        ...track,
+        error: "This file was moved or deleted in Dropbox",
+        errorCode: "not_found",
+      },
       meta
     );
 
     expect(updated).toBeDefined();
     expect(updated?.error).toBeUndefined();
+    expect(updated?.errorCode).toBeUndefined();
   });
 });

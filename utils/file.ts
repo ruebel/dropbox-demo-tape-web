@@ -91,7 +91,7 @@ export function updateTrackMeta(
     // A moved or renamed file keeps its rev but has a new path
     meta.path_lower !== track.path_lower;
 
-  if (!hasChanged && !track.error) {
+  if (!hasChanged && !track.error && !track.errorCode) {
     return undefined;
   }
 
@@ -100,6 +100,7 @@ export function updateTrackMeta(
     // Link metadata comes back without a ".tag"
     ...transformFile({ ...meta, ".tag": "file" }),
     error: undefined,
+    errorCode: undefined,
   };
 }
 

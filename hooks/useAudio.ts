@@ -5,7 +5,7 @@ import {
 } from "@/state/audio";
 import { playlistAtom, updatePlaylistTrackAtom } from "@/state/playlists";
 import { updateTrackMeta } from "@/utils/file";
-import { FileMeta, PlaylistTrack } from "@/utils/types";
+import { FileMeta, PlaylistTrack, TrackErrorCode } from "@/utils/types";
 import { useAtom, useAtomValue, useSetAtom } from "jotai";
 
 export function useAudio() {
@@ -72,8 +72,12 @@ export function useAudio() {
     );
   }
 
-  function onSetTrackError(error: string | undefined) {
-    updatePlayingTrack((t) => (t.error === error ? undefined : { ...t, error }));
+  function onSetTrackError(error: string, errorCode?: TrackErrorCode) {
+    updatePlayingTrack((t) =>
+      t.error === error && t.errorCode === errorCode
+        ? undefined
+        : { ...t, error, errorCode }
+    );
   }
 
   function onStop() {
