@@ -23,7 +23,7 @@ import {
 } from "@/utils/mediaSession";
 import { FileMeta } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useEffectEvent, useRef } from "react";
 
 export function Audio() {
   const audioRef = useRef<HTMLAudioElement>(null);
@@ -161,8 +161,36 @@ export function Audio() {
     }
   }, [track?.id, imagePath, playlist?.meta?.id]);
 
+  // Called when a load finishes. They read the latest state when they run,
+  // so they are not dependencies of the effect below and do not restart it.
+  const handleTrackLoaded = useEffectEvent((meta: FileMeta) => {
+    // If this track previously had an error we need to clear it
+    // or if it was updated or moved on the server
+    onUpdateTrackMeta(meta);
+  });
+
+  const handleTrackFailed = useEffectEvent((error: unknown) => {
+    // We failed to load the track so mark it as errored
+    logError(error as Error);
+    onSetTrackError(
+      getTrackErrorMessage(error),
+      // The file is gone at its path and its id, so offer to replace it
+      isPathNotFoundError(error) ? "not_found" : undefined
+    );
+
+    if (hasNext) {
+      onNext();
+    } else {
+      setAudioState("stopped");
+    }
+  });
+
   // Updates playing track when changes
   useEffect(() => {
+    // Set when the effect runs again, so a late result from this run is
+    // ignored. Otherwise a stale load could still set the source or an error.
+    let isStale = false;
+
     async function updatePlayer() {
       const player = audioRef.current;
 
@@ -172,30 +200,17 @@ export function Audio() {
         // This is not a resume so we need to load the file
         try {
           const fileLink = await getTrackLink(dbx, track);
+          if (isStale) return;
 
           player.setAttribute("src", fileLink.link);
 
           player.play();
           setMediaState("playing");
 
-          // If this track previously had an error we need to clear it
-          // or if it was updated or moved on the server
-          onUpdateTrackMeta(fileLink.metadata as FileMeta);
+          handleTrackLoaded(fileLink.metadata as FileMeta);
         } catch (error) {
-          // We failed to load the track so mark it as errored
-          logError(error as Error);
-          onSetTrackError(
-            getTrackErrorMessage(error),
-            // The file is gone at its path and its id, so offer to replace it
-            isPathNotFoundError(error) ? "not_found" : undefined
-          );
-
-          if (hasNext) {
-            onNext();
-          } else {
-            setAudioState("stopped");
-          }
-
+          if (isStale) return;
+          handleTrackFailed(error);
           return;
         }
       } else if (track && audioState === "playing") {
@@ -213,16 +228,11 @@ export function Audio() {
     }
 
     updatePlayer();
-  }, [
-    audioState,
-    dbx,
-    isAuthenticated,
-    onSetTrackDuration,
-    onSetTrackError,
-    onUpdateTrackMeta,
-    playlist?.meta?.id,
-    track?.id,
-  ]);
+
+    return () => {
+      isStale = true;
+    };
+  }, [audioState, dbx, isAuthenticated, playlist?.meta?.id, track?.id]);
 
   // Handle volume / mute changes
   useEffect(() => {
