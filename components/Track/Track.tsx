@@ -4,6 +4,7 @@ import { ErrorIcon } from "@/components/icons/ErrorIcon";
 import { HeadsetIcon } from "@/components/icons/HeadsetIcon";
 import { PauseIcon } from "@/components/icons/PauseIcon";
 import { PlayIcon } from "@/components/icons/PlayIcon";
+import { Tooltip } from "@/components/Tooltip/Tooltip";
 import { audioStateAtom, playingTrackIdAtom } from "@/state/audio";
 import { userByIdAtom } from "@/state/users";
 import { getModifiedBy, removeExtension } from "@/utils/file";
@@ -49,15 +50,7 @@ export function Track({
         {track.error ? (
           <>
             <ErrorIcon size={20} />
-            {hasErrorTooltip && (
-              <span
-                className={styles.errorTooltip}
-                id={errorId}
-                role="tooltip"
-              >
-                {track.error}
-              </span>
-            )}
+            {hasErrorTooltip && <Tooltip id={errorId}>{track.error}</Tooltip>}
           </>
         ) : isPlaying ? (
           audioState === "playing" ? (

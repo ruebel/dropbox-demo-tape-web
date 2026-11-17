@@ -1,0 +1,33 @@
+/*
+ * Sits above its anchor, lined up with the anchor's left edge. Hidden until
+ * an ancestor sets --tooltip-display, for example on hover.
+ */
+.tooltip {
+  background-color: var(--background-light);
+  border-radius: 4px;
+  bottom: calc(100% + 8px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: var(--primary);
+  display: var(--tooltip-display, none);
+  font-size: 14px;
+  left: 0;
+  line-height: 20px;
+  max-width: min(300px, 70vw);
+  padding: var(--space-small) var(--space-medium);
+  position: absolute;
+  text-align: left;
+  width: max-content;
+  /* Above overlays that the anchor's parent draws, like "Edit Image" */
+  z-index: 2;
+}
+
+/* Arrow that points down near the anchor's left edge (the center of a 30px
+   anchor) */
+.tooltip::after {
+  border: 6px solid transparent;
+  border-top-color: var(--background-light);
+  content: "";
+  left: 9px;
+  position: absolute;
+  top: 100%;
+}
