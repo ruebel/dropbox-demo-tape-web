@@ -11,18 +11,19 @@
   object-fit: cover;
 }
 
-/* Just inside the bottom-right corner, so a parent that hides overflow
-   cannot cut it off */
+/* Inside the bottom-right corner, so a parent that hides overflow cannot cut
+   it off. The offset grows with the image (3% of its size), so the badge
+   stays inside the fallback image's rounded corner (10% of its size). */
 .errorBadge {
   align-items: center;
   background-color: var(--background);
   border-radius: 50%;
-  bottom: 2px;
+  bottom: 3%;
   color: var(--error);
   display: flex;
   justify-content: center;
   position: absolute;
-  right: 2px;
+  right: 3%;
 }
 
 /* Shows the error Tooltip above the image */
