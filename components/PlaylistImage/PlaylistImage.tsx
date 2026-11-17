@@ -4,6 +4,7 @@ import { imageMapAtom } from "@/state/image";
 import { Playlist } from "@/utils/types";
 import { useAtom, useAtomValue } from "jotai";
 import { useEffect, useState } from "react";
+import styles from "./playlistImage.module.css";
 
 const FALLBACK_IMAGE = "/android-icon-96x96.png";
 
@@ -78,6 +79,7 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   return (
     <img
       alt={playlist?.data?.title}
+      className={styles.image}
       height={size === "100%" ? "auto" : size}
       onError={handleError}
       src={showFallback ? FALLBACK_IMAGE : imageUrl}
