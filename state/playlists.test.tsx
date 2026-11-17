@@ -14,6 +14,7 @@ import {
   loadableDBPlaylistFiles,
   playlistSyncErrorAtom,
   playlistsAtom,
+  updatePlaylistAtom,
   updatePlaylistTrackAtom,
 } from "@/state/playlists";
 import { transformFile } from "@/utils/file";
@@ -356,5 +357,25 @@ describe("updatePlaylistTrackAtom", () => {
       duration: 168,
       error: "Failed to load track",
     });
+  });
+
+  it("queues a whole-playlist update behind a track update", async () => {
+    const store = makeStore();
+    const playlistId = playlistFile.id;
+
+    const timed = store.set(updatePlaylistTrackAtom, {
+      playlistId,
+      trackId: "id:track",
+      update: (t) => ({ ...t, duration: 168 }),
+    });
+    const retitled = store.set(updatePlaylistAtom, {
+      playlistId,
+      update: (p) => ({ ...p, data: { ...p.data, title: "Renamed" } }),
+    });
+    await Promise.all([timed, retitled]);
+
+    const [, lastUpload] = vi.mocked(uploadFile).mock.calls[1];
+    expect(lastUpload.title).toBe("Renamed");
+    expect(lastUpload.tracks[0].duration).toBe(168);
   });
 });

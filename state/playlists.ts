@@ -128,25 +128,24 @@ export const playlistAtom = atomFamily((id: string | null) =>
   )
 );
 
-type PlaylistTrackUpdate = {
+type PlaylistUpdate = {
   playlistId: string;
-  trackId: string;
-  // Returns the changed track, or undefined when nothing needs saving
-  update: (track: PlaylistTrack) => PlaylistTrack | undefined;
+  // Returns the changed playlist, or undefined when nothing needs saving
+  update: (playlist: Playlist) => Playlist | undefined;
 };
 
 // The last save queued for each playlist. Each store gets its own map.
-const trackSaveQueuesAtom = atom(() => new Map<string, Promise<void>>());
+const playlistSaveQueuesAtom = atom(() => new Map<string, Promise<void>>());
 
 /**
- * Updates one track in a playlist and saves the playlist. Saves to the same
- * playlist run one at a time, and each one applies its update to the latest
- * saved playlist, so two updates close together cannot overwrite each other.
+ * Updates a playlist and saves it. Saves to the same playlist run one at a
+ * time, and each one applies its update to the latest saved playlist, so two
+ * updates close together cannot overwrite each other.
  */
-export const updatePlaylistTrackAtom = atom(
+export const updatePlaylistAtom = atom(
   null,
-  (get, set, { playlistId, trackId, update }: PlaylistTrackUpdate) => {
-    const queues = get(trackSaveQueuesAtom);
+  (get, set, { playlistId, update }: PlaylistUpdate) => {
+    const queues = get(playlistSaveQueuesAtom);
     const previous = queues.get(playlistId) ?? Promise.resolve();
 
     const save = previous
@@ -154,25 +153,52 @@ export const updatePlaylistTrackAtom = atom(
       .catch(() => {})
       .then(async () => {
         const playlist = get(playlistAtom(playlistId));
-        const tracks = playlist?.data.tracks || [];
-        const index = tracks.findIndex((t) => t.id === trackId);
-        if (!playlist || index === -1) return;
+        if (!playlist) return;
 
-        const updatedTrack = update(tracks[index]);
-        if (!updatedTrack) return;
+        const updatedPlaylist = update(playlist);
+        if (!updatedPlaylist) return;
 
-        await set(playlistAtom(playlistId), {
-          ...playlist,
-          data: {
-            ...playlist.data,
-            tracks: replaceItemAtIndex(tracks, index, updatedTrack),
-          },
-        });
+        await set(playlistAtom(playlistId), updatedPlaylist);
       });
 
     queues.set(playlistId, save);
     return save;
   }
+);
+
+type PlaylistTrackUpdate = {
+  playlistId: string;
+  trackId: string;
+  // Returns the changed track, or undefined when nothing needs saving
+  update: (track: PlaylistTrack) => PlaylistTrack | undefined;
+};
+
+/**
+ * Updates one track in a playlist and saves the playlist, in the same queue
+ * as updatePlaylistAtom
+ */
+export const updatePlaylistTrackAtom = atom(
+  null,
+  (_get, set, { playlistId, trackId, update }: PlaylistTrackUpdate) =>
+    set(updatePlaylistAtom, {
+      playlistId,
+      update: (playlist) => {
+        const tracks = playlist.data.tracks;
+        const index = tracks.findIndex((t) => t.id === trackId);
+        if (index === -1) return undefined;
+
+        const updatedTrack = update(tracks[index]);
+        if (!updatedTrack) return undefined;
+
+        return {
+          ...playlist,
+          data: {
+            ...playlist.data,
+            tracks: replaceItemAtIndex(tracks, index, updatedTrack),
+          },
+        };
+      },
+    })
 );
 
 /**
