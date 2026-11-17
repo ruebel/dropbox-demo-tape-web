@@ -22,10 +22,11 @@ type PlaylistImageProps = {
 
 type ImageState = "none" | "fetched" | "error";
 
-// The badge is about 30% of the image, but stays readable and not too big
+// The badge is about 20% of the image, but stays readable (16px) and not too
+// big (32px): 16px in lists, 21px on the edit page, 32px in the full player
 function getBadgeSize(size: number | string) {
   return typeof size === "number"
-    ? Math.min(32, Math.max(16, Math.round(size * 0.3)))
+    ? Math.min(32, Math.max(16, Math.round(size * 0.2)))
     : 32;
 }
 
