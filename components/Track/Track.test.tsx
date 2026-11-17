@@ -16,10 +16,15 @@ function makeTrack(error?: string) {
   } as PlaylistTrack;
 }
 
-function renderTrack(track: PlaylistTrack) {
+function renderTrack(track: PlaylistTrack, showErrorTooltip?: boolean) {
   render(
     <Provider store={createStore()}>
-      <Track index={1} onClick={() => {}} track={track} />
+      <Track
+        index={1}
+        onClick={() => {}}
+        showErrorTooltip={showErrorTooltip}
+        track={track}
+      />
     </Provider>
   );
 }
@@ -43,6 +48,13 @@ describe("Track", () => {
 
   it("has no tooltip when the track has no error", () => {
     renderTrack(makeTrack());
+
+    expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
+    expect(screen.getByRole("button").getAttribute("aria-describedby")).toBeNull();
+  });
+
+  it("leaves out the tooltip when the message is shown elsewhere", () => {
+    renderTrack(makeTrack("This file was moved or deleted in Dropbox"), false);
 
     expect(screen.queryByRole("tooltip", { hidden: true })).toBeNull();
     expect(screen.getByRole("button").getAttribute("aria-describedby")).toBeNull();

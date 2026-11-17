@@ -17,19 +17,27 @@ import styles from "./track.module.css";
 type TrackProps = {
   index: number;
   onClick: (id: string) => void;
+  // False when the error message is already shown next to the track
+  showErrorTooltip?: boolean;
   track: PlaylistTrack;
 };
 
-export function Track({ index, onClick, track }: TrackProps) {
+export function Track({
+  index,
+  onClick,
+  showErrorTooltip = true,
+  track,
+}: TrackProps) {
   const user = useAtomValue(userByIdAtom(getModifiedBy(track)));
   const playingTrackId = useAtomValue(playingTrackIdAtom);
   const isPlaying = playingTrackId === track.id;
   const audioState = useAtomValue(audioStateAtom);
   const errorId = useId();
+  const hasErrorTooltip = !!track.error && showErrorTooltip;
 
   return (
     <button
-      aria-describedby={track.error ? errorId : undefined}
+      aria-describedby={hasErrorTooltip ? errorId : undefined}
       className={styleArray([
         styles.track,
         isPlaying && styles.trackPlaying,
@@ -41,9 +49,15 @@ export function Track({ index, onClick, track }: TrackProps) {
         {track.error ? (
           <>
             <ErrorIcon size={20} />
-            <span className={styles.errorTooltip} id={errorId} role="tooltip">
-              {track.error}
-            </span>
+            {hasErrorTooltip && (
+              <span
+                className={styles.errorTooltip}
+                id={errorId}
+                role="tooltip"
+              >
+                {track.error}
+              </span>
+            )}
           </>
         ) : isPlaying ? (
           audioState === "playing" ? (

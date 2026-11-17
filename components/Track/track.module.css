@@ -1,7 +1,7 @@
 .track {
   align-items: center;
+  /* Transparent so a block around the track (a missing track) shows through */
   background: none;
-  background-color: var(--background);
   border: none;
   border-top: 1px solid var(--bg-highlight);
   color: inherit;

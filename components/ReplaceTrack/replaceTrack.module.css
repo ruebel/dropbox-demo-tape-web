@@ -1,0 +1,88 @@
+/*
+ * Sits right under its track, inside the block PlaylistDetails draws around
+ * both. Lines up with the track name (10px padding + 40px icon column + gap).
+ */
+.root {
+  display: grid;
+  font-size: 14px;
+  gap: var(--space-medium);
+  padding: var(--space-small) var(--space-large) var(--space-medium) 55px;
+
+  @media screen and (max-width: 768px) {
+    padding: var(--space-small) var(--space-medium) var(--space-medium);
+  }
+}
+
+.matches {
+  display: grid;
+  gap: var(--space-small);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.match {
+  align-items: center;
+  border-bottom: 1px solid var(--bg-highlight);
+  display: grid;
+  gap: var(--space-medium);
+  grid-template-columns: 1fr auto;
+  padding-bottom: var(--space-small);
+}
+
+.matchInfo {
+  display: grid;
+  min-width: 0;
+}
+
+.folder {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.details {
+  color: var(--secondary);
+  font-size: 12px;
+}
+
+.private {
+  color: var(--error);
+}
+
+.footer {
+  align-items: center;
+  display: grid;
+  gap: var(--space-medium);
+  grid-template-columns: 1fr auto;
+
+  /* The message goes on its own line above the buttons */
+  @media screen and (max-width: 768px) {
+    grid-template-columns: 1fr;
+    justify-items: start;
+  }
+}
+
+.message {
+  color: var(--secondary);
+}
+
+/*
+ * So an empty message does not leave a blank line on mobile. Desktop keeps it,
+ * because it holds the buttons in the right column.
+ */
+@media screen and (max-width: 768px) {
+  .message:empty {
+    display: none;
+  }
+}
+
+.error {
+  color: var(--error);
+}
+
+.actions {
+  display: grid;
+  gap: var(--space-medium);
+  grid-auto-flow: column;
+}

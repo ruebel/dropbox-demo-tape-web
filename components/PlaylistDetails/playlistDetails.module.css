@@ -33,3 +33,9 @@
   background-color: var(--highlight);
   color: var(--white);
 }
+
+/* Draws a missing track and the row that offers to replace it as one block */
+.missingTrack {
+  background-color: var(--background-light);
+  box-shadow: inset 3px 0 0 var(--error);
+}
