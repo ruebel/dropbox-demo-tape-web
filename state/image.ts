@@ -13,3 +13,10 @@ export const freshImageLinksAtom = atom<ReadonlySet<string>>(new Set<string>());
 // shows the fallback for these and stops fetching links. Not saved, so a
 // reload tries again.
 export const brokenImageIdsAtom = atom<ReadonlySet<string>>(new Set<string>());
+
+// Link requests still waiting on Dropbox, by image id. Copies of the same
+// image (the playlist header and the player bar) wait on one request instead
+// of each asking for a link. Each store gets its own map.
+export const imageLinkRequestsAtom = atom(
+  () => new Map<string, Promise<string>>()
+);

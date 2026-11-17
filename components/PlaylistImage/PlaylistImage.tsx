@@ -5,6 +5,7 @@ import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import {
   brokenImageIdsAtom,
   freshImageLinksAtom,
+  imageLinkRequestsAtom,
   imageMapAtom,
 } from "@/state/image";
 import { Playlist } from "@/utils/types";
@@ -46,6 +47,7 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
   // which images are broken, and do not keep fetching new links
   const [freshLinks, setFreshLinks] = useAtom(freshImageLinksAtom);
   const [brokenImageIds, setBrokenImageIds] = useAtom(brokenImageIdsAtom);
+  const linkRequests = useAtomValue(imageLinkRequestsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
 
   const mappedImage = imageId ? imageMap[imageId] : undefined;
@@ -59,11 +61,21 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
       const image = playlist?.data?.image;
 
       if (image?.path_lower) {
+        const path = image.path_lower;
+        // Wait on another copy's request for this image, if there is one
+        const pending = linkRequests.get(image.id);
+        const request =
+          pending ??
+          dbx
+            .filesGetTemporaryLink({ path })
+            .then((fileLink) => fileLink.result.link)
+            .finally(() => linkRequests.delete(image.id));
+        if (!pending) {
+          linkRequests.set(image.id, request);
+        }
+
         try {
-          const fileLink = await dbx.filesGetTemporaryLink({
-            path: image.path_lower,
-          });
-          const link = fileLink.result.link;
+          const link = await request;
 
           setFreshLinks((links) => addTo(links, link));
           setUrl(link);
@@ -74,7 +86,8 @@ export function PlaylistImage({ playlist, size = 50 }: PlaylistImageProps) {
           // The Dropbox client has no token until sign-in finishes,
           // so only log and give up after sign-in
           if (isAuthenticated) {
-            logError(error as Error);
+            // Only the copy that made the request logs, to log a failure once
+            if (!pending) logError(error as Error);
             setBrokenImageIds((ids) => addTo(ids, image.id));
           }
           setUrl("");

@@ -195,4 +195,62 @@ describe("PlaylistImage", () => {
     }
     expect(screen.getAllByRole("tooltip", { hidden: true })).toHaveLength(2);
   });
+
+  describe("two copies of the same image", () => {
+    // Like the playlist header and the player bar on a playlist page
+    function renderTwoCopies(imageMap: Record<string, string> = {}) {
+      // Each request returns a new temporary link, like Dropbox does
+      let requests = 0;
+      filesGetTemporaryLink.mockImplementation(async () => ({
+        result: { link: `https://dl.dropbox.test/${++requests}.jpg` },
+      }));
+      const playlist = makePlaylist("a");
+      const store = createStore();
+      store.set(isAuthenticatedAtom, true);
+      store.set(dbxAtom, { filesGetTemporaryLink } as unknown as Dropbox);
+      store.set(imageMapAtom, imageMap);
+      render(
+        <Provider store={store}>
+          <PlaylistImage playlist={playlist} />
+          <PlaylistImage playlist={playlist} />
+        </Provider>
+      );
+    }
+
+    function sources() {
+      return screen
+        .getAllByAltText("Playlist a")
+        .map((img) => img.getAttribute("src"));
+    }
+
+    it("make one link request when nothing is cached", async () => {
+      renderTwoCopies();
+
+      await waitFor(() =>
+        expect(sources()).toEqual([
+          "https://dl.dropbox.test/1.jpg",
+          "https://dl.dropbox.test/1.jpg",
+        ])
+      );
+      expect(filesGetTemporaryLink).toHaveBeenCalledTimes(1);
+    });
+
+    it("make one new request when their expired link fails", async () => {
+      renderTwoCopies({ "image-a": CACHED_URL });
+      expect(sources()).toEqual([CACHED_URL, CACHED_URL]);
+
+      // The link from an earlier session has expired
+      for (const img of screen.getAllByAltText("Playlist a")) {
+        fireEvent.error(img);
+      }
+
+      await waitFor(() =>
+        expect(sources()).toEqual([
+          "https://dl.dropbox.test/1.jpg",
+          "https://dl.dropbox.test/1.jpg",
+        ])
+      );
+      expect(filesGetTemporaryLink).toHaveBeenCalledTimes(1);
+    });
+  });
 });
