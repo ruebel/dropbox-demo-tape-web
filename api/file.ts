@@ -37,19 +37,30 @@ export async function getFiles(
   return payload;
 }
 
+type UploadOptions = {
+  // False makes the upload fail with a path/conflict error when a file is
+  // already at the path, so a new file cannot replace an existing one
+  overwrite?: boolean;
+};
+
 /**
  * Upload a file to dropbox
  */
-export async function uploadFile(dbx: Dropbox, data: any, path: string) {
+export async function uploadFile(
+  dbx: Dropbox,
+  data: any,
+  path: string,
+  { overwrite = true }: UploadOptions = {}
+) {
   // Upload playlist to dropbox (dropbox will return new metadata)
   const { result } = await dbx.filesUpload({
     // Do not rename on conflict
     autorename: false,
     // File data to upload
     contents: JSON.stringify(data),
-    // Overwrite previous version of file (if exists)
+    // Overwrite the previous version of the file, or only add a new file
     mode: {
-      ".tag": "overwrite",
+      ".tag": overwrite ? "overwrite" : "add",
     },
     // Do not notify users of change
     mute: true,

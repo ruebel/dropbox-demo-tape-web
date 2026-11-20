@@ -5,6 +5,7 @@ import {
   DEFAULT_TRACK_ERROR,
   getMediaErrorMessage,
   getTrackErrorMessage,
+  isPathConflictError,
   isPathNotFoundError,
   isTransientError,
   MEDIA_ERROR,
@@ -81,6 +82,23 @@ describe("isPathNotFoundError", () => {
     ).toBe(false);
     expect(isPathNotFoundError(dropboxError(500, "Internal Server Error"))).toBe(false);
     expect(isPathNotFoundError(new TypeError("Failed to fetch"))).toBe(false);
+  });
+});
+
+describe("isPathConflictError", () => {
+  it("is true when a file is already at the upload path", () => {
+    const error = dropboxError(409, {
+      error_summary: "path/conflict/file/..",
+    });
+
+    expect(isPathConflictError(error)).toBe(true);
+  });
+
+  it("is false for other errors", () => {
+    expect(
+      isPathConflictError(dropboxError(409, { error_summary: "path/not_found/.." }))
+    ).toBe(false);
+    expect(isPathConflictError(new TypeError("Failed to fetch"))).toBe(false);
   });
 });
 

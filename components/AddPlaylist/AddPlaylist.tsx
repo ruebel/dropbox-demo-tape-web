@@ -11,6 +11,7 @@ import { Explorer } from "@/components/Explorer/Explorer";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
 import { dbxAtom } from "@/state/dropbox";
 import { artistsAtom, playlistsAtom } from "@/state/playlists";
+import { isPathConflictError } from "@/utils/error";
 import { styleArray } from "@/utils/style";
 import { Playlist, PlaylistData } from "@/utils/types";
 import { playlistUrl } from "@/utils/url";
@@ -43,6 +44,8 @@ export function AddPlaylist() {
   const [typedTitle, setTypedTitle] = useState("");
   // The open folder. Dropbox uses "" for the home folder.
   const [path, setPath] = useState("");
+  // The last file path a save found taken
+  const [takenPath, setTakenPath] = useState<string | null>(null);
   const dbx = useAtomValue(dbxAtom);
   const [playlists, savePlaylistLocally] = useAtom(playlistsAtom);
   const artists = useAtomValue(artistsAtom);
@@ -54,6 +57,12 @@ export function AddPlaylist() {
   const title = isFolder && !typedTitle ? getFolderName(path) : typedTitle;
   const canSave = !isFolder || !isRoot;
   const help = PLAYLIST_TYPES.find((t) => t.value === type)?.help;
+  const filePath = `${path}/${title}.${DEMO_FILE_EXT}`;
+  // Shown until the title or folder changes. Dropbox ignores case in paths.
+  const titleError =
+    takenPath === filePath.toLowerCase()
+      ? `A playlist named "${title}" already exists in this folder.`
+      : undefined;
 
   async function handleSave(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -61,7 +70,6 @@ export function AddPlaylist() {
 
     if (!title || !artist || !canSave) return;
 
-    const filePath = `${path}/${title}.${DEMO_FILE_EXT}`;
     const playlistData: PlaylistData = { artist, title, tracks: [] };
 
     if (isFolder) {
@@ -70,8 +78,19 @@ export function AddPlaylist() {
       playlistData.folder = { ...folder, sort: "name" };
     }
 
-    // Save the file to dropbox
-    const meta = await uploadFile(dbx, playlistData, filePath);
+    // Save the file to dropbox. A new playlist must not replace a file that
+    // is already there, such as another playlist with the same title.
+    let meta;
+    try {
+      meta = await uploadFile(dbx, playlistData, filePath, {
+        overwrite: false,
+      });
+    } catch (error) {
+      if (!isPathConflictError(error)) throw error;
+
+      setTakenPath(filePath.toLowerCase());
+      return;
+    }
 
     // Create entire playlist shape
     const playlist = { data: playlistData, meta } as Playlist;
@@ -120,6 +139,8 @@ export function AddPlaylist() {
         <p className={styles.typeHelp}>{help}</p>
       </fieldset>
       <TextInput
+        error={titleError}
+        hasError={!!titleError}
         onChange={setTypedTitle}
         isRequired={true}
         title="Title"

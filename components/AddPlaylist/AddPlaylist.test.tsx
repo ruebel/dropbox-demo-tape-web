@@ -5,6 +5,7 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import { DropboxResponseError } from "dropbox";
 import { createStore, Provider } from "jotai";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -213,5 +214,64 @@ describe("AddPlaylist", () => {
     });
     expect(store.get(playlistsAtom)[0].data).toEqual(saved);
     expect(push).toHaveBeenCalledWith("/playlist/id%3Atape");
+  });
+
+  describe("when a file with the same name is in the folder", () => {
+    const TAKEN = 'A playlist named "Band" already exists in this folder.';
+
+    beforeEach(() => {
+      vi.mocked(uploadFile).mockRejectedValueOnce(
+        new DropboxResponseError(409, {}, {
+          error_summary: "path/conflict/file/..",
+        })
+      );
+    });
+
+    async function trySave(store = renderPage()) {
+      chooseFolderType();
+      openFolder("/Demos/Band");
+      fillIn("Artist", "Hunted Horse");
+      fireEvent.click(saveButton());
+      await screen.findByText(TAKEN);
+      return store;
+    }
+
+    it("does not replace the file and asks for another title", async () => {
+      const store = await trySave();
+
+      expect(vi.mocked(uploadFile).mock.lastCall![3]).toEqual({
+        overwrite: false,
+      });
+      expect(push).not.toHaveBeenCalled();
+      expect(store.get(playlistsAtom)).toEqual([]);
+    });
+
+    it("clears the error when the title changes", async () => {
+      await trySave();
+
+      fillIn("Title", "Band 2");
+
+      expect(screen.queryByText(TAKEN)).toBeNull();
+    });
+
+    it("clears the error when the folder changes", async () => {
+      await trySave();
+
+      openFolder("/Demos");
+
+      expect(screen.queryByText(TAKEN)).toBeNull();
+    });
+
+    it("saves with a new title", async () => {
+      await trySave();
+
+      fillIn("Title", "Band 2");
+      const saved = await save();
+
+      expect(saved.title).toBe("Band 2");
+      expect(vi.mocked(uploadFile).mock.lastCall![2]).toBe(
+        "/Demos/Band/Band 2.mix"
+      );
+    });
   });
 });
