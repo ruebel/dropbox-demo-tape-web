@@ -18,6 +18,13 @@ function byFileName(a: { name: string }, b: { name: string }) {
 }
 
 /**
+ * Returns a copy of the tracks in file name order
+ */
+export function sortTracksByName(tracks: PlaylistTrack[]) {
+  return [...tracks].sort(byFileName);
+}
+
+/**
  * Returns the saved track for a file in the folder. A track with the same id
  * gets fresh metadata when the file changed and keeps its duration. A track
  * that only matched by name is a different file (deleted and uploaded

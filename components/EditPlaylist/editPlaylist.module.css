@@ -107,3 +107,12 @@
     justify-content: space-between;
   }
 }
+.folderPath {
+  color: var(--secondary);
+  margin: 0;
+
+  strong {
+    color: var(--primary);
+    word-break: break-all;
+  }
+}

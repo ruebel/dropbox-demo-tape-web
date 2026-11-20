@@ -1,14 +1,26 @@
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { createStore, Provider } from "jotai";
+import { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uploadFile } from "@/api/file";
+import { EditableTrack } from "@/components/EditPlaylist/EditableTrack";
 import { EditPlaylist } from "@/components/EditPlaylist/EditPlaylist";
-import { playlistsAtom, updatePlaylistTrackAtom } from "@/state/playlists";
+import type { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
+import {
+  playlistsAtom,
+  updatePlaylistAtom,
+  updatePlaylistTrackAtom,
+} from "@/state/playlists";
 import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
 const push = vi.fn();
+
+// The props of the last track list the page rendered
+const trackList = vi.hoisted(() => ({
+  props: null as ComponentProps<typeof EditableTrackList> | null,
+}));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
@@ -17,7 +29,10 @@ vi.mock("@/components/PlaylistImage/PlaylistImage", () => ({
   PlaylistImage: () => null,
 }));
 vi.mock("@/components/EditPlaylist/EditableTrackList", () => ({
-  EditableTrackList: () => null,
+  EditableTrackList: (props: ComponentProps<typeof EditableTrackList>) => {
+    trackList.props = props;
+    return null;
+  },
 }));
 
 function file(path: string) {
@@ -76,5 +91,159 @@ describe("EditPlaylist", () => {
     const saved: PlaylistData = vi.mocked(uploadFile).mock.calls[1][1];
     expect(saved.title).toBe("Stuck In Heaven (v2)");
     expect(saved.tracks[0].duration).toBe(168);
+  });
+});
+
+describe("EditPlaylist for a folder playlist", () => {
+  const a = transformFile(file("/Band/a.mp3"));
+  const b = transformFile(file("/Band/b.mp3"));
+  const c = transformFile(file("/Band/c.mp3"));
+
+  function renderFolderPlaylist(sort: "name" | "custom" = "name") {
+    const store = createStore();
+    store.set(playlistsAtom, [
+      {
+        data: {
+          artist: "Hunted Horse",
+          folder: { id: "id:band", path: "/Band", sort },
+          title: "Band",
+          tracks: [a, b],
+        },
+        meta: transformFile(playlistFile),
+      } as Playlist,
+    ]);
+    render(
+      <Provider store={store}>
+        <EditPlaylist id={playlistFile.id} />
+      </Provider>
+    );
+    return store;
+  }
+
+  // Like a sync that finds a new file while the page is open
+  async function addTrackFromSync(store: ReturnType<typeof createStore>) {
+    await store.set(updatePlaylistAtom, {
+      playlistId: playlistFile.id,
+      update: (p) => ({
+        ...p,
+        data: { ...p.data, tracks: [...p.data.tracks, c] },
+      }),
+    });
+  }
+
+  async function save(): Promise<PlaylistData> {
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+    await vi.waitFor(() => expect(push).toHaveBeenCalled());
+    return vi.mocked(uploadFile).mock.lastCall![1];
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    trackList.props = null;
+    vi.mocked(uploadFile).mockResolvedValue(playlistFile);
+  });
+
+  afterEach(() => {
+    cleanup();
+    vi.clearAllMocks();
+  });
+
+  it("shows the folder and hides the controls that pick tracks", () => {
+    renderFolderPlaylist();
+
+    expect(screen.getByText("/Band")).toBeTruthy();
+    expect(screen.queryByText("Edit Tracks")).toBeNull();
+    expect(trackList.props?.canDelete).toBe(false);
+  });
+
+  it("disables Sort A–Z while the tracks are in name order", () => {
+    renderFolderPlaylist("name");
+
+    const button = screen.getByRole("button", { name: "Sort A–Z" });
+    expect((button as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("saves a dragged order as custom and keeps files a sync added", async () => {
+    const store = renderFolderPlaylist("name");
+
+    act(() => trackList.props!.onTrackChange([b, a]));
+    await addTrackFromSync(store);
+    const saved = await save();
+
+    expect(saved.folder?.sort).toBe("custom");
+    expect(saved.tracks.map((t) => t.name)).toEqual(["b.mp3", "a.mp3", "c.mp3"]);
+  });
+
+  it("saves name order after Sort A–Z, with files a sync added in place", async () => {
+    const store = createStore();
+    store.set(playlistsAtom, [
+      {
+        data: {
+          artist: "Hunted Horse",
+          folder: { id: "id:band", path: "/Band", sort: "custom" },
+          title: "Band",
+          tracks: [c, a],
+        },
+        meta: transformFile(playlistFile),
+      } as Playlist,
+    ]);
+    render(
+      <Provider store={store}>
+        <EditPlaylist id={playlistFile.id} />
+      </Provider>
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Sort A–Z" }));
+    expect(trackList.props?.tracks.map((t) => t.name)).toEqual([
+      "a.mp3",
+      "c.mp3",
+    ]);
+
+    // A sync adds b while the page is open
+    await store.set(updatePlaylistAtom, {
+      playlistId: playlistFile.id,
+      update: (p) => ({
+        ...p,
+        data: { ...p.data, tracks: [...p.data.tracks, b] },
+      }),
+    });
+    const saved = await save();
+
+    expect(saved.folder?.sort).toBe("name");
+    expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3", "c.mp3"]);
+  });
+
+  it("keeps a sync's changes when only the title changed", async () => {
+    const store = renderFolderPlaylist("name");
+
+    await addTrackFromSync(store);
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Band (v2)" },
+    });
+    const saved = await save();
+
+    expect(saved.title).toBe("Band (v2)");
+    expect(saved.folder).toEqual({ id: "id:band", path: "/Band", sort: "name" });
+    expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3", "c.mp3"]);
+  });
+});
+
+describe("EditableTrack", () => {
+  const track = transformFile(file("/Band/a.mp3"));
+
+  afterEach(() => {
+    cleanup();
+  });
+
+  it("shows the remove button when it can delete", () => {
+    render(<EditableTrack index={1} onDelete={vi.fn()} track={track} />);
+
+    expect(screen.getByRole("button", { name: "Remove track" })).toBeTruthy();
+  });
+
+  it("hides the remove button when it cannot delete", () => {
+    render(<EditableTrack index={1} track={track} />);
+
+    expect(screen.queryByRole("button", { name: "Remove track" })).toBeNull();
   });
 });

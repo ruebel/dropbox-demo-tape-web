@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 
 import { transformFile } from "@/utils/file";
-import { compareFileNames, reconcileFolderTracks } from "@/utils/folderSync";
+import {
+  compareFileNames,
+  reconcileFolderTracks,
+  sortTracksByName,
+} from "@/utils/folderSync";
 import { FileMeta, PlaylistTrack } from "@/utils/types";
 
 function makeFile(name: string, { id = `id:${name}`, rev = "1" } = {}) {
@@ -43,6 +47,21 @@ describe("compareFileNames", () => {
     );
 
     expect(sorted).toEqual(["Apple.mp3", "banana.mp3", "cherry.mp3"]);
+  });
+});
+
+describe("sortTracksByName", () => {
+  it("returns a copy in file name order", () => {
+    const tracks = [
+      makeTrack(makeFile("Track 10.mp3")),
+      makeTrack(makeFile("Track 2.mp3")),
+    ];
+
+    expect(names(sortTracksByName(tracks))).toEqual([
+      "Track 2.mp3",
+      "Track 10.mp3",
+    ]);
+    expect(names(tracks)).toEqual(["Track 10.mp3", "Track 2.mp3"]);
   });
 });
 
