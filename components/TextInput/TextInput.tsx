@@ -1,4 +1,5 @@
 import { styleArray } from "@/utils/style";
+import { useId } from "react";
 import styles from "./textInput.module.css";
 
 type TextInputProps = {
@@ -18,20 +19,32 @@ export function TextInput({
   title,
   value,
 }: TextInputProps) {
+  const errorId = useId();
+
   return (
-    <label
-      aria-required={isRequired}
-      className={styleArray([styles.wrapper, hasError && styles.hasError])}
-    >
-      <input
-        className={styles.input}
-        required={isRequired}
-        onChange={(e) => onChange(e.target.value)}
-        type="text"
-        value={value}
-      />
-      <div className={styles.title}>{title}</div>
-      {error && <div className={styles.errorMessage}>{error}</div>}
-    </label>
+    <div>
+      <label
+        aria-required={isRequired}
+        className={styleArray([styles.wrapper, hasError && styles.hasError])}
+      >
+        <input
+          // The error is outside the label, so the field's name stays the
+          // title and the error is read as its description
+          aria-describedby={error ? errorId : undefined}
+          aria-invalid={hasError || undefined}
+          className={styles.input}
+          required={isRequired}
+          onChange={(e) => onChange(e.target.value)}
+          type="text"
+          value={value}
+        />
+        <div className={styles.title}>{title}</div>
+      </label>
+      {error && (
+        <div className={styles.errorMessage} id={errorId} role="alert">
+          {error}
+        </div>
+      )}
+    </div>
   );
 }
