@@ -1,10 +1,12 @@
 import { uploadFile } from "@/api/file";
+import { listFolderAudioFiles } from "@/api/folder";
 import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
 import { getUnknownUsersAtom } from "@/state/users";
 import { atomWithRefresh } from "@/utils/atomWithRefresh";
 import { getModifiedUsersFromEntries } from "@/utils/file";
+import { reconcileFolderTracks } from "@/utils/folderSync";
 import { replaceItemAtIndex } from "@/utils/list";
 import { loadable } from "@/utils/loadable";
 import { planPlaylistSync } from "@/utils/playlistSync";
@@ -201,6 +203,48 @@ export const updatePlaylistTrackAtom = atom(
         };
       },
     })
+);
+
+/**
+ * Lists a folder playlist's folder and saves its tracks when the folder
+ * changed. The tracks are matched against the latest saved playlist, in the
+ * same queue as updatePlaylistAtom. Returns the cursor from the listing, to
+ * wait for the next change, or undefined for a playlist without a folder.
+ * Throws when the folder cannot be listed. A failed save is logged and the
+ * cursor is still returned, so a user who cannot write to the playlist still
+ * gets the next change.
+ */
+export const syncFolderPlaylistAtom = atom(
+  null,
+  async (get, set, playlistId: string) => {
+    const folder = get(playlistAtom(playlistId))?.data.folder;
+    if (!folder) return undefined;
+
+    const { cursor, files } = await listFolderAudioFiles(
+      get(dbxAtom),
+      folder.id
+    );
+
+    try {
+      await set(updatePlaylistAtom, {
+        playlistId,
+        update: (latest) => {
+          if (!latest.data.folder) return undefined;
+
+          const tracks = reconcileFolderTracks(
+            latest.data.tracks,
+            files,
+            latest.data.folder.sort
+          );
+          return tracks && { ...latest, data: { ...latest.data, tracks } };
+        },
+      });
+    } catch (error) {
+      logError(error as Error);
+    }
+
+    return cursor;
+  }
 );
 
 /**
