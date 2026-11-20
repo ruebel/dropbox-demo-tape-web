@@ -41,14 +41,15 @@ export function AddPlaylist() {
   const [type, setType] = useState<PlaylistType>("tracks");
   const [artist, setArtist] = useState("");
   const [typedTitle, setTypedTitle] = useState("");
-  const [path, setPath] = useState("/");
+  // The open folder. Dropbox uses "" for the home folder.
+  const [path, setPath] = useState("");
   const dbx = useAtomValue(dbxAtom);
   const [playlists, savePlaylistLocally] = useAtom(playlistsAtom);
   const artists = useAtomValue(artistsAtom);
   const { push } = useRouter();
 
   const isFolder = type === "folder";
-  const isRoot = path === "" || path === "/";
+  const isRoot = path === "";
   // A folder playlist is named after its folder until the user types a title
   const title = isFolder && !typedTitle ? getFolderName(path) : typedTitle;
   const canSave = !isFolder || !isRoot;
@@ -58,7 +59,7 @@ export function AddPlaylist() {
     e.preventDefault();
     e.stopPropagation();
 
-    if (!title || !artist || !path || !canSave) return;
+    if (!title || !artist || !canSave) return;
 
     const filePath = `${path}/${title}.${DEMO_FILE_EXT}`;
     const playlistData: PlaylistData = { artist, title, tracks: [] };

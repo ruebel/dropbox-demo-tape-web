@@ -132,6 +132,28 @@ describe("AddPlaylist", () => {
     expect(getFolder).not.toHaveBeenCalled();
   });
 
+  it("saves a playlist with picked tracks in the home folder", async () => {
+    renderPage();
+    fillIn("Title", "Mix");
+    fillIn("Artist", "Hunted Horse");
+
+    await save();
+
+    expect(vi.mocked(uploadFile).mock.lastCall![2]).toBe("/Mix.mix");
+  });
+
+  it("saves in the home folder after going back to it", async () => {
+    renderPage();
+    openFolder("/Demos");
+    openFolder("");
+    fillIn("Title", "Mix");
+    fillIn("Artist", "Hunted Horse");
+
+    await save();
+
+    expect(vi.mocked(uploadFile).mock.lastCall![2]).toBe("/Mix.mix");
+  });
+
   it("names a folder playlist after the open folder", () => {
     renderPage();
     chooseFolderType();
