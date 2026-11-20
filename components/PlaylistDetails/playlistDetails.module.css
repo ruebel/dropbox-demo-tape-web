@@ -39,3 +39,23 @@
   background-color: var(--background-light);
   box-shadow: inset 3px 0 0 var(--error);
 }
+
+/* Same box as .empty, but not a link, so it does not highlight on hover */
+.emptyFolder {
+  border: 1px dashed var(--primary);
+  border-radius: 10px;
+  color: var(--secondary);
+  margin: 20px;
+  padding: 20px;
+  text-align: center;
+}
+
+.syncError {
+  background-color: var(--background-light);
+  border-radius: 10px;
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--error);
+  font-size: 14px;
+  margin: 0 20px 20px;
+  padding: 10px 20px;
+}

@@ -53,25 +53,26 @@ type WatchFolderOptions = {
 
 /**
  * Waits for changes in a folder with Dropbox long polling, and calls
- * `onChange` after each change until the signal aborts. Waits the time
- * Dropbox asks for before the next poll. After an error, waits and tries the
- * same step again: the poll, or `onChange` when that failed. When Dropbox no
- * longer accepts the cursor, calls `onChange` to get a new one.
+ * `onChange` after each change until the signal aborts. With no cursor,
+ * calls `onChange` first to get one. Waits the time Dropbox asks for before
+ * the next poll. After an error, waits and tries the same step again: the
+ * poll, or `onChange` when that failed. When Dropbox no longer accepts the
+ * cursor, calls `onChange` to get a new one.
  */
 export async function watchFolder(
   dbx: Dropbox,
-  cursor: string,
+  cursor: string | undefined,
   { onChange, onError, signal }: WatchFolderOptions
 ) {
-  let current: string | undefined = cursor;
-  let hasChanges = false;
+  let current = cursor;
+  let hasChanges = cursor === undefined;
   let errorDelay = FIRST_ERROR_DELAY_MS;
 
-  while (current && !signal.aborted) {
+  while (!signal.aborted) {
     try {
       let backoffMs = 0;
 
-      if (!hasChanges) {
+      if (!hasChanges && current) {
         const { result } = await dbx.filesListFolderLongpoll(
           { cursor: current },
           { signal }
@@ -83,6 +84,7 @@ export async function watchFolder(
       if (hasChanges) {
         current = await onChange();
         hasChanges = false;
+        if (!current) return;
       }
 
       errorDelay = FIRST_ERROR_DELAY_MS;

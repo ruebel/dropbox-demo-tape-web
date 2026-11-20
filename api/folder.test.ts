@@ -128,6 +128,43 @@ describe("watchFolder", () => {
     await watching;
   });
 
+  it("calls onChange first when there is no cursor yet", async () => {
+    const onChange = vi.fn().mockResolvedValue("c1");
+
+    const watching = watchFolder(dbx, undefined, {
+      onChange,
+      signal: controller.signal,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(cursors()).toEqual(["c1"]);
+
+    controller.abort();
+    await watching;
+  });
+
+  it("retries the first onChange after a wait when it fails", async () => {
+    const onChange = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError("Failed to fetch"))
+      .mockResolvedValueOnce("c1");
+
+    const watching = watchFolder(dbx, undefined, {
+      onChange,
+      signal: controller.signal,
+    });
+    await vi.advanceTimersByTimeAsync(0);
+    expect(filesListFolderLongpoll).not.toHaveBeenCalled();
+
+    await vi.advanceTimersByTimeAsync(5_000);
+    expect(onChange).toHaveBeenCalledTimes(2);
+    expect(cursors()).toEqual(["c1"]);
+
+    controller.abort();
+    await watching;
+  });
+
   it("polls again with the same cursor when nothing changed", async () => {
     filesListFolderLongpoll.mockResolvedValueOnce(poll(false));
     const onChange = vi.fn();
