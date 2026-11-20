@@ -1,5 +1,7 @@
 .wrapper {
   color: var(--white);
+  /* A block, so the title sits on the input's top border */
+  display: block;
   position: relative;
 }
 
@@ -40,8 +42,13 @@
 }
 
 .errorMessage {
-  border-color: var(--error);
   color: var(--error);
   font-size: var(--fs-sm);
   font-weight: 700;
+  margin-top: var(--space-small);
+}
+
+/* Marks the box as well as the text, since the error sits outside it */
+.hasError .input {
+  border-color: var(--error);
 }

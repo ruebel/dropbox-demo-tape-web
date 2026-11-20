@@ -11,11 +11,18 @@ import styles from "./explorer.module.css";
 
 type EntryProps = {
   entry: EnhancedFileMeta;
+  // Shown for information only, so it cannot be clicked
+  isDisabled?: boolean;
   isSelected?: boolean;
   onClick: (entry: EnhancedFileMeta) => void;
 };
 
-export function Entry({ entry, onClick, isSelected = false }: EntryProps) {
+export function Entry({
+  entry,
+  isDisabled = false,
+  isSelected = false,
+  onClick,
+}: EntryProps) {
   const users = useAtomValue(usersAtom);
   const user = entry.modifiedBy && users ? users[entry.modifiedBy] : null;
 
@@ -28,6 +35,7 @@ export function Entry({ entry, onClick, isSelected = false }: EntryProps) {
   return (
     <button
       className={styleArray([styles.entry, isSelected && styles.entrySelected])}
+      disabled={isDisabled}
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();

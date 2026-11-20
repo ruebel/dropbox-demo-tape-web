@@ -5,8 +5,10 @@ import { StrictMode, Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uploadFile } from "@/api/file";
+import { listFolderAudioFiles } from "@/api/folder";
 import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { useCacheSync } from "@/hooks/useCacheSync";
+import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom } from "@/state/dropbox";
 import {
   dbPlaylistFilesAtom,
@@ -15,6 +17,7 @@ import {
   playlistAtom,
   playlistSyncErrorAtom,
   playlistsAtom,
+  syncFolderPlaylistAtom,
   updatePlaylistAtom,
   updatePlaylistTrackAtom,
 } from "@/state/playlists";
@@ -26,6 +29,7 @@ vi.mock("@/api/playlists", () => ({
   searchPlaylistFiles: vi.fn(),
 }));
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
+vi.mock("@/api/folder", () => ({ listFolderAudioFiles: vi.fn() }));
 vi.mock("@/api/user", () => ({ getUsers: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 
@@ -411,5 +415,149 @@ describe("playlistAtom", () => {
     ]);
 
     expect(titles(store)).toEqual(["a renamed", "b renamed"]);
+  });
+});
+
+describe("syncFolderPlaylistAtom", () => {
+  const playlistFile = makeFile("tape");
+
+  function audioFile(name: string) {
+    return {
+      ".tag": "file",
+      id: `id:${name}`,
+      name,
+      path_display: `/Demos/${name}`,
+      path_lower: `/demos/${name.toLowerCase()}`,
+      rev: "1",
+      server_modified: "2026-10-01T12:00:00Z",
+    } as FileMeta;
+  }
+
+  function makeStore(tracks: PlaylistTrack[], hasFolder = true) {
+    const store = createStore();
+    const playlist = makePlaylist(playlistFile);
+    playlist.data.tracks = tracks;
+    if (hasFolder) {
+      playlist.data.folder = { id: "id:folder", path: "/Demos", sort: "name" };
+    }
+    store.set(playlistsAtom, [playlist]);
+    return store;
+  }
+
+  function savedNames(store: Store) {
+    return store.get(playlistsAtom)[0].data.tracks.map((t) => t.name);
+  }
+
+  beforeEach(() => {
+    localStorage.clear();
+    vi.mocked(uploadFile).mockImplementation(async () => {
+      await sleep(20);
+      return playlistFile;
+    });
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("saves the tracks when the folder changed and returns the cursor", async () => {
+    const a = audioFile("a.mp3");
+    const b = audioFile("b.mp3");
+    const store = makeStore([transformFile(a)]);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [b, a],
+    });
+
+    const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(cursor).toBe("c1");
+    expect(listFolderAudioFiles).toHaveBeenCalledWith(
+      expect.anything(),
+      "id:folder"
+    );
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(savedNames(store)).toEqual(["a.mp3", "b.mp3"]);
+  });
+
+  it("does not upload when the folder did not change", async () => {
+    const a = audioFile("a.mp3");
+    const store = makeStore([transformFile(a)]);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [a],
+    });
+
+    const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(cursor).toBe("c1");
+    expect(uploadFile).not.toHaveBeenCalled();
+  });
+
+  it("does nothing for a playlist without a folder", async () => {
+    const store = makeStore([], false);
+
+    const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(cursor).toBeUndefined();
+    expect(listFolderAudioFiles).not.toHaveBeenCalled();
+    expect(uploadFile).not.toHaveBeenCalled();
+  });
+
+  it("matches against the latest saved playlist", async () => {
+    const a = audioFile("a.mp3");
+    const b = audioFile("b.mp3");
+    const c = audioFile("c.mp3");
+    const store = makeStore([transformFile(a), transformFile(b)]);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [a, b, c],
+    });
+
+    // An edit that reorders the tracks is saving when the sync starts
+    const reordered = store.set(updatePlaylistAtom, {
+      playlistId: playlistFile.id,
+      update: (p) => ({
+        ...p,
+        data: {
+          ...p.data,
+          folder: { ...p.data.folder!, sort: "custom" },
+          tracks: [...p.data.tracks].reverse(),
+        },
+      }),
+    });
+    const synced = store.set(syncFolderPlaylistAtom, playlistFile.id);
+    await Promise.all([reordered, synced]);
+
+    // The new file goes after the custom order
+    expect(savedNames(store)).toEqual(["b.mp3", "a.mp3", "c.mp3"]);
+  });
+
+  it("logs a failed save and still returns the cursor", async () => {
+    const error = new Error("Failed to fetch");
+    vi.mocked(uploadFile).mockRejectedValueOnce(error);
+    const store = makeStore([]);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [audioFile("a.mp3")],
+    });
+
+    const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(cursor).toBe("c1");
+    expect(logError).toHaveBeenCalledWith(error);
+    expect(savedNames(store)).toEqual([]);
+  });
+
+  it("throws when the folder cannot be listed", async () => {
+    const store = makeStore([]);
+    vi.mocked(listFolderAudioFiles).mockRejectedValue(
+      new Error("path/not_found")
+    );
+
+    await expect(
+      store.set(syncFolderPlaylistAtom, playlistFile.id)
+    ).rejects.toThrow("path/not_found");
+    expect(uploadFile).not.toHaveBeenCalled();
   });
 });

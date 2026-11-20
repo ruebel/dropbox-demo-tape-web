@@ -26,6 +26,28 @@ export function isPathNotFoundError(error: unknown) {
   );
 }
 
+/**
+ * Whether Dropbox did not write a file because something is already at its
+ * path
+ */
+export function isPathConflictError(error: unknown) {
+  return (
+    error instanceof DropboxResponseError &&
+    getErrorSummary(error).startsWith("path/conflict")
+  );
+}
+
+/**
+ * Whether Dropbox no longer accepts a folder cursor, so the folder must be
+ * listed again to get a new one
+ */
+export function isCursorResetError(error: unknown) {
+  return (
+    error instanceof DropboxResponseError &&
+    getErrorSummary(error).startsWith("reset")
+  );
+}
+
 // MediaError codes from the audio element (MediaError.MEDIA_ERR_*)
 export const MEDIA_ERROR = {
   aborted: 1,

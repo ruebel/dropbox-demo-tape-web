@@ -14,12 +14,14 @@ import { reorderList } from "@/utils/list";
 import styles from "./editableTrackList.module.css";
 
 type EditableTrackListProps = {
+  // False hides the button that removes a track
+  canDelete?: boolean;
   onTrackChange: (tracks: PlaylistTrack[]) => void;
   tracks: PlaylistTrack[];
 };
 
 type TrackListProps = {
-  onTrackDelete: (id: string) => void;
+  onTrackDelete?: (id: string) => void;
   tracks: PlaylistTrack[];
 };
 
@@ -53,6 +55,7 @@ const TrackList = memo(function EditableTrackList({ onTrackDelete, tracks }) {
 }, trackListPropsAreEqual);
 
 export function EditableTrackList({
+  canDelete = true,
   onTrackChange,
   tracks,
 }: EditableTrackListProps) {
@@ -82,7 +85,10 @@ export function EditableTrackList({
       <Droppable droppableId="tracks">
         {(provided) => (
           <div ref={provided.innerRef} {...provided.droppableProps}>
-            <TrackList onTrackDelete={handleDelete} tracks={tracks} />
+            <TrackList
+              onTrackDelete={canDelete ? handleDelete : undefined}
+              tracks={tracks}
+            />
             {provided.placeholder}
           </div>
         )}

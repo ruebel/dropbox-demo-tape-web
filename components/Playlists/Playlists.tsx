@@ -15,6 +15,7 @@ import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
 import { SortPlaylists } from "@/components/Playlists/SortPlaylists";
 import { Progress } from "@/components/Progress/Progress";
 import { Search } from "@/components/Search/Search";
+import { SyncedFolder } from "@/components/SyncedFolder/SyncedFolder";
 import { usersAtom } from "@/state/users";
 import { sortPlaylists } from "@/utils/sorting";
 import { playlistUrl } from "@/utils/url";
@@ -89,6 +90,7 @@ export function Playlists() {
                 playlist.meta?.sharing_info?.modified_by ||
                 ""
             ];
+          const subtitle = playlist.data.artist || playlist.meta.path_display;
 
           return (
             <div className={styles.playlistWrapper}>
@@ -98,7 +100,13 @@ export function Playlists() {
                   <div className={styles.title}>
                     <h3>{playlist.data.title}</h3>
                     <span className={styles.path}>
-                      {playlist.data.artist || playlist.meta.path_display}
+                      {playlist.data.folder ? (
+                        <SyncedFolder folder={playlist.data.folder}>
+                          {subtitle}
+                        </SyncedFolder>
+                      ) : (
+                        subtitle
+                      )}
                     </span>
                   </div>
                   <div className={styles.updated}>

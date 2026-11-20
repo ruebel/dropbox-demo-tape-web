@@ -7,6 +7,7 @@ import { ReplaceTrack } from "@/components/ReplaceTrack/ReplaceTrack";
 import { Track } from "@/components/Track/Track";
 import { useAudio } from "@/hooks/useAudio";
 import { useDeletePlaylist } from "@/hooks/useDeletePlaylist";
+import { useFolderSync } from "@/hooks/useFolderSync";
 import { playlistAtom } from "@/state/playlists";
 import { HOME } from "@/utils/constants";
 import { Playlist } from "@/utils/types";
@@ -23,9 +24,13 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
   const playlist = useAtomValue(playlistAtom(id));
   const { audioState, onPause, onPlay, track } = useAudio();
   const { isLoading, onDeletePlaylist } = useDeletePlaylist();
+  const { errorMessage, isSyncing } = useFolderSync(id);
   const { push } = useRouter();
 
   if (!playlist) return null;
+
+  const isFolderPlaylist = !!playlist.data.folder;
+  const isEmpty = playlist.data.tracks.length === 0;
 
   async function handleDelete() {
     await onDeletePlaylist(playlist as Playlist);
@@ -53,18 +58,29 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
           </ConfirmationButton>
         </div>
       </div>
-      {playlist.data.tracks.length === 0 && (
+      {errorMessage && (
+        <div className={styles.syncError} role="alert">
+          {errorMessage}
+        </div>
+      )}
+      {isEmpty && !isFolderPlaylist && (
         <a href={editPlaylistUrl(id)}>
           <div className={styles.empty}>Add Tracks</div>
         </a>
       )}
-      {isLoading && <Progress />}
+      {isEmpty && isFolderPlaylist && !isSyncing && !errorMessage && (
+        <div className={styles.emptyFolder}>No audio files in this folder</div>
+      )}
+      {(isLoading || isSyncing) && <Progress />}
       <List
         getKey={(t) => t.id}
         items={playlist.data.tracks}
         itemRenderer={(track, index) => {
-          // The replace row under a missing track shows its error message
-          const isMissing = track.errorCode === "not_found";
+          // The replace row under a missing track shows its error message. A
+          // folder playlist has no replace row, because its sync removes
+          // tracks whose file is gone.
+          const isMissing =
+            !isFolderPlaylist && track.errorCode === "not_found";
           const row = (
             <Track
               index={index + 1}

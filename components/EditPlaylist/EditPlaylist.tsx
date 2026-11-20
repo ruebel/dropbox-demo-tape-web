@@ -7,14 +7,15 @@ import {
   playlistAtom,
   updatePlaylistAtom,
 } from "@/state/playlists";
-import { mergeEditedTracks } from "@/utils/playlist";
+import { sortTracksByName } from "@/utils/folderSync";
+import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
-import { PlaylistTrack } from "@/utils/types";
+import { FolderSort, PlaylistData, PlaylistTrack } from "@/utils/types";
 import {
   editPlaylistImageUrl,
   editPlaylistTracksUrl,
@@ -35,6 +36,8 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   const [artist, setArtist] = useState(playlist?.data.artist || "");
   const [title, setTitle] = useState(playlist?.data.title || "");
   const [tracks, setTracks] = useState(playlist?.data.tracks || []);
+  const folder = playlist?.data.folder;
+  const [sort, setSort] = useState<FolderSort>(folder?.sort ?? "name");
   const artists = useAtomValue(artistsAtom);
 
   const { push } = useRouter();
@@ -51,7 +54,32 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
 
   function handleTrackChange(newTracks: PlaylistTrack[]) {
     setTracks(newTracks);
+    // For a folder playlist, the only track change is a drag
+    setSort("custom");
     setIsDirty(true);
+  }
+
+  function handleSortByName() {
+    setTracks(sortTracksByName(tracks));
+    setSort("name");
+    setIsDirty(true);
+  }
+
+  // Only this page's track edits, applied to the latest saved data
+  function mergeTracks(latest: PlaylistData): Partial<PlaylistData> {
+    if (!latest.folder) {
+      return { tracks: mergeEditedTracks(latest.tracks, tracks) };
+    }
+
+    // A sync can add or remove files while the page is open, so the latest
+    // tracks decide which tracks are in the playlist
+    return {
+      folder: { ...latest.folder, sort },
+      tracks:
+        sort === "name"
+          ? sortTracksByName(latest.tracks)
+          : mergeEditedOrder(latest.tracks, tracks),
+    };
   }
 
   async function handleSave() {
@@ -67,7 +95,7 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
           ...latest.data,
           artist,
           title,
-          tracks: mergeEditedTracks(latest.data.tracks, tracks),
+          ...mergeTracks(latest.data),
         },
       }),
     });
@@ -107,14 +135,30 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       </div>
       <div className={styles.tracksHeader}>
         <h2>Tracks</h2>
-        <ButtonLink href={editPlaylistTracksUrl(id)}>Edit Tracks</ButtonLink>
+        {folder ? (
+          <ButtonLink disabled={sort === "name"} onClick={handleSortByName}>
+            Sort A–Z
+          </ButtonLink>
+        ) : (
+          <ButtonLink href={editPlaylistTracksUrl(id)}>Edit Tracks</ButtonLink>
+        )}
       </div>
-      {tracks.length === 0 && (
+      {folder && (
+        <p className={styles.folderPath}>
+          Every audio file in <strong>{folder.path}</strong> is in this
+          playlist. Drag tracks to change their order.
+        </p>
+      )}
+      {tracks.length === 0 && !folder && (
         <a className={styles.emptyTracks} href={editPlaylistTracksUrl(id)}>
           Add tracks to your playlist
         </a>
       )}
-      <EditableTrackList onTrackChange={handleTrackChange} tracks={tracks} />
+      <EditableTrackList
+        canDelete={!folder}
+        onTrackChange={handleTrackChange}
+        tracks={tracks}
+      />
     </div>
   );
 }

@@ -1,0 +1,26 @@
+/* The Tooltip's anchor */
+.root {
+  position: relative;
+}
+
+/* Shows the Tooltip after a short hover, and hides it as soon as the pointer
+   leaves */
+.root:hover {
+  --tooltip-delay: 250ms;
+  --tooltip-display: block;
+}
+
+/*
+ * Inline, so the text after it keeps its baseline. The icon box is 14px and
+ * the folder shape fills its middle, so -2px centers the shape on the
+ * capital letters of 14px text.
+ */
+.icon {
+  display: inline-block;
+  margin-right: 3px;
+  vertical-align: -2px;
+}
+
+.icon svg {
+  display: block;
+}

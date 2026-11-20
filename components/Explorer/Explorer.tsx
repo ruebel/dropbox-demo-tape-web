@@ -13,6 +13,8 @@ type ExplorerProps = {
   initialFolder?: string;
   onPathChange?: (path: string) => void;
   onSelectionChange?: (entries: EnhancedFileMeta[]) => void;
+  // Lists audio files that cannot be selected, to show what a folder holds
+  previewFiles?: boolean;
   selectedEntries?: EnhancedFileMeta[];
   singleSelection?: boolean;
   showFiles?: boolean;
@@ -23,6 +25,7 @@ export function Explorer({
   initialFolder = "",
   onPathChange,
   onSelectionChange,
+  previewFiles = false,
   selectedEntries = [],
   singleSelection = false,
   showFiles = false,
@@ -36,20 +39,24 @@ export function Explorer({
     // If we cannot get a folder or a path is invalid
     // then send the user back to their home folder
     onError: () => {
-      if (folder.length > 0) setFolder("");
+      if (folder.length > 0) changeFolder("");
     },
-    showFiles,
+    showFiles: showFiles || previewFiles,
     showImages,
     sortBy,
     sortDir,
   });
 
+  // Every way of opening a folder goes through here, so onPathChange always
+  // has the folder that is shown
+  function changeFolder(path: string) {
+    setFolder(path);
+    onPathChange?.(path);
+  }
+
   function handleClick(entry: EnhancedFileMeta) {
     if (entry.type === "folder") {
-      setFolder(entry.path);
-      if (onPathChange) {
-        onPathChange(entry.path);
-      }
+      changeFolder(entry.path);
     } else if (showFiles || showImages) {
       if (singleSelection) {
         if (selectedEntries.some((e) => e.id === entry.id)) {
@@ -82,7 +89,7 @@ export function Explorer({
   }
   return (
     <div className={styles.wrapper}>
-      <BreadcrumbTrail onClick={setFolder} path={folder} />
+      <BreadcrumbTrail onClick={changeFolder} path={folder} />
       <div className={styles.header}>
         <span />
         <SortableHeader
@@ -116,6 +123,7 @@ export function Explorer({
         itemRenderer={(entry) => (
           <Entry
             entry={entry}
+            isDisabled={previewFiles && entry.type !== "folder"}
             isSelected={selectedEntries.some(
               (e) => e.path_lower === entry.path_lower
             )}
