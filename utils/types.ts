@@ -27,8 +27,23 @@ export type EnhancedFileMeta = FileMeta & {
 
 export type PlaylistTrack = EnhancedFileMeta;
 
+// How a folder playlist orders its tracks. "name" keeps them in file name
+// order. "custom" keeps the order the user set and adds new files at the end.
+export type FolderSort = "name" | "custom";
+
+// The Dropbox folder a folder playlist shows the audio files of
+export type PlaylistFolder = {
+  // The folder id, so the playlist still works when the folder moves
+  id: string;
+  // For display only
+  path: string;
+  sort: FolderSort;
+};
+
 export type PlaylistData = {
   artist: string;
+  // Set for a folder playlist, whose tracks come from this folder
+  folder?: PlaylistFolder;
   image?: EnhancedFileMeta | undefined;
   title: string;
   tracks: PlaylistTrack[];
