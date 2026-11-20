@@ -16,6 +16,12 @@
   padding: var(--space-small) var(--space-medium);
   position: absolute;
   text-align: left;
+  /*
+   * Waits --tooltip-delay before showing. The animation restarts each time
+   * the tooltip goes from hidden to shown, and keeps it invisible during the
+   * delay. Hiding is at once.
+   */
+  animation: tooltip-wait 0s var(--tooltip-delay, 0s) backwards;
   width: max-content;
   /* Above overlays that the anchor's parent draws, like "Edit Image" */
   z-index: 2;
@@ -30,4 +36,10 @@
   left: 9px;
   position: absolute;
   top: 100%;
+}
+
+@keyframes tooltip-wait {
+  from {
+    visibility: hidden;
+  }
 }
