@@ -13,6 +13,8 @@ type ExplorerProps = {
   initialFolder?: string;
   onPathChange?: (path: string) => void;
   onSelectionChange?: (entries: EnhancedFileMeta[]) => void;
+  // Lists audio files that cannot be selected, to show what a folder holds
+  previewFiles?: boolean;
   selectedEntries?: EnhancedFileMeta[];
   singleSelection?: boolean;
   showFiles?: boolean;
@@ -23,6 +25,7 @@ export function Explorer({
   initialFolder = "",
   onPathChange,
   onSelectionChange,
+  previewFiles = false,
   selectedEntries = [],
   singleSelection = false,
   showFiles = false,
@@ -38,7 +41,7 @@ export function Explorer({
     onError: () => {
       if (folder.length > 0) changeFolder("");
     },
-    showFiles,
+    showFiles: showFiles || previewFiles,
     showImages,
     sortBy,
     sortDir,
@@ -120,6 +123,7 @@ export function Explorer({
         itemRenderer={(entry) => (
           <Entry
             entry={entry}
+            isDisabled={previewFiles && entry.type !== "folder"}
             isSelected={selectedEntries.some(
               (e) => e.path_lower === entry.path_lower
             )}

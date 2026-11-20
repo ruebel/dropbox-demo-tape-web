@@ -133,7 +133,9 @@ export function AddPlaylist() {
       />
       <div className={styles.explorerWrapper}>
         <div className={styles.explorerInner}>
-          <Explorer onPathChange={setPath} />
+          {/* Lists the audio files too, so a folder of tracks does not look
+              empty */}
+          <Explorer onPathChange={setPath} previewFiles={true} />
         </div>
         <div className={styles.explorerTitle}>
           {isFolder ? "Folder" : "Location"}

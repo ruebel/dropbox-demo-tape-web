@@ -19,6 +19,7 @@ const push = vi.fn();
 // The folder change handler the page passed to the Explorer
 const explorer = vi.hoisted(() => ({
   onPathChange: null as ((path: string) => void) | null,
+  previewFiles: undefined as boolean | undefined,
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
@@ -26,8 +27,15 @@ vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/folder", () => ({ getFolder: vi.fn() }));
 // Needs Dropbox to list folders
 vi.mock("@/components/Explorer/Explorer", () => ({
-  Explorer: ({ onPathChange }: { onPathChange: (path: string) => void }) => {
+  Explorer: ({
+    onPathChange,
+    previewFiles,
+  }: {
+    onPathChange: (path: string) => void;
+    previewFiles?: boolean;
+  }) => {
     explorer.onPathChange = onPathChange;
+    explorer.previewFiles = previewFiles;
     return null;
   },
 }));
@@ -101,6 +109,14 @@ describe("AddPlaylist", () => {
       (screen.getByLabelText("Pick tracks") as HTMLInputElement).checked
     ).toBe(true);
     expect(screen.getByText("Location")).toBeTruthy();
+  });
+
+  it("shows the audio files in the open folder for both playlist types", () => {
+    renderPage();
+    expect(explorer.previewFiles).toBe(true);
+
+    chooseFolderType();
+    expect(explorer.previewFiles).toBe(true);
   });
 
   it("saves a playlist with picked tracks without a folder", async () => {

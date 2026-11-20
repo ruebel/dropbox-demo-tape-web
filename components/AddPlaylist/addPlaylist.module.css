@@ -15,7 +15,7 @@
 
 .explorerInner {  
   overflow-y: scroll;
-  height: 470px;
+  height: 390px;
 }
 
 .explorerTitle {
@@ -31,7 +31,7 @@
 .explorerWrapper {
   border: 1px solid var(--primary);
   border-radius: 10px;
-  max-height: 480px;
+  max-height: 400px;
   padding: 5px;
   position: relative;
 }

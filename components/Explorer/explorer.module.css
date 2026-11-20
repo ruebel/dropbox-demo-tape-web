@@ -22,8 +22,15 @@
   width: 100%;
 }
 
-.entry:hover {
+.entry:not(:disabled):hover {
   background-color: var(--primary-light);
+}
+
+/* A file shown for information only. Keeps the normal text color, so it does
+   not look left out. */
+.entry:disabled {
+  color: inherit;
+  cursor: default;
 }
 
 .entrySelected {

@@ -62,7 +62,7 @@ export function useFiles({
       fetchFiles();
     }
     // eslint-disable-next-line
-  }, [dbx, folder, isAuthenticated]);
+  }, [dbx, folder, isAuthenticated, showFiles, showImages]);
 
   const {
     cursor,
