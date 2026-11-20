@@ -1,4 +1,12 @@
-import { PlaylistTrack } from "@/utils/types";
+import { PlaylistFolder, PlaylistTrack } from "@/utils/types";
+
+/**
+ * The text that says which folder a folder playlist shows, for its icon's
+ * label and hover
+ */
+export function getSyncedWithLabel(folder: PlaylistFolder) {
+  return `Synced with ${folder.path}`;
+}
 
 /**
  * Combines a track list edited on a page with the latest saved tracks. The

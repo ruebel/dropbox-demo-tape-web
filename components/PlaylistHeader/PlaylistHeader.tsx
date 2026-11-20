@@ -1,4 +1,5 @@
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { SyncedFolder } from "@/components/SyncedFolder/SyncedFolder";
 import { Playlist } from "@/utils/types";
 
 import { getMMSSFromMs } from "@/utils/time";
@@ -13,6 +14,10 @@ export function PlaylistHeader({ playlist }: PlaylistHeaderProps) {
     (acc, track) => acc + (track.duration || 0),
     0
   );
+  const folder = playlist.data.folder;
+  const trackCount = `${playlist.data.tracks.length} track${
+    playlist.data.tracks.length !== 1 ? "s" : ""
+  }`;
 
   return (
     <div className={styles.wrapper}>
@@ -24,8 +29,11 @@ export function PlaylistHeader({ playlist }: PlaylistHeaderProps) {
             <span className={styles.artistName}>{playlist.data.artist}</span>
             <span className={styles.duration}>
               {playlist.data.artist && <span> • </span>}
-              {playlist.data.tracks.length} track
-              {playlist.data.tracks.length !== 1 && "s"}
+              {folder ? (
+                <SyncedFolder folder={folder}>{trackCount}</SyncedFolder>
+              ) : (
+                trackCount
+              )}
               {duration > 0 && ` • ${getMMSSFromMs(duration * 1000)}`}
             </span>
           </div>

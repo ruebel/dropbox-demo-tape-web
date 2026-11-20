@@ -127,4 +127,27 @@ describe("Playlists", () => {
     expect(await screen.findByText("Playlist a")).toBeTruthy();
     expect(screen.queryByRole("alert")).toBeNull();
   });
+
+  it("marks only the playlists that sync with a folder", async () => {
+    vi.mocked(downloadPlaylists).mockImplementation(async (_dbx, files) =>
+      files.map((file) => {
+        const playlist = makePlaylist(file);
+        if (file.id === "a") {
+          playlist.data.folder = { id: "id:band", path: "/Band", sort: "name" };
+        }
+        return playlist;
+      })
+    );
+    renderPlaylists();
+
+    await screen.findByText("Playlist b");
+
+    const icons = screen.getAllByRole("img", { name: "Folder playlist" });
+    expect(icons).toHaveLength(1);
+    expect(icons[0]).toBe(
+      screen.getByRole("img", { description: "Synced with /Band" })
+    );
+    const link = screen.getByRole("link", { name: /Playlist a/ });
+    expect(link.contains(icons[0])).toBe(true);
+  });
 });
