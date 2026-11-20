@@ -4,6 +4,20 @@ import { isAudioFile } from "@/utils/file";
 import { FileMeta } from "@/utils/types";
 import { Dropbox } from "dropbox";
 
+/**
+ * Gets the id and display path of the folder at `path`. Throws when the path
+ * is not a folder.
+ */
+export async function getFolder(dbx: Dropbox, path: string) {
+  const { result } = await dbx.filesGetMetadata({ path });
+
+  if (result[".tag"] !== "folder") {
+    throw new Error(`Not a folder: ${path}`);
+  }
+
+  return { id: result.id, path: result.path_display ?? path };
+}
+
 export type FolderAudioFiles = {
   // Pass to a long poll to wait for the next change in the folder
   cursor: string;

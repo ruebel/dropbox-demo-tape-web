@@ -1,16 +1,43 @@
 import { Dropbox, DropboxResponseError } from "dropbox";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { listFolderAudioFiles, watchFolder } from "@/api/folder";
+import { getFolder, listFolderAudioFiles, watchFolder } from "@/api/folder";
 
+const filesGetMetadata = vi.fn();
 const filesListFolder = vi.fn();
 const filesListFolderContinue = vi.fn();
 const filesListFolderLongpoll = vi.fn();
 const dbx = {
+  filesGetMetadata,
   filesListFolder,
   filesListFolderContinue,
   filesListFolderLongpoll,
 } as unknown as Dropbox;
+
+describe("getFolder", () => {
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("returns the folder's id and display path", async () => {
+    filesGetMetadata.mockResolvedValue({
+      result: { ".tag": "folder", id: "id:band", path_display: "/Demos/Band" },
+    });
+
+    const folder = await getFolder(dbx, "/demos/band");
+
+    expect(filesGetMetadata).toHaveBeenCalledWith({ path: "/demos/band" });
+    expect(folder).toEqual({ id: "id:band", path: "/Demos/Band" });
+  });
+
+  it("throws when the path is a file", async () => {
+    filesGetMetadata.mockResolvedValue({
+      result: { ".tag": "file", id: "id:song", path_display: "/Song.mp3" },
+    });
+
+    await expect(getFolder(dbx, "/Song.mp3")).rejects.toThrow("Not a folder");
+  });
+});
 
 function file(name: string) {
   return { ".tag": "file", id: `id:${name}`, name };
