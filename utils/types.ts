@@ -35,6 +35,9 @@ export type FolderSort = "name" | "custom";
 export type PlaylistFolder = {
   // The folder id, so the playlist still works when the folder moves
   id: string;
+  // Whether audio files in subfolders, at any depth, are in the playlist too.
+  // Playlists saved before this option have no value, which means false.
+  includeSubfolders?: boolean;
   // For display only
   path: string;
   sort: FolderSort;

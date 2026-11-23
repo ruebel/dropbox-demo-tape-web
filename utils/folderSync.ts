@@ -13,21 +13,34 @@ export function compareFileNames(a: string, b: string) {
   return fileNameCollator.compare(a, b);
 }
 
-function byFileName(a: { name: string }, b: { name: string }) {
-  return compareFileNames(a.name, b.name);
+type PathItem = { name: string; path_lower?: string };
+
+/**
+ * The lowercase path of a file, to match and sort files by. Dropbox leaves
+ * out the path only for a file that is not mounted, which a folder listing
+ * does not return, so the name is only a fallback for the type.
+ */
+function getPathKey(item: PathItem) {
+  return item.path_lower ?? item.name.toLowerCase();
+}
+
+// Every file in a folder playlist shares the folder's path, so path order is
+// file name order for a flat folder, and keeps each subfolder's files together
+function byPath(a: PathItem, b: PathItem) {
+  return compareFileNames(getPathKey(a), getPathKey(b));
 }
 
 /**
- * Returns a copy of the tracks in file name order
+ * Returns a copy of the tracks in path order
  */
-export function sortTracksByName(tracks: PlaylistTrack[]) {
-  return [...tracks].sort(byFileName);
+export function sortTracksByPath(tracks: PlaylistTrack[]) {
+  return [...tracks].sort(byPath);
 }
 
 /**
  * Returns the saved track for a file in the folder. A track with the same id
  * gets fresh metadata when the file changed and keeps its duration. A track
- * that only matched by name is a different file (deleted and uploaded
+ * that only matched by path is a different file (deleted and uploaded
  * again), so it starts over as a new track in the same place.
  */
 function matchTrack(track: PlaylistTrack, file: FileMeta): PlaylistTrack {
@@ -53,10 +66,12 @@ function matchTrack(track: PlaylistTrack, file: FileMeta): PlaylistTrack {
 
 /**
  * Updates a folder playlist's tracks to match the audio files in its folder.
- * Each saved track matches a file by id, or else by name (ignoring case).
- * Tracks with no file are removed. Files with no track are added: in name
- * order when `sort` is "name", and at the end in name order when `sort` is
- * "custom". Returns undefined when the tracks do not change.
+ * Each saved track matches a file by id, or else by path (ignoring case).
+ * Matching by path, not name, keeps apart files with the same name in
+ * different subfolders. Tracks with no file are removed. Files with no track
+ * are added: in path order when `sort` is "name", and at the end in path
+ * order when `sort` is "custom". Returns undefined when the tracks do not
+ * change.
  */
 export function reconcileFolderTracks(
   tracks: PlaylistTrack[],
@@ -64,17 +79,15 @@ export function reconcileFolderTracks(
   sort: FolderSort
 ): PlaylistTrack[] | undefined {
   const unmatchedById = new Map(files.map((file) => [file.id, file]));
-  const unmatchedByName = new Map(
-    files.map((file) => [file.name.toLowerCase(), file])
-  );
+  const unmatchedByPath = new Map(files.map((file) => [getPathKey(file), file]));
 
   function claim(file: FileMeta) {
     unmatchedById.delete(file.id);
-    unmatchedByName.delete(file.name.toLowerCase());
+    unmatchedByPath.delete(getPathKey(file));
     return file;
   }
 
-  // Match by id first for every track, so a name match cannot take a file
+  // Match by id first for every track, so a path match cannot take a file
   // that a later track matches by id
   const idMatches = tracks.map((track) => {
     const file = unmatchedById.get(track.id);
@@ -83,20 +96,17 @@ export function reconcileFolderTracks(
 
   const kept: PlaylistTrack[] = [];
   tracks.forEach((track, index) => {
-    const file =
-      idMatches[index] ?? unmatchedByName.get(track.name.toLowerCase());
+    const file = idMatches[index] ?? unmatchedByPath.get(getPathKey(track));
     if (!file) return;
 
     claim(file);
     kept.push(matchTrack(track, file));
   });
 
-  const added = [...unmatchedById.values()].map(transformFile).sort(byFileName);
+  const added = [...unmatchedById.values()].map(transformFile).sort(byPath);
 
   const next =
-    sort === "name"
-      ? [...kept, ...added].sort(byFileName)
-      : [...kept, ...added];
+    sort === "name" ? [...kept, ...added].sort(byPath) : [...kept, ...added];
 
   const isUnchanged =
     next.length === tracks.length &&

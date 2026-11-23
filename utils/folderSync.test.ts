@@ -4,12 +4,19 @@ import { transformFile } from "@/utils/file";
 import {
   compareFileNames,
   reconcileFolderTracks,
-  sortTracksByName,
+  sortTracksByPath,
 } from "@/utils/folderSync";
 import { FileMeta, PlaylistTrack } from "@/utils/types";
 
-function makeFile(name: string, { id = `id:${name}`, rev = "1" } = {}) {
-  const path = `/Demos/${name}`;
+function makeFile(
+  name: string,
+  {
+    dir = "/Demos",
+    id = `id:${dir}/${name}`,
+    rev = "1",
+  }: { dir?: string; id?: string; rev?: string } = {}
+) {
+  const path = `${dir}/${name}`;
   return {
     ".tag": "file",
     id,
@@ -32,6 +39,10 @@ function names(tracks: PlaylistTrack[] | undefined) {
   return tracks?.map((track) => track.name);
 }
 
+function paths(tracks: PlaylistTrack[] | undefined) {
+  return tracks?.map((track) => track.path);
+}
+
 describe("compareFileNames", () => {
   it("sorts numbers inside names by value", () => {
     const sorted = ["Track 10.mp3", "Track 2.mp3", "Track 1.mp3"].sort(
@@ -50,18 +61,34 @@ describe("compareFileNames", () => {
   });
 });
 
-describe("sortTracksByName", () => {
-  it("returns a copy in file name order", () => {
+describe("sortTracksByPath", () => {
+  it("returns a copy in file name order for files in one folder", () => {
     const tracks = [
       makeTrack(makeFile("Track 10.mp3")),
       makeTrack(makeFile("Track 2.mp3")),
     ];
 
-    expect(names(sortTracksByName(tracks))).toEqual([
+    expect(names(sortTracksByPath(tracks))).toEqual([
       "Track 2.mp3",
       "Track 10.mp3",
     ]);
     expect(names(tracks)).toEqual(["Track 10.mp3", "Track 2.mp3"]);
+  });
+
+  it("keeps each subfolder's files together", () => {
+    const tracks = [
+      makeTrack(makeFile("02.mp3", { dir: "/Demos/Disc 2" })),
+      makeTrack(makeFile("02.mp3", { dir: "/Demos/Disc 1" })),
+      makeTrack(makeFile("01.mp3", { dir: "/Demos/Disc 2" })),
+      makeTrack(makeFile("01.mp3", { dir: "/Demos/Disc 1" })),
+    ];
+
+    expect(paths(sortTracksByPath(tracks))).toEqual([
+      "/Demos/Disc 1/01.mp3",
+      "/Demos/Disc 1/02.mp3",
+      "/Demos/Disc 2/01.mp3",
+      "/Demos/Disc 2/02.mp3",
+    ]);
   });
 });
 
@@ -181,9 +208,56 @@ describe("reconcileFolderTracks", () => {
     expect(result?.[0]).toEqual(transformFile(reuploaded));
   });
 
-  it("prefers an id match over a name match for the same file", () => {
+  it("keeps files with the same name in different subfolders", () => {
+    const disc1 = makeFile("Intro.mp3", { dir: "/Demos/Disc 1" });
+    const disc2 = makeFile("Intro.mp3", { dir: "/Demos/Disc 2" });
+
+    const result = reconcileFolderTracks([], [disc2, disc1], "name");
+
+    expect(paths(result)).toEqual([
+      "/Demos/Disc 1/Intro.mp3",
+      "/Demos/Disc 2/Intro.mp3",
+    ]);
+  });
+
+  it("keeps the place of a file uploaded again in a subfolder", () => {
+    const dir = "/Demos/Disc 2";
+    const old = makeFile("Intro.mp3", { dir, id: "id:old" });
+    const a = makeFile("a.mp3");
+    const reuploaded = makeFile("Intro.mp3", { dir, id: "id:new" });
+
+    const result = reconcileFolderTracks(
+      [makeTrack(old), makeTrack(a)],
+      [a, reuploaded],
+      "custom"
+    );
+
+    expect(result?.map((track) => track.id)).toEqual([
+      "id:new",
+      "id:/Demos/a.mp3",
+    ]);
+  });
+
+  it("does not give a removed track's place to a file with the same name in another subfolder", () => {
+    const removed = makeFile("Intro.mp3", { dir: "/Demos/Disc 1" });
+    const a = makeFile("a.mp3");
+    const other = makeFile("Intro.mp3", { dir: "/Demos/Disc 2" });
+
+    const result = reconcileFolderTracks(
+      [makeTrack(removed), makeTrack(a)],
+      [a, other],
+      "custom"
+    );
+
+    expect(paths(result)).toEqual([
+      "/Demos/a.mp3",
+      "/Demos/Disc 2/Intro.mp3",
+    ]);
+  });
+
+  it("prefers an id match over a path match for the same file", () => {
     const original = makeFile("a.mp3", { id: "id:1" });
-    // A stale track whose name matches the file that the first track owns
+    // A stale track whose path matches the file that the first track owns
     const stale = makeTrack(makeFile("a.mp3", { id: "id:2" }));
 
     const result = reconcileFolderTracks(

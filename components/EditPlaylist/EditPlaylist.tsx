@@ -7,7 +7,7 @@ import {
   playlistAtom,
   updatePlaylistAtom,
 } from "@/state/playlists";
-import { sortTracksByName } from "@/utils/folderSync";
+import { sortTracksByPath } from "@/utils/folderSync";
 import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
 import { useAtomValue, useSetAtom } from "jotai";
 import { useState } from "react";
@@ -60,7 +60,7 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   }
 
   function handleSortByName() {
-    setTracks(sortTracksByName(tracks));
+    setTracks(sortTracksByPath(tracks));
     setSort("name");
     setIsDirty(true);
   }
@@ -77,7 +77,7 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       folder: { ...latest.folder, sort },
       tracks:
         sort === "name"
-          ? sortTracksByName(latest.tracks)
+          ? sortTracksByPath(latest.tracks)
           : mergeEditedOrder(latest.tracks, tracks),
     };
   }
