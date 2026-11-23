@@ -7,9 +7,10 @@ import { playlistsAtom } from "@/state/playlists";
 import { transformFile } from "@/utils/file";
 import { EnhancedFileMeta, FileMeta, Playlist } from "@/utils/types";
 
-// The images the page passed to the Explorer as selected
+// The props the page passed to the Explorer
 const explorer = vi.hoisted(() => ({
   selectedEntries: null as EnhancedFileMeta[] | null,
+  singleSelection: undefined as boolean | undefined,
 }));
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
@@ -19,8 +20,15 @@ vi.mock("@/components/PlaylistHeader/PlaylistHeader", () => ({
   PlaylistHeader: () => null,
 }));
 vi.mock("@/components/Explorer/Explorer", () => ({
-  Explorer: ({ selectedEntries }: { selectedEntries: EnhancedFileMeta[] }) => {
+  Explorer: ({
+    selectedEntries,
+    singleSelection,
+  }: {
+    selectedEntries: EnhancedFileMeta[];
+    singleSelection?: boolean;
+  }) => {
     explorer.selectedEntries = selectedEntries;
+    explorer.singleSelection = singleSelection;
     return null;
   },
 }));
@@ -42,6 +50,7 @@ describe("ImageExplorer", () => {
   beforeEach(() => {
     localStorage.clear();
     explorer.selectedEntries = null;
+    explorer.singleSelection = undefined;
   });
 
   afterEach(cleanup);
@@ -65,5 +74,22 @@ describe("ImageExplorer", () => {
     );
 
     expect(explorer.selectedEntries).toEqual([image]);
+  });
+
+  it("lets a click on another image replace the selected one", () => {
+    const store = createStore();
+    store.set(playlistsAtom, [
+      {
+        data: { artist: "Artist", image, title: "Tape", tracks: [] },
+        meta: playlistFile,
+      } as Playlist,
+    ]);
+    render(
+      <Provider store={store}>
+        <ImageExplorer id={playlistFile.id} />
+      </Provider>
+    );
+
+    expect(explorer.singleSelection).toBe(true);
   });
 });

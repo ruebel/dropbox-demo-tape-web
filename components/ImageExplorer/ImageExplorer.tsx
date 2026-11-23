@@ -75,6 +75,8 @@ function ImagePicker({ id, playlist }: ImagePickerProps) {
         onSelectionChange={handleSelectionChange}
         selectedEntries={selectedImage ? [selectedImage] : []}
         showImages={true}
+        // A playlist has one image, so clicking another image replaces it
+        singleSelection={true}
       />
     </div>
   );

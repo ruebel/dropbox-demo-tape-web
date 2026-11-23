@@ -147,6 +147,48 @@ describe("Explorer with showImages", () => {
   });
 });
 
+describe("Explorer with singleSelection", () => {
+  afterEach(() => {
+    cleanup();
+  });
+
+  const otherImage = { ...cover, id: "id:other", path_lower: "/demos/other.jpg" };
+
+  it("replaces the selection with the clicked file", () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <Explorer
+        initialFolder="/Demos"
+        onSelectionChange={onSelectionChange}
+        selectedEntries={[otherImage]}
+        showImages={true}
+        singleSelection={true}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Cover.jpg" }));
+
+    expect(onSelectionChange).toHaveBeenLastCalledWith([cover]);
+  });
+
+  it("clears the selection when the selected file is clicked", () => {
+    const onSelectionChange = vi.fn();
+    render(
+      <Explorer
+        initialFolder="/Demos"
+        onSelectionChange={onSelectionChange}
+        selectedEntries={[cover]}
+        showImages={true}
+        singleSelection={true}
+      />
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Open Cover.jpg" }));
+
+    expect(onSelectionChange).toHaveBeenLastCalledWith([]);
+  });
+});
+
 describe("Entry", () => {
   afterEach(() => {
     cleanup();
