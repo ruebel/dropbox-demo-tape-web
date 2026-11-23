@@ -9,7 +9,7 @@
   display: grid;
   font-size: 16px;
   gap: 5px;
-  grid-template-columns: 40px auto 1fr 100px 170px;
+  grid-template-columns: 40px 1fr 100px 170px;
   margin: 0;
   outline: none;
   padding: var(--space-medium) var(--space-large) var(--space-medium) var(--space-medium);
@@ -17,28 +17,19 @@
   width: 100%;
 
   @media screen and (max-width: 768px) {
-    grid-template-columns: 40px auto 1fr 45px;
+    grid-template-columns: 40px 1fr 45px;
     padding: var(--space-medium);
   }
 }
 
 .track:hover {
   background-color: var(--bg-highlight);
-
-  .play {
-    color: var(--white);
-    border-width: 1px;
-  }
 }
 
 .trackPlaying {
   color: var(--highlight);
 
-  .play {
-    color: var(--highlight);
-    border-width: 0;
-  }
-
+  .number,
   .duration {
     color: var(--highlight);
   }
@@ -47,14 +38,7 @@
 .trackError {
   color: var(--error);
 
-  .play {
-    border: none;
-    color: var(--error);
-  }
-}
-
-.trackError:hover {
-  .play {
+  .number {
     color: var(--error);
   }
 }
@@ -65,17 +49,48 @@
   --tooltip-display: block;
 }
 
-.play {
+/* The track number, or an icon for the track's play state */
+.number {
   align-items: center;
-  border: 1px solid currentColor;
-  border-radius: 50%;
-  color: transparent;
+  color: var(--secondary);
   display: flex;
+  font-variant-numeric: tabular-nums;
   height: 30px;
-  justify-content: center;
-  line-height: 20px;
+  /* Lines up 9 and 10 by their last digit */
+  justify-content: flex-end;
+  padding-right: var(--space-medium);
+}
+
+/* Anchors the error Tooltip, so its arrow points at the icon */
+.errorIcon {
+  display: flex;
   position: relative;
-  width: 30px;
+}
+
+.numberResting,
+.numberHover {
+  align-items: center;
+  display: flex;
+}
+
+.numberHover {
+  display: none;
+}
+
+/* On hover or keyboard focus, the number shows what a click does */
+.track:hover,
+.track:focus-visible {
+  .numberResting {
+    display: none;
+  }
+
+  .numberHover {
+    display: flex;
+  }
+}
+
+.track:hover:not(.trackPlaying, .trackError) .number {
+  color: var(--white);
 }
 
 /* The track name, with its folder under it */
