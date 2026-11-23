@@ -1,4 +1,5 @@
 import { FolderIcon } from "@/components/icons/FolderIcon";
+import { PathText } from "@/components/PathText/PathText";
 import { Tooltip } from "@/components/Tooltip/Tooltip";
 import { getSyncedWithLabel } from "@/utils/playlist";
 import { PlaylistFolder } from "@/utils/types";
@@ -27,7 +28,9 @@ export function SyncedFolder({ children, folder }: SyncedFolderProps) {
         <FolderIcon size={14} />
       </span>
       {children}
-      <Tooltip id={tooltipId}>{getSyncedWithLabel(folder)}</Tooltip>
+      <Tooltip id={tooltipId}>
+        <PathText text={getSyncedWithLabel(folder)} />
+      </Tooltip>
     </span>
   );
 }

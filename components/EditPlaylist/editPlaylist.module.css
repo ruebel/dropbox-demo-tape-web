@@ -140,6 +140,8 @@
 
   strong {
     color: var(--primary);
-    word-break: break-all;
+    /* PathText wraps the path after a slash. This breaks a folder name only
+       when the name alone is longer than the line. */
+    overflow-wrap: anywhere;
   }
 }

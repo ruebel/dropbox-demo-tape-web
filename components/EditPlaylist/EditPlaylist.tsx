@@ -15,6 +15,7 @@ import { useRef, useState } from "react";
 
 import { listFolderAudioFiles } from "@/api/folder";
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
+import { PathText } from "@/components/PathText/PathText";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
 import { Progress } from "@/components/Progress/Progress";
 import { getFolderSyncErrorMessage } from "@/hooks/useFolderSync";
@@ -217,7 +218,10 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
           <>
             <div className={styles.folderRow}>
               <p className={styles.folderPath}>
-                Synced with <strong>{folder.path}</strong>
+                Synced with{" "}
+                <strong>
+                  <PathText text={folder.path} />
+                </strong>
               </p>
               <Checkbox
                 checked={includeSubfolders}
