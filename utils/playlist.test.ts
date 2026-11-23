@@ -1,11 +1,29 @@
 import { describe, expect, it } from "vitest";
 
-import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
+import {
+  getSyncedWithLabel,
+  mergeEditedOrder,
+  mergeEditedTracks,
+} from "@/utils/playlist";
 import { PlaylistTrack } from "@/utils/types";
 
 function track(id: string, details: Partial<PlaylistTrack> = {}) {
   return { id, name: `${id}.mp3`, ...details } as PlaylistTrack;
 }
+
+describe("getSyncedWithLabel", () => {
+  const folder = { id: "id:band", path: "/Demos/Band", sort: "name" as const };
+
+  it("names the folder", () => {
+    expect(getSyncedWithLabel(folder)).toBe("Synced with /Demos/Band");
+  });
+
+  it("says when subfolders are included", () => {
+    expect(getSyncedWithLabel({ ...folder, includeSubfolders: true })).toBe(
+      "Synced with /Demos/Band and its subfolders"
+    );
+  });
+});
 
 describe("mergeEditedTracks", () => {
   it("keeps the edited order", () => {

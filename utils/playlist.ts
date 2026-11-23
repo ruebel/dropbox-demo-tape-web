@@ -5,7 +5,9 @@ import { PlaylistFolder, PlaylistTrack } from "@/utils/types";
  * label and hover
  */
 export function getSyncedWithLabel(folder: PlaylistFolder) {
-  return `Synced with ${folder.path}`;
+  return folder.includeSubfolders
+    ? `Synced with ${folder.path} and its subfolders`
+    : `Synced with ${folder.path}`;
 }
 
 /**

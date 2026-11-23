@@ -212,7 +212,9 @@ export const updatePlaylistTrackAtom = atom(
  * wait for the next change, or undefined for a playlist without a folder.
  * Throws when the folder cannot be listed. A failed save is logged and the
  * cursor is still returned, so a user who cannot write to the playlist still
- * gets the next change.
+ * gets the next change. Lists subfolders too when the playlist includes them.
+ * When that setting changed during the listing, the files do not match it,
+ * so nothing is saved: the watch for the new setting syncs again.
  */
 export const syncFolderPlaylistAtom = atom(
   null,
@@ -220,9 +222,11 @@ export const syncFolderPlaylistAtom = atom(
     const folder = get(playlistAtom(playlistId))?.data.folder;
     if (!folder) return undefined;
 
+    const includeSubfolders = !!folder.includeSubfolders;
     const { cursor, files } = await listFolderAudioFiles(
       get(dbxAtom),
-      folder.id
+      folder.id,
+      { recursive: includeSubfolders }
     );
 
     try {
@@ -230,6 +234,9 @@ export const syncFolderPlaylistAtom = atom(
         playlistId,
         update: (latest) => {
           if (!latest.data.folder) return undefined;
+          if (!!latest.data.folder.includeSubfolders !== includeSubfolders) {
+            return undefined;
+          }
 
           const tracks = reconcileFolderTracks(
             latest.data.tracks,

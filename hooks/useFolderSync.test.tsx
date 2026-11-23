@@ -110,6 +110,29 @@ describe("useFolderSync", () => {
     expect(signal.aborted).toBe(true);
   });
 
+  it("starts a new watch when the playlist starts including subfolders", () => {
+    const store = makeStore();
+    renderSync(store);
+    const { signal } = lastWatch();
+
+    act(() => {
+      const [playlist] = store.get(playlistsAtom);
+      store.set(playlistsAtom, [
+        {
+          ...playlist,
+          data: {
+            ...playlist.data,
+            folder: { ...playlist.data.folder!, includeSubfolders: true },
+          },
+        },
+      ]);
+    });
+
+    expect(signal.aborted).toBe(true);
+    expect(watchFolder).toHaveBeenCalledTimes(2);
+    expect(lastWatch().signal.aborted).toBe(false);
+  });
+
   it("syncs the folder when the watch reports a change", async () => {
     const store = makeStore();
     const { result } = renderSync(store);

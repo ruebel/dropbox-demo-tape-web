@@ -19,10 +19,14 @@ export function getFolderSyncErrorMessage(error: unknown) {
 /**
  * Keeps a folder playlist's tracks in sync with its folder while the
  * component is mounted. Syncs once on mount, then again each time the folder
- * changes. Does nothing for a playlist without a folder.
+ * changes. Does nothing for a playlist without a folder. Starts a new watch
+ * when the playlist starts or stops including subfolders, because only a
+ * recursive listing's cursor reports changes in subfolders.
  */
 export function useFolderSync(playlistId: string) {
-  const folderId = useAtomValue(playlistAtom(playlistId))?.data.folder?.id;
+  const folder = useAtomValue(playlistAtom(playlistId))?.data.folder;
+  const folderId = folder?.id;
+  const includeSubfolders = !!folder?.includeSubfolders;
   const dbx = useAtomValue(dbxAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
   const syncFolderPlaylist = useSetAtom(syncFolderPlaylistAtom);
@@ -59,7 +63,14 @@ export function useFolderSync(playlistId: string) {
       controller.abort();
       setIsSyncing(false);
     };
-  }, [dbx, folderId, isAuthenticated, playlistId, syncFolderPlaylist]);
+  }, [
+    dbx,
+    folderId,
+    includeSubfolders,
+    isAuthenticated,
+    playlistId,
+    syncFolderPlaylist,
+  ]);
 
   return {
     errorMessage: error === null ? null : getFolderSyncErrorMessage(error),

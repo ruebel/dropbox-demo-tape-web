@@ -433,12 +433,21 @@ describe("syncFolderPlaylistAtom", () => {
     } as FileMeta;
   }
 
-  function makeStore(tracks: PlaylistTrack[], hasFolder = true) {
+  function makeStore(
+    tracks: PlaylistTrack[],
+    hasFolder = true,
+    includeSubfolders?: boolean
+  ) {
     const store = createStore();
     const playlist = makePlaylist(playlistFile);
     playlist.data.tracks = tracks;
     if (hasFolder) {
-      playlist.data.folder = { id: "id:folder", path: "/Demos", sort: "name" };
+      playlist.data.folder = {
+        id: "id:folder",
+        includeSubfolders,
+        path: "/Demos",
+        sort: "name",
+      };
     }
     store.set(playlistsAtom, [playlist]);
     return store;
@@ -474,10 +483,55 @@ describe("syncFolderPlaylistAtom", () => {
     expect(cursor).toBe("c1");
     expect(listFolderAudioFiles).toHaveBeenCalledWith(
       expect.anything(),
-      "id:folder"
+      "id:folder",
+      { recursive: false }
     );
     expect(uploadFile).toHaveBeenCalledTimes(1);
     expect(savedNames(store)).toEqual(["a.mp3", "b.mp3"]);
+  });
+
+  it("lists subfolders when the playlist includes them", async () => {
+    const store = makeStore([], true, true);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [],
+    });
+
+    await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(listFolderAudioFiles).toHaveBeenCalledWith(
+      expect.anything(),
+      "id:folder",
+      { recursive: true }
+    );
+  });
+
+  it("does not save when the subfolder setting changed during the listing", async () => {
+    const store = makeStore([]);
+    let finishListing = () => {};
+    vi.mocked(listFolderAudioFiles).mockReturnValue(
+      new Promise((resolve) => {
+        finishListing = () =>
+          resolve({ cursor: "c1", files: [audioFile("a.mp3")] });
+      })
+    );
+
+    const synced = store.set(syncFolderPlaylistAtom, playlistFile.id);
+    await store.set(updatePlaylistAtom, {
+      playlistId: playlistFile.id,
+      update: (p) => ({
+        ...p,
+        data: {
+          ...p.data,
+          folder: { ...p.data.folder!, includeSubfolders: true },
+        },
+      }),
+    });
+    finishListing();
+
+    expect(await synced).toBe("c1");
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(savedNames(store)).toEqual([]);
   });
 
   it("does not upload when the folder did not change", async () => {
