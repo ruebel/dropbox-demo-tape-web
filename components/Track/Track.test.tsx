@@ -77,27 +77,27 @@ describe("Track", () => {
     );
   });
 
-  it("shows the subfolder under the title", () => {
+  it("shows the folder under the title", () => {
     render(
       <Provider store={createStore()}>
         <Track
+          folder="/Demos/Disc 1"
           index={1}
           onClick={() => {}}
-          subfolder="Disc 1/Extras"
           track={makeTrack()}
         />
       </Provider>
     );
 
-    expect(document.querySelector("[class*=subfolder]")?.textContent).toBe(
-      "Disc 1/Extras"
+    expect(document.querySelector("[class*=folder]")?.textContent).toBe(
+      "/Demos/Disc 1"
     );
   });
 
-  it("shows no subfolder when it has none", () => {
+  it("shows no folder when it has none", () => {
     renderTrack(makeTrack());
 
-    expect(screen.getByRole("button").textContent).not.toContain("Disc");
-    expect(document.querySelector("[class*=subfolder]")).toBeNull();
+    expect(screen.getByRole("button").textContent).not.toContain("Demos");
+    expect(document.querySelector("[class*=folder]")).toBeNull();
   });
 });

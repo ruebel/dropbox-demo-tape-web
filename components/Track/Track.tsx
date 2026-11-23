@@ -20,20 +20,20 @@ import { useId } from "react";
 import styles from "./track.module.css";
 
 type TrackProps = {
+  // The folder the track's file is in, shown under the title
+  folder?: string;
   index: number;
   onClick: (id: string) => void;
   // False when the error message is already shown next to the track
   showErrorTooltip?: boolean;
-  // Shown under the title, for a track in a subfolder of a folder playlist
-  subfolder?: string;
   track: PlaylistTrack;
 };
 
 export function Track({
+  folder,
   index,
   onClick,
   showErrorTooltip = true,
-  subfolder,
   track,
 }: TrackProps) {
   const user = useAtomValue(userByIdAtom(getModifiedBy(track)));
@@ -75,10 +75,10 @@ export function Track({
       <span>{index}.</span>
       <span className={styles.title}>
         <span className={styles.trackName}>{removeExtension(track.name)}</span>
-        {subfolder && (
-          <span className={styles.subfolder}>
+        {folder && (
+          <span className={styles.folder}>
             {/* Keeps the path left to right inside the right-to-left box */}
-            <span dir="ltr">{subfolder}</span>
+            <span dir="ltr">{folder}</span>
           </span>
         )}
       </span>

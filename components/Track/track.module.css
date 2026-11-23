@@ -78,10 +78,10 @@
   width: 30px;
 }
 
-/* The track name, with its subfolder under it */
+/* The track name, with its folder under it */
 .title {
   display: grid;
-  /* Lets the name and subfolder shrink and end with an ellipsis */
+  /* Lets the name and folder shrink and end with an ellipsis */
   min-width: 0;
 }
 
@@ -91,7 +91,7 @@
   white-space: nowrap;
 }
 
-.subfolder {
+.folder {
   /* Matches the name of who updated the track */
   color: var(--disabled);
   /* Right to left, so a long path is cut at its start and keeps its last

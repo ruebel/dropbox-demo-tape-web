@@ -6,18 +6,18 @@ import { removeExtension } from "@/utils/file";
 import styles from "./editableTrackList.module.css";
 
 type EditableTrackProps = {
+  // The folder the track's file is in, shown under the title
+  folder?: string;
   index: number;
   // Shows a button to remove the track when set
   onDelete?: (id: string) => void;
-  // Shown under the title, for a track in a subfolder of a folder playlist
-  subfolder?: string;
   track: PlaylistTrack;
 };
 
 export function EditableTrack({
+  folder,
   index,
   onDelete,
-  subfolder,
   track,
 }: EditableTrackProps) {
   return (
@@ -36,10 +36,10 @@ export function EditableTrack({
       <span>{index}.</span>
       <span className={styles.title}>
         <span className={styles.trackName}>{removeExtension(track.name)}</span>
-        {subfolder && (
-          <span className={styles.subfolder}>
+        {folder && (
+          <span className={styles.folder}>
             {/* Keeps the path left to right inside the right-to-left box */}
-            <span dir="ltr">{subfolder}</span>
+            <span dir="ltr">{folder}</span>
           </span>
         )}
       </span>

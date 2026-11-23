@@ -417,17 +417,17 @@ describe("EditableTrack", () => {
     expect(screen.queryByRole("button", { name: "Remove track" })).toBeNull();
   });
 
-  it("shows the subfolder under the title", () => {
-    render(<EditableTrack index={1} subfolder="Live" track={track} />);
+  it("shows the folder under the title", () => {
+    render(<EditableTrack folder="/Band/Live" index={1} track={track} />);
 
-    expect(document.querySelector("[class*=subfolder]")?.textContent).toBe(
-      "Live"
+    expect(document.querySelector("[class*=folder]")?.textContent).toBe(
+      "/Band/Live"
     );
   });
 
-  it("shows no subfolder when it has none", () => {
+  it("shows no folder when it has none", () => {
     render(<EditableTrack index={1} track={track} />);
 
-    expect(document.querySelector("[class*=subfolder]")).toBeNull();
+    expect(document.querySelector("[class*=folder]")).toBeNull();
   });
 });

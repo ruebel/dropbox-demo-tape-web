@@ -42,7 +42,7 @@ const TrackList = memo(function EditableTrackList({ onTrackDelete, tracks }) {
               <EditableTrack
                 index={index + 1}
                 onDelete={onTrackDelete}
-                subfolder={getPathWithoutFileName(track.path)}
+                folder={getPathWithoutFileName(track.path)}
                 track={track}
               />
               <div className={styles.dragHandle} {...provided.dragHandleProps}>

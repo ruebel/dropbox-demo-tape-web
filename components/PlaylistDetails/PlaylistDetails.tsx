@@ -87,7 +87,7 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
               index={index + 1}
               onClick={handleTrackClick}
               showErrorTooltip={!isMissing}
-              subfolder={getPathWithoutFileName(track.path)}
+              folder={getPathWithoutFileName(track.path)}
               track={track}
             />
           );
