@@ -1,5 +1,5 @@
 import { uploadFile } from "@/api/file";
-import { listFolderAudioFiles } from "@/api/folder";
+import { getFolder, listFolderAudioFiles } from "@/api/folder";
 import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { logError } from "@/hooks/useErrorTracking";
 import { dbxAtom, isAuthenticatedAtom, rootStorageAtom } from "@/state/dropbox";
@@ -214,7 +214,9 @@ export const updatePlaylistTrackAtom = atom(
  * cursor is still returned, so a user who cannot write to the playlist still
  * gets the next change. Lists subfolders too when the playlist includes them.
  * When that setting changed during the listing, the files do not match it,
- * so nothing is saved: the watch for the new setting syncs again.
+ * so nothing is saved: the watch for the new setting syncs again. Also saves
+ * the folder's current path, which changes when the folder is renamed or
+ * moved.
  */
 export const syncFolderPlaylistAtom = atom(
   null,
@@ -222,28 +224,40 @@ export const syncFolderPlaylistAtom = atom(
     const folder = get(playlistAtom(playlistId))?.data.folder;
     if (!folder) return undefined;
 
+    const dbx = get(dbxAtom);
     const includeSubfolders = !!folder.includeSubfolders;
-    const { cursor, files } = await listFolderAudioFiles(
-      get(dbxAtom),
-      folder.id,
-      { recursive: includeSubfolders }
-    );
+    // At the same time, so the extra request does not make the sync slower
+    const [{ path }, { cursor, files }] = await Promise.all([
+      getFolder(dbx, folder.id),
+      listFolderAudioFiles(dbx, folder.id, { recursive: includeSubfolders }),
+    ]);
 
     try {
       await set(updatePlaylistAtom, {
         playlistId,
         update: (latest) => {
-          if (!latest.data.folder) return undefined;
-          if (!!latest.data.folder.includeSubfolders !== includeSubfolders) {
+          const latestFolder = latest.data.folder;
+          if (!latestFolder) return undefined;
+          if (!!latestFolder.includeSubfolders !== includeSubfolders) {
             return undefined;
           }
 
           const tracks = reconcileFolderTracks(
             latest.data.tracks,
             files,
-            latest.data.folder.sort
+            latestFolder.sort
           );
-          return tracks && { ...latest, data: { ...latest.data, tracks } };
+          const hasMoved = latestFolder.path !== path;
+          if (!tracks && !hasMoved) return undefined;
+
+          return {
+            ...latest,
+            data: {
+              ...latest.data,
+              folder: hasMoved ? { ...latestFolder, path } : latestFolder,
+              tracks: tracks ?? latest.data.tracks,
+            },
+          };
         },
       });
     } catch (error) {
