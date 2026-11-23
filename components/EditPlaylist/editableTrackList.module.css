@@ -29,16 +29,31 @@
   display: grid;
   font-size: 16px;
   gap: 5px;
-  grid-template-columns: 40px auto 1fr;
+  /* The number, the title, and the remove button when there is one */
+  grid-template-columns: 40px 1fr auto;
   margin: 0;
   outline: none;
-  padding: var(--space-medium);
+  /* The right side leaves room for the drag handle, which sits over the row:
+     its 30px icon, 10px from the edge, with 10px before it */
+  padding: var(--space-medium) 50px var(--space-medium) var(--space-medium);
   text-align: left;
   width: 100%;
 }
 
 .track:hover {
   background-color: var(--bg-highlight);
+}
+
+/* Matches the number column on the playlist page */
+.number {
+  align-items: center;
+  color: var(--secondary);
+  display: flex;
+  font-variant-numeric: tabular-nums;
+  height: 30px;
+  /* Lines up 9 and 10 by their last digit */
+  justify-content: flex-end;
+  padding-right: var(--space-medium);
 }
 
 /* The track name, with its folder under it */

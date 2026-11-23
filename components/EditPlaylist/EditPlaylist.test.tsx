@@ -459,6 +459,21 @@ describe("EditableTrack", () => {
     expect(screen.queryByRole("button", { name: "Remove track" })).toBeNull();
   });
 
+  it("shows the number, then the title, then the remove button", () => {
+    const onDelete = vi.fn();
+    const { container } = render(
+      <EditableTrack index={12} onDelete={onDelete} track={track} />
+    );
+
+    const [number, title, button] = container.firstElementChild!.children;
+    expect(number.textContent).toBe("12");
+    expect(title.textContent).toBe("a");
+    expect(button.getAttribute("aria-label")).toBe("Remove track");
+
+    fireEvent.click(button);
+    expect(onDelete).toHaveBeenCalledWith(track.id);
+  });
+
   it("shows the folder under the title", () => {
     render(<EditableTrack folder="/Band/Live" index={1} track={track} />);
 
