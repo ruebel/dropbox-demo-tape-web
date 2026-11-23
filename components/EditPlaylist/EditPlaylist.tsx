@@ -196,40 +196,46 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
           />
         </div>
       </div>
-      <div className={styles.tracksHeader}>
-        <h2>Tracks</h2>
-        {folder ? (
-          <ButtonLink
-            disabled={sort === "name" || isListing}
-            onClick={handleSortByName}
-          >
-            Sort A–Z
-          </ButtonLink>
-        ) : (
-          <ButtonLink href={editPlaylistTracksUrl(id)}>Edit Tracks</ButtonLink>
+      <div className={styles.tracksSection}>
+        <div className={styles.tracksHeader}>
+          <h2>Tracks</h2>
+          {folder ? (
+            <ButtonLink
+              disabled={sort === "name" || isListing}
+              onClick={handleSortByName}
+              size="small"
+            >
+              Sort A–Z
+            </ButtonLink>
+          ) : (
+            <ButtonLink href={editPlaylistTracksUrl(id)} size="small">
+              Edit Tracks
+            </ButtonLink>
+          )}
+        </div>
+        {folder && (
+          <>
+            <div className={styles.folderRow}>
+              <p className={styles.folderPath}>
+                Synced with <strong>{folder.path}</strong>
+              </p>
+              <Checkbox
+                checked={includeSubfolders}
+                disabled={isListing}
+                label="Include subfolders"
+                onChange={handleIncludeSubfoldersChange}
+              />
+            </div>
+            <p className={styles.dragHint}>Drag tracks to change their order.</p>
+            {listError !== null && (
+              <div className={styles.listError} role="alert">
+                {getFolderSyncErrorMessage(listError)}
+              </div>
+            )}
+          </>
         )}
       </div>
-      {folder && (
-        <>
-          <p className={styles.folderPath}>
-            Every audio file in <strong>{folder.path}</strong>
-            {includeSubfolders && " and its subfolders"} is in this playlist.
-            Drag tracks to change their order.
-          </p>
-          <Checkbox
-            checked={includeSubfolders}
-            disabled={isListing}
-            label="Include subfolders"
-            onChange={handleIncludeSubfoldersChange}
-          />
-          {listError !== null && (
-            <div className={styles.listError} role="alert">
-              {getFolderSyncErrorMessage(listError)}
-            </div>
-          )}
-          {isListing && <Progress />}
-        </>
-      )}
+      {isListing && <Progress />}
       {tracks.length === 0 && !folder && (
         <a className={styles.emptyTracks} href={editPlaylistTracksUrl(id)}>
           Add tracks to your playlist

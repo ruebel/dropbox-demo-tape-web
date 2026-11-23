@@ -159,7 +159,10 @@ describe("EditPlaylist for a folder playlist", () => {
   it("shows the folder and hides the controls that pick tracks", () => {
     renderFolderPlaylist();
 
-    expect(screen.getByText("/Band")).toBeTruthy();
+    expect(screen.getByText("/Band").parentElement?.textContent).toBe(
+      "Synced with /Band"
+    );
+    expect(screen.getByText("Drag tracks to change their order.")).toBeTruthy();
     expect(screen.queryByText("Edit Tracks")).toBeNull();
     expect(trackList.props?.canDelete).toBe(false);
   });
@@ -283,9 +286,6 @@ describe("EditPlaylist for a folder playlist", () => {
         { recursive: true }
       );
       expect(checkbox().checked).toBe(true);
-      expect(
-        screen.getByText(/and its subfolders is in this playlist/)
-      ).toBeTruthy();
       expect(shownPaths()).toEqual([
         "/Band/a.mp3",
         "/Band/b.mp3",
