@@ -107,6 +107,15 @@
     justify-content: space-between;
   }
 }
+.listError {
+  background-color: var(--background-light);
+  border-radius: 10px;
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--error);
+  font-size: var(--fs-sm);
+  padding: 10px 20px;
+}
+
 .folderPath {
   color: var(--secondary);
   margin: 0;

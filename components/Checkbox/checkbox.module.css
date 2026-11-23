@@ -17,6 +17,15 @@
   width: 16px;
 }
 
+.wrapper:has(.input:disabled) {
+  color: var(--disabled);
+  cursor: default;
+}
+
+.input:disabled {
+  cursor: default;
+}
+
 .input:focus-visible {
   outline: var(--outline);
 }

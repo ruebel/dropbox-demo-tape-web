@@ -8,13 +8,17 @@ import {
   playlistAtom,
   updatePlaylistAtom,
 } from "@/state/playlists";
-import { sortTracksByPath } from "@/utils/folderSync";
+import { reconcileFolderTracks, sortTracksByPath } from "@/utils/folderSync";
 import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
+import { listFolderAudioFiles } from "@/api/folder";
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { Progress } from "@/components/Progress/Progress";
+import { getFolderSyncErrorMessage } from "@/hooks/useFolderSync";
+import { dbxAtom } from "@/state/dropbox";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
 import { FolderSort, PlaylistData, PlaylistTrack } from "@/utils/types";
 import {
@@ -39,12 +43,25 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   const [tracks, setTracks] = useState(playlist?.data.tracks || []);
   const folder = playlist?.data.folder;
   const [sort, setSort] = useState<FolderSort>(folder?.sort ?? "name");
+  // The sort for a folder listing to use when it finishes. A drag during the
+  // listing changes it.
+  const sortRef = useRef(sort);
   const [includeSubfolders, setIncludeSubfolders] = useState(
     !!folder?.includeSubfolders
   );
+  // True while the folder is listed for a new includeSubfolders value
+  const [isListing, setIsListing] = useState(false);
+  // The error from the last listing, cleared when the next one starts
+  const [listError, setListError] = useState<unknown>(null);
   const artists = useAtomValue(artistsAtom);
+  const dbx = useAtomValue(dbxAtom);
 
   const { push } = useRouter();
+
+  function changeSort(newSort: FolderSort) {
+    setSort(newSort);
+    sortRef.current = newSort;
+  }
 
   function handleArtistChange(newArtist: string) {
     setArtist(newArtist);
@@ -59,18 +76,41 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   function handleTrackChange(newTracks: PlaylistTrack[]) {
     setTracks(newTracks);
     // For a folder playlist, the only track change is a drag
-    setSort("custom");
+    changeSort("custom");
     setIsDirty(true);
   }
 
-  function handleIncludeSubfoldersChange(checked: boolean) {
+  // Lists the folder with the new value, so the track list shows the tracks
+  // the playlist will have. The checkbox is disabled until the listing
+  // finishes, so listings cannot finish out of order.
+  async function handleIncludeSubfoldersChange(checked: boolean) {
+    if (!folder) return;
+
     setIncludeSubfolders(checked);
-    setIsDirty(true);
+    setListError(null);
+    setIsListing(true);
+    try {
+      const { files } = await listFolderAudioFiles(dbx, folder.id, {
+        recursive: checked,
+      });
+      // Matches against the tracks on the page when the listing finishes, so
+      // a drag during the listing is kept
+      setTracks(
+        (current) =>
+          reconcileFolderTracks(current, files, sortRef.current) ?? current
+      );
+      setIsDirty(true);
+    } catch (error) {
+      setIncludeSubfolders(!checked);
+      setListError(error);
+    } finally {
+      setIsListing(false);
+    }
   }
 
   function handleSortByName() {
     setTracks(sortTracksByPath(tracks));
-    setSort("name");
+    changeSort("name");
     setIsDirty(true);
   }
 
@@ -80,11 +120,24 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       return { tracks: mergeEditedTracks(latest.tracks, tracks) };
     }
 
+    const nextFolder = { ...latest.folder, includeSubfolders, sort };
+
+    // After a change to includeSubfolders, the page's tracks come from a new
+    // listing, so they decide which tracks are in the playlist. The latest
+    // saved tracks still decide each track's details. The next sync fixes
+    // any file that changed since the listing.
+    if (!!latest.folder.includeSubfolders !== includeSubfolders) {
+      const merged = mergeEditedTracks(latest.tracks, tracks);
+      return {
+        folder: nextFolder,
+        tracks: sort === "name" ? sortTracksByPath(merged) : merged,
+      };
+    }
+
     // A sync can add or remove files while the page is open, so the latest
-    // tracks decide which tracks are in the playlist. A change to
-    // includeSubfolders shows in the tracks after the next sync.
+    // tracks decide which tracks are in the playlist
     return {
-      folder: { ...latest.folder, includeSubfolders, sort },
+      folder: nextFolder,
       tracks:
         sort === "name"
           ? sortTracksByPath(latest.tracks)
@@ -118,7 +171,7 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       <div className={styles.header}>
         <h2>Edit playlist</h2>
         <div className={styles.actions}>
-          <ButtonLink disabled={!isDirty} onClick={handleSave}>
+          <ButtonLink disabled={!isDirty || isListing} onClick={handleSave}>
             Save
           </ButtonLink>
           <ButtonLink href={playlistUrl(id)}>Cancel</ButtonLink>
@@ -146,7 +199,10 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       <div className={styles.tracksHeader}>
         <h2>Tracks</h2>
         {folder ? (
-          <ButtonLink disabled={sort === "name"} onClick={handleSortByName}>
+          <ButtonLink
+            disabled={sort === "name" || isListing}
+            onClick={handleSortByName}
+          >
             Sort A–Z
           </ButtonLink>
         ) : (
@@ -162,9 +218,16 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
           </p>
           <Checkbox
             checked={includeSubfolders}
+            disabled={isListing}
             label="Include subfolders"
             onChange={handleIncludeSubfoldersChange}
           />
+          {listError !== null && (
+            <div className={styles.listError} role="alert">
+              {getFolderSyncErrorMessage(listError)}
+            </div>
+          )}
+          {isListing && <Progress />}
         </>
       )}
       {tracks.length === 0 && !folder && (

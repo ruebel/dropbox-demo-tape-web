@@ -4,6 +4,7 @@ import { ComponentProps } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uploadFile } from "@/api/file";
+import { listFolderAudioFiles } from "@/api/folder";
 import { EditableTrack } from "@/components/EditPlaylist/EditableTrack";
 import { EditPlaylist } from "@/components/EditPlaylist/EditPlaylist";
 import type { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
@@ -24,6 +25,10 @@ const trackList = vi.hoisted(() => ({
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push }) }));
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
+vi.mock("@/api/folder", () => ({
+  listFolderAudioFiles: vi.fn(),
+  watchFolder: vi.fn(),
+}));
 // Not under test, and they need Dropbox and drag-and-drop setup
 vi.mock("@/components/PlaylistImage/PlaylistImage", () => ({
   PlaylistImage: () => null,
@@ -99,15 +104,18 @@ describe("EditPlaylist for a folder playlist", () => {
   const b = transformFile(file("/Band/b.mp3"));
   const c = transformFile(file("/Band/c.mp3"));
 
-  function renderFolderPlaylist(sort: "name" | "custom" = "name") {
+  function renderFolderPlaylist(
+    sort: "name" | "custom" = "name",
+    { includeSubfolders = undefined as boolean | undefined, tracks = [a, b] } = {}
+  ) {
     const store = createStore();
     store.set(playlistsAtom, [
       {
         data: {
           artist: "Hunted Horse",
-          folder: { id: "id:band", path: "/Band", sort },
+          folder: { id: "id:band", includeSubfolders, path: "/Band", sort },
           title: "Band",
-          tracks: [a, b],
+          tracks,
         },
         meta: transformFile(playlistFile),
       } as Playlist,
@@ -232,19 +240,161 @@ describe("EditPlaylist for a folder playlist", () => {
     expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3", "c.mp3"]);
   });
 
-  it("saves a change to the subfolder option and keeps the tracks", async () => {
-    renderFolderPlaylist("name");
-    const checkbox = screen.getByLabelText(
-      "Include subfolders"
-    ) as HTMLInputElement;
-    expect(checkbox.checked).toBe(false);
+  describe("when the subfolder option changes", () => {
+    const live = file("/Band/Live/b.mp3");
 
-    fireEvent.click(checkbox);
-    expect(screen.getByText(/and its subfolders is in this playlist/)).toBeTruthy();
-    const saved = await save();
+    function checkbox() {
+      return screen.getByLabelText("Include subfolders") as HTMLInputElement;
+    }
 
-    expect(saved.folder?.includeSubfolders).toBe(true);
-    expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3"]);
+    function shownPaths() {
+      return trackList.props?.tracks.map((t) => t.path);
+    }
+
+    function isDisabled(name: string) {
+      return (screen.getByRole("button", { name }) as HTMLButtonElement)
+        .disabled;
+    }
+
+    // A listing that finishes when the test calls `finish`
+    function pendingListing(files: FileMeta[]) {
+      let finish = () => {};
+      vi.mocked(listFolderAudioFiles).mockReturnValueOnce(
+        new Promise((resolve) => {
+          finish = () => resolve({ cursor: "c1", files });
+        })
+      );
+      return { finish: () => act(async () => finish()) };
+    }
+
+    it("lists subfolders and shows their tracks when checked", async () => {
+      vi.mocked(listFolderAudioFiles).mockResolvedValueOnce({
+        cursor: "c1",
+        files: [a, b, live],
+      });
+      renderFolderPlaylist("name");
+      expect(checkbox().checked).toBe(false);
+
+      await act(async () => fireEvent.click(checkbox()));
+
+      expect(listFolderAudioFiles).toHaveBeenCalledWith(
+        expect.anything(),
+        "id:band",
+        { recursive: true }
+      );
+      expect(checkbox().checked).toBe(true);
+      expect(
+        screen.getByText(/and its subfolders is in this playlist/)
+      ).toBeTruthy();
+      expect(shownPaths()).toEqual([
+        "/Band/a.mp3",
+        "/Band/b.mp3",
+        "/Band/Live/b.mp3",
+      ]);
+      expect(isDisabled("Save")).toBe(false);
+    });
+
+    it("removes the subfolder tracks when unchecked", async () => {
+      vi.mocked(listFolderAudioFiles).mockResolvedValueOnce({
+        cursor: "c1",
+        files: [a, b],
+      });
+      renderFolderPlaylist("name", {
+        includeSubfolders: true,
+        tracks: [a, b, transformFile(live)],
+      });
+
+      await act(async () => fireEvent.click(checkbox()));
+
+      expect(listFolderAudioFiles).toHaveBeenCalledWith(
+        expect.anything(),
+        "id:band",
+        { recursive: false }
+      );
+      expect(shownPaths()).toEqual(["/Band/a.mp3", "/Band/b.mp3"]);
+    });
+
+    it("disables the controls until the listing finishes", async () => {
+      const listing = pendingListing([a, b, live]);
+      renderFolderPlaylist("custom");
+
+      fireEvent.click(checkbox());
+
+      expect(checkbox().disabled).toBe(true);
+      expect(isDisabled("Save")).toBe(true);
+      expect(isDisabled("Sort A–Z")).toBe(true);
+
+      await listing.finish();
+
+      expect(checkbox().disabled).toBe(false);
+      expect(isDisabled("Save")).toBe(false);
+      expect(isDisabled("Sort A–Z")).toBe(false);
+    });
+
+    it("keeps a drag made during the listing", async () => {
+      const listing = pendingListing([a, b, live]);
+      renderFolderPlaylist("name");
+
+      fireEvent.click(checkbox());
+      act(() => trackList.props!.onTrackChange([b, a]));
+      await listing.finish();
+
+      expect(shownPaths()).toEqual([
+        "/Band/b.mp3",
+        "/Band/a.mp3",
+        "/Band/Live/b.mp3",
+      ]);
+    });
+
+    it("puts the box back and shows an error when the listing fails", async () => {
+      vi.mocked(listFolderAudioFiles).mockRejectedValueOnce(
+        new TypeError("Failed to fetch")
+      );
+      renderFolderPlaylist("name");
+
+      await act(async () => fireEvent.click(checkbox()));
+
+      expect(checkbox().checked).toBe(false);
+      expect(screen.getByRole("alert").textContent).toMatch(
+        /Check your connection/
+      );
+      expect(shownPaths()).toEqual(["/Band/a.mp3", "/Band/b.mp3"]);
+      expect(isDisabled("Save")).toBe(true);
+    });
+
+    it("saves the listed tracks in the order the user dragged them", async () => {
+      vi.mocked(listFolderAudioFiles).mockResolvedValueOnce({
+        cursor: "c1",
+        files: [a, b, live],
+      });
+      const store = renderFolderPlaylist("name");
+      // The player saves a's duration while the page is open
+      await store.set(updatePlaylistTrackAtom, {
+        playlistId: playlistFile.id,
+        trackId: a.id,
+        update: (t) => ({ ...t, duration: 168 }),
+      });
+
+      await act(async () => fireEvent.click(checkbox()));
+      const [listedA, listedB, listedLive] = trackList.props!.tracks;
+      act(() =>
+        trackList.props!.onTrackChange([listedLive, listedA, listedB])
+      );
+      const saved = await save();
+
+      expect(saved.folder).toEqual({
+        id: "id:band",
+        includeSubfolders: true,
+        path: "/Band",
+        sort: "custom",
+      });
+      expect(saved.tracks.map((t) => t.path)).toEqual([
+        "/Band/Live/b.mp3",
+        "/Band/a.mp3",
+        "/Band/b.mp3",
+      ]);
+      expect(saved.tracks[1].duration).toBe(168);
+    });
   });
 });
 
