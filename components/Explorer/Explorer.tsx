@@ -1,4 +1,5 @@
 import { useFiles } from "@/hooks/useFiles";
+import { useThumbnails } from "@/hooks/useThumbnails";
 import { EnhancedFileMeta, SortDir } from "@/utils/types";
 import { useState } from "react";
 
@@ -7,6 +8,7 @@ import { Entry } from "@/components/Explorer/Entry";
 import { SortableHeader } from "@/components/Explorer/SortableHeader";
 import { List } from "@/components/List/List";
 import { Progress } from "@/components/Progress/Progress";
+import { styleArray } from "@/utils/style";
 import styles from "./explorer.module.css";
 
 type ExplorerProps = {
@@ -46,6 +48,7 @@ export function Explorer({
     sortBy,
     sortDir,
   });
+  const thumbnails = useThumbnails(files, showImages);
 
   // Every way of opening a folder goes through here, so onPathChange always
   // has the folder that is shown
@@ -88,7 +91,12 @@ export function Explorer({
     }
   }
   return (
-    <div className={styles.wrapper}>
+    <div
+      className={styleArray([
+        styles.wrapper,
+        showImages && styles.withThumbnails,
+      ])}
+    >
       <BreadcrumbTrail onClick={changeFolder} path={folder} />
       <div className={styles.header}>
         <span />
@@ -128,6 +136,9 @@ export function Explorer({
               (e) => e.path_lower === entry.path_lower
             )}
             onClick={handleClick}
+            thumbnail={
+              entry.path_lower ? thumbnails.get(entry.path_lower) : undefined
+            }
           />
         )}
       />
