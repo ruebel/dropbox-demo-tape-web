@@ -1,13 +1,14 @@
 "use client";
 
-import { playlistAtom, updatePlaylistAtom } from "@/state/playlists";
+import { updatePlaylistAtom } from "@/state/playlists";
 import { mergeEditedTracks } from "@/utils/playlist";
-import { EnhancedFileMeta } from "@/utils/types";
-import { useAtomValue, useSetAtom } from "jotai";
+import { EnhancedFileMeta, Playlist } from "@/utils/types";
+import { useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import { Explorer } from "@/components/Explorer/Explorer";
+import { LoadedPlaylist } from "@/components/LoadedPlaylist/LoadedPlaylist";
 import { PlaylistHeader } from "@/components/PlaylistHeader/PlaylistHeader";
 import { getPathWithoutFileName } from "@/utils/file";
 import { playlistUrl } from "@/utils/url";
@@ -19,17 +20,26 @@ type TrackExplorerProps = {
 };
 
 export function TrackExplorer({ id }: TrackExplorerProps) {
-  const playlist = useAtomValue(playlistAtom(id));
-  const updatePlaylist = useSetAtom(updatePlaylistAtom);
-  const [selectedTracks, setSelectedTracks] = useState(
-    playlist?.data.tracks || []
+  return (
+    <LoadedPlaylist id={id}>
+      {(playlist) => <TrackPicker id={id} playlist={playlist} />}
+    </LoadedPlaylist>
   );
+}
+
+type TrackPickerProps = {
+  id: string;
+  // The latest playlist. The selection starts from its first value.
+  playlist: Playlist;
+};
+
+function TrackPicker({ id, playlist }: TrackPickerProps) {
+  const updatePlaylist = useSetAtom(updatePlaylistAtom);
+  const [selectedTracks, setSelectedTracks] = useState(playlist.data.tracks);
   const [isDirty, setIsDirty] = useState(false);
   const { push } = useRouter();
 
   async function handleSave() {
-    if (!playlist) return;
-
     // Applies only the track selection to the latest saved playlist, so
     // changes the player saved while the page was open are kept
     await updatePlaylist({
@@ -52,8 +62,6 @@ export function TrackExplorer({ id }: TrackExplorerProps) {
       setIsDirty(true);
     }
   }
-
-  if (!playlist) return null;
 
   return (
     <div>

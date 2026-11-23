@@ -97,6 +97,48 @@ describe("EditPlaylist", () => {
     expect(saved.title).toBe("Stuck In Heaven (v2)");
     expect(saved.tracks[0].duration).toBe(168);
   });
+
+  it("fills the form after a reload and keeps the playlist on save", async () => {
+    // After a reload the page renders before the cache loads
+    const store = createStore();
+    render(
+      <Provider store={store}>
+        <EditPlaylist id={playlistFile.id} />
+      </Provider>
+    );
+    expect(screen.queryByLabelText("Title")).toBeNull();
+
+    act(() =>
+      store.set(playlistsAtom, [
+        {
+          data: {
+            artist: "Hunted Horse",
+            title: "Stuck In Heaven",
+            tracks: [track],
+          },
+          meta: transformFile(playlistFile),
+        } as Playlist,
+      ])
+    );
+
+    expect((screen.getByLabelText("Title") as HTMLInputElement).value).toBe(
+      "Stuck In Heaven"
+    );
+    expect((screen.getByLabelText("Artist") as HTMLInputElement).value).toBe(
+      "Hunted Horse"
+    );
+    expect(trackList.props?.tracks).toEqual([track]);
+
+    fireEvent.change(screen.getByLabelText("Title"), {
+      target: { value: "Stuck In Heaven (v2)" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save" }));
+
+    await vi.waitFor(() => expect(push).toHaveBeenCalled());
+    const saved: PlaylistData = vi.mocked(uploadFile).mock.lastCall![1];
+    expect(saved.artist).toBe("Hunted Horse");
+    expect(saved.tracks.map((t) => t.id)).toEqual([track.id]);
+  });
 });
 
 describe("EditPlaylist for a folder playlist", () => {

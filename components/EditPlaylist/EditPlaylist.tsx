@@ -3,11 +3,7 @@
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
 import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { TextInput } from "@/components/TextInput/TextInput";
-import {
-  artistsAtom,
-  playlistAtom,
-  updatePlaylistAtom,
-} from "@/state/playlists";
+import { artistsAtom, updatePlaylistAtom } from "@/state/playlists";
 import { reconcileFolderTracks, sortTracksByPath } from "@/utils/folderSync";
 import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -15,13 +11,19 @@ import { useRef, useState } from "react";
 
 import { listFolderAudioFiles } from "@/api/folder";
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
+import { LoadedPlaylist } from "@/components/LoadedPlaylist/LoadedPlaylist";
 import { PathText } from "@/components/PathText/PathText";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
 import { Progress } from "@/components/Progress/Progress";
 import { getFolderSyncErrorMessage } from "@/hooks/useFolderSync";
 import { dbxAtom } from "@/state/dropbox";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
-import { FolderSort, PlaylistData, PlaylistTrack } from "@/utils/types";
+import {
+  FolderSort,
+  Playlist,
+  PlaylistData,
+  PlaylistTrack,
+} from "@/utils/types";
 import {
   editPlaylistImageUrl,
   editPlaylistTracksUrl,
@@ -36,13 +38,26 @@ type EditPlaylistProps = {
 };
 
 export function EditPlaylist({ id }: EditPlaylistProps) {
-  const playlist = useAtomValue(playlistAtom(id));
+  return (
+    <LoadedPlaylist id={id}>
+      {(playlist) => <EditPlaylistForm id={id} playlist={playlist} />}
+    </LoadedPlaylist>
+  );
+}
+
+type EditPlaylistFormProps = {
+  id: string;
+  // The latest playlist. The form's fields start from its first value.
+  playlist: Playlist;
+};
+
+function EditPlaylistForm({ id, playlist }: EditPlaylistFormProps) {
   const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [isDirty, setIsDirty] = useState(false);
-  const [artist, setArtist] = useState(playlist?.data.artist || "");
-  const [title, setTitle] = useState(playlist?.data.title || "");
-  const [tracks, setTracks] = useState(playlist?.data.tracks || []);
-  const folder = playlist?.data.folder;
+  const [artist, setArtist] = useState(playlist.data.artist);
+  const [title, setTitle] = useState(playlist.data.title);
+  const [tracks, setTracks] = useState(playlist.data.tracks);
+  const folder = playlist.data.folder;
   const [sort, setSort] = useState<FolderSort>(folder?.sort ?? "name");
   // The sort for a folder listing to use when it finishes. A drag during the
   // listing changes it.
@@ -147,8 +162,6 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   }
 
   async function handleSave() {
-    if (!playlist) return;
-
     // Applies only this page's edits to the latest saved playlist, so changes
     // the player saved while the page was open are kept
     await updatePlaylist({

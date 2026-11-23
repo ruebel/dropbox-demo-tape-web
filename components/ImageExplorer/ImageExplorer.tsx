@@ -2,12 +2,13 @@
 
 import { Explorer } from "@/components/Explorer/Explorer";
 import { PlaylistHeader } from "@/components/PlaylistHeader/PlaylistHeader";
-import { playlistAtom, updatePlaylistAtom } from "@/state/playlists";
-import { EnhancedFileMeta } from "@/utils/types";
-import { useAtomValue, useSetAtom } from "jotai";
+import { updatePlaylistAtom } from "@/state/playlists";
+import { EnhancedFileMeta, Playlist } from "@/utils/types";
+import { useSetAtom } from "jotai";
 import { useState } from "react";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
+import { LoadedPlaylist } from "@/components/LoadedPlaylist/LoadedPlaylist";
 import { playlistUrl } from "@/utils/url";
 import { useRouter } from "next/navigation";
 import styles from "./imageExplorer.module.css";
@@ -17,11 +18,24 @@ type ImageExplorerProps = {
 };
 
 export function ImageExplorer({ id }: ImageExplorerProps) {
-  const playlist = useAtomValue(playlistAtom(id));
+  return (
+    <LoadedPlaylist id={id}>
+      {(playlist) => <ImagePicker id={id} playlist={playlist} />}
+    </LoadedPlaylist>
+  );
+}
+
+type ImagePickerProps = {
+  id: string;
+  // The latest playlist. The selection starts from its first value.
+  playlist: Playlist;
+};
+
+function ImagePicker({ id, playlist }: ImagePickerProps) {
   const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [selectedImage, setSelectedImage] = useState<
     EnhancedFileMeta | undefined
-  >(playlist?.data?.image);
+  >(playlist.data.image);
   const [isDirty, setIsDirty] = useState(false);
   const { push } = useRouter();
 
@@ -33,8 +47,6 @@ export function ImageExplorer({ id }: ImageExplorerProps) {
   }
 
   async function handleSave() {
-    if (!playlist) return;
-
     // Applies only the image to the latest saved playlist, so changes the
     // player saved while the page was open are kept
     await updatePlaylist({
@@ -47,8 +59,6 @@ export function ImageExplorer({ id }: ImageExplorerProps) {
 
     push(playlistUrl(id));
   }
-
-  if (!playlist) return null;
 
   return (
     <div>
