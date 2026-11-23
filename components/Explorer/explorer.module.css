@@ -118,3 +118,37 @@
     width: 100%;
   }
 }
+/* The image picker shows a thumbnail in the first column, so the column is
+   wider */
+.withThumbnails .header,
+.withThumbnails .entryInner {
+  grid-template-columns: 40px 1fr 0.5fr 0.5fr;
+}
+
+.thumbnail {
+  align-items: center;
+  background-color: var(--bg-highlight);
+  border-radius: 4px;
+  display: flex;
+  height: 40px;
+  justify-content: center;
+  position: relative;
+  width: 40px;
+}
+
+.thumbnailImage {
+  border-radius: 4px;
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
+.thumbnailBadge {
+  background-color: var(--background);
+  border-radius: 3px;
+  bottom: -5px;
+  color: var(--highlight);
+  display: flex;
+  position: absolute;
+  right: -5px;
+}

@@ -71,6 +71,56 @@ export async function uploadFile(
   return result;
 }
 
+// The most files one thumbnail batch request accepts
+const THUMBNAIL_BATCH_SIZE = 25;
+
+/**
+ * Gets a small JPEG thumbnail for each image at `paths`, with one request per
+ * 25 images. Returns a map from each path to a data URL that an <img> can
+ * show. Leaves out images that have no thumbnail, and every image in a
+ * request that failed.
+ */
+export async function getThumbnails(
+  dbx: Dropbox,
+  paths: string[]
+): Promise<Map<string, string>> {
+  const groups: string[][] = [];
+  for (let i = 0; i < paths.length; i += THUMBNAIL_BATCH_SIZE) {
+    groups.push(paths.slice(i, i + THUMBNAIL_BATCH_SIZE));
+  }
+
+  const results = await Promise.allSettled(
+    groups.map((group) =>
+      dbx.filesGetThumbnailBatch({
+        entries: group.map((path) => ({
+          format: { ".tag": "jpeg" },
+          path,
+          // Twice the shown size, so the thumbnail stays sharp on retina
+          // screens
+          size: { ".tag": "w128h128" },
+        })),
+      })
+    )
+  );
+
+  const thumbnails = new Map<string, string>();
+  results.forEach((settled, groupIndex) => {
+    if (settled.status !== "fulfilled") return;
+
+    // Entries come back in the order of the request
+    settled.value.result.entries.forEach((entry, index) => {
+      if (entry[".tag"] === "success") {
+        thumbnails.set(
+          groups[groupIndex][index],
+          `data:image/jpeg;base64,${entry.thumbnail}`
+        );
+      }
+    });
+  });
+
+  return thumbnails;
+}
+
 // The largest page size search allows
 const SEARCH_PAGE_SIZE = 1000;
 
