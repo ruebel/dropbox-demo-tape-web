@@ -1,6 +1,7 @@
 "use client";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
+import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { TextInput } from "@/components/TextInput/TextInput";
 import {
   artistsAtom,
@@ -38,6 +39,9 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   const [tracks, setTracks] = useState(playlist?.data.tracks || []);
   const folder = playlist?.data.folder;
   const [sort, setSort] = useState<FolderSort>(folder?.sort ?? "name");
+  const [includeSubfolders, setIncludeSubfolders] = useState(
+    !!folder?.includeSubfolders
+  );
   const artists = useAtomValue(artistsAtom);
 
   const { push } = useRouter();
@@ -59,6 +63,11 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
     setIsDirty(true);
   }
 
+  function handleIncludeSubfoldersChange(checked: boolean) {
+    setIncludeSubfolders(checked);
+    setIsDirty(true);
+  }
+
   function handleSortByName() {
     setTracks(sortTracksByPath(tracks));
     setSort("name");
@@ -72,9 +81,10 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
     }
 
     // A sync can add or remove files while the page is open, so the latest
-    // tracks decide which tracks are in the playlist
+    // tracks decide which tracks are in the playlist. A change to
+    // includeSubfolders shows in the tracks after the next sync.
     return {
-      folder: { ...latest.folder, sort },
+      folder: { ...latest.folder, includeSubfolders, sort },
       tracks:
         sort === "name"
           ? sortTracksByPath(latest.tracks)
@@ -144,10 +154,18 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
         )}
       </div>
       {folder && (
-        <p className={styles.folderPath}>
-          Every audio file in <strong>{folder.path}</strong> is in this
-          playlist. Drag tracks to change their order.
-        </p>
+        <>
+          <p className={styles.folderPath}>
+            Every audio file in <strong>{folder.path}</strong>
+            {includeSubfolders && " and its subfolders"} is in this playlist.
+            Drag tracks to change their order.
+          </p>
+          <Checkbox
+            checked={includeSubfolders}
+            label="Include subfolders"
+            onChange={handleIncludeSubfoldersChange}
+          />
+        </>
       )}
       {tracks.length === 0 && !folder && (
         <a className={styles.emptyTracks} href={editPlaylistTracksUrl(id)}>

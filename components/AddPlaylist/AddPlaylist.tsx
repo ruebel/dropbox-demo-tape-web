@@ -1,6 +1,7 @@
 "use client";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
+import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { TextInput } from "@/components/TextInput/TextInput";
 import { DEMO_FILE_EXT, HOME } from "@/utils/constants";
 import { useState } from "react";
@@ -40,6 +41,7 @@ function getFolderName(path: string) {
 
 export function AddPlaylist() {
   const [type, setType] = useState<PlaylistType>("tracks");
+  const [includeSubfolders, setIncludeSubfolders] = useState(false);
   const [artist, setArtist] = useState("");
   const [typedTitle, setTypedTitle] = useState("");
   // The open folder. Dropbox uses "" for the home folder.
@@ -75,7 +77,7 @@ export function AddPlaylist() {
     if (isFolder) {
       const folder = await getFolder(dbx, path);
       // The tape page fills in the tracks with its first sync
-      playlistData.folder = { ...folder, sort: "name" };
+      playlistData.folder = { ...folder, includeSubfolders, sort: "name" };
     }
 
     // Save the file to dropbox. A new playlist must not replace a file that
@@ -137,6 +139,13 @@ export function AddPlaylist() {
           ))}
         </div>
         <p className={styles.typeHelp}>{help}</p>
+        {isFolder && (
+          <Checkbox
+            checked={includeSubfolders}
+            label="Include subfolders"
+            onChange={setIncludeSubfolders}
+          />
+        )}
       </fieldset>
       <TextInput
         error={titleError}

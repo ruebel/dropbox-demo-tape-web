@@ -223,8 +223,28 @@ describe("EditPlaylist for a folder playlist", () => {
     const saved = await save();
 
     expect(saved.title).toBe("Band (v2)");
-    expect(saved.folder).toEqual({ id: "id:band", path: "/Band", sort: "name" });
+    expect(saved.folder).toEqual({
+      id: "id:band",
+      includeSubfolders: false,
+      path: "/Band",
+      sort: "name",
+    });
     expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3", "c.mp3"]);
+  });
+
+  it("saves a change to the subfolder option and keeps the tracks", async () => {
+    renderFolderPlaylist("name");
+    const checkbox = screen.getByLabelText(
+      "Include subfolders"
+    ) as HTMLInputElement;
+    expect(checkbox.checked).toBe(false);
+
+    fireEvent.click(checkbox);
+    expect(screen.getByText(/and its subfolders is in this playlist/)).toBeTruthy();
+    const saved = await save();
+
+    expect(saved.folder?.includeSubfolders).toBe(true);
+    expect(saved.tracks.map((t) => t.name)).toEqual(["a.mp3", "b.mp3"]);
   });
 });
 
