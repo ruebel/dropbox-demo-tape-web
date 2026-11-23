@@ -76,4 +76,28 @@ describe("Track", () => {
       "Couldn't reach Dropbox. Check your connection."
     );
   });
+
+  it("shows the subfolder under the title", () => {
+    render(
+      <Provider store={createStore()}>
+        <Track
+          index={1}
+          onClick={() => {}}
+          subfolder="Disc 1/Extras"
+          track={makeTrack()}
+        />
+      </Provider>
+    );
+
+    expect(document.querySelector("[class*=subfolder]")?.textContent).toBe(
+      "Disc 1/Extras"
+    );
+  });
+
+  it("shows no subfolder when it has none", () => {
+    renderTrack(makeTrack());
+
+    expect(screen.getByRole("button").textContent).not.toContain("Disc");
+    expect(document.querySelector("[class*=subfolder]")).toBeNull();
+  });
 });

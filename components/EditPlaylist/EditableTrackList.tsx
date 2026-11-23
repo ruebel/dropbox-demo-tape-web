@@ -11,6 +11,7 @@ import { memo } from "react";
 import { EditableTrack } from "@/components/EditPlaylist/EditableTrack";
 import { DragHandleIcon } from "@/components/icons/DragHandleIcon";
 import { reorderList } from "@/utils/list";
+import { getPathWithoutFileName } from "@/utils/file";
 import styles from "./editableTrackList.module.css";
 
 type EditableTrackListProps = {
@@ -41,6 +42,7 @@ const TrackList = memo(function EditableTrackList({ onTrackDelete, tracks }) {
               <EditableTrack
                 index={index + 1}
                 onDelete={onTrackDelete}
+                subfolder={getPathWithoutFileName(track.path)}
                 track={track}
               />
               <div className={styles.dragHandle} {...provided.dragHandleProps}>

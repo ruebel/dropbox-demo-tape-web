@@ -41,8 +41,33 @@
   background-color: var(--bg-highlight);
 }
 
+/* The track name, with its subfolder under it */
+.title {
+  display: grid;
+  /* Lets the name and subfolder shrink and end with an ellipsis */
+  min-width: 0;
+}
+
 .trackName {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.subfolder {
+  /* Matches the name of who updated a track on the playlist page */
+  color: var(--disabled);
+  /* Right to left, so a long path is cut at its start and keeps its last
+     folders */
+  direction: rtl;
+  font-size: 11px;
+  line-height: 15px;
+  overflow: hidden;
+  text-align: left;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  @media screen and (max-width: 768px) {
+    display: none;
+  }
 }

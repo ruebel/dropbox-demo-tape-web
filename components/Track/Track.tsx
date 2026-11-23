@@ -24,6 +24,8 @@ type TrackProps = {
   onClick: (id: string) => void;
   // False when the error message is already shown next to the track
   showErrorTooltip?: boolean;
+  // Shown under the title, for a track in a subfolder of a folder playlist
+  subfolder?: string;
   track: PlaylistTrack;
 };
 
@@ -31,6 +33,7 @@ export function Track({
   index,
   onClick,
   showErrorTooltip = true,
+  subfolder,
   track,
 }: TrackProps) {
   const user = useAtomValue(userByIdAtom(getModifiedBy(track)));
@@ -70,7 +73,15 @@ export function Track({
         )}
       </div>
       <span>{index}.</span>
-      <span className={styles.trackName}>{removeExtension(track.name)}</span>
+      <span className={styles.title}>
+        <span className={styles.trackName}>{removeExtension(track.name)}</span>
+        {subfolder && (
+          <span className={styles.subfolder}>
+            {/* Keeps the path left to right inside the right-to-left box */}
+            <span dir="ltr">{subfolder}</span>
+          </span>
+        )}
+      </span>
       <span className={styles.duration}>
         {track.duration ? getMMSSFromMs(track.duration * 1000) : "--:--"}
       </span>

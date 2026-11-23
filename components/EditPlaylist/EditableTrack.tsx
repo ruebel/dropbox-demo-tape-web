@@ -9,10 +9,17 @@ type EditableTrackProps = {
   index: number;
   // Shows a button to remove the track when set
   onDelete?: (id: string) => void;
+  // Shown under the title, for a track in a subfolder of a folder playlist
+  subfolder?: string;
   track: PlaylistTrack;
 };
 
-export function EditableTrack({ index, onDelete, track }: EditableTrackProps) {
+export function EditableTrack({
+  index,
+  onDelete,
+  subfolder,
+  track,
+}: EditableTrackProps) {
   return (
     <div className={styles.track}>
       {/* Stays when empty, so the numbers line up in the same column */}
@@ -27,7 +34,15 @@ export function EditableTrack({ index, onDelete, track }: EditableTrackProps) {
         )}
       </div>
       <span>{index}.</span>
-      <span className={styles.trackName}>{removeExtension(track.name)}</span>
+      <span className={styles.title}>
+        <span className={styles.trackName}>{removeExtension(track.name)}</span>
+        {subfolder && (
+          <span className={styles.subfolder}>
+            {/* Keeps the path left to right inside the right-to-left box */}
+            <span dir="ltr">{subfolder}</span>
+          </span>
+        )}
+      </span>
     </div>
   );
 }

@@ -10,6 +10,7 @@ import { useDeletePlaylist } from "@/hooks/useDeletePlaylist";
 import { useFolderSync } from "@/hooks/useFolderSync";
 import { playlistAtom } from "@/state/playlists";
 import { HOME } from "@/utils/constants";
+import { getPathWithoutFileName } from "@/utils/file";
 import { Playlist } from "@/utils/types";
 import { editPlaylistUrl } from "@/utils/url";
 import { useAtomValue } from "jotai";
@@ -86,6 +87,7 @@ export function PlaylistDetails({ id }: PlaylistDetailsProps) {
               index={index + 1}
               onClick={handleTrackClick}
               showErrorTooltip={!isMissing}
+              subfolder={getPathWithoutFileName(track.path)}
               track={track}
             />
           );
