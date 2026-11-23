@@ -34,10 +34,13 @@ const TrackList = memo(function EditableTrackList({ onTrackDelete, tracks }) {
       itemRenderer={(track, index) => (
         <Draggable draggableId={track.id} index={index}>
           {(provided) => (
+            // The whole row drags. A drag does not start from the remove
+            // button, so it still works.
             <div
               className={styles.trackWrapper}
               ref={provided.innerRef}
               {...provided.draggableProps}
+              {...provided.dragHandleProps}
             >
               <EditableTrack
                 index={index + 1}
@@ -45,8 +48,9 @@ const TrackList = memo(function EditableTrackList({ onTrackDelete, tracks }) {
                 folder={getPathWithoutFileName(track.path)}
                 track={track}
               />
-              <div className={styles.dragHandle} {...provided.dragHandleProps}>
-                <DragHandleIcon size={30} />
+              {/* Shows that the row can move, mainly for touch screens */}
+              <div aria-hidden="true" className={styles.dragHint}>
+                <DragHandleIcon size={24} />
               </div>
             </div>
           )}

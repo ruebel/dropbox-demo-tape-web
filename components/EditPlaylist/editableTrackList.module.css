@@ -1,21 +1,24 @@
+/* The drag handle: the whole row */
 .trackWrapper {
+  cursor: grab;
   position: relative;
 }
 
-.dragHandle {
+.trackWrapper:focus-visible {
+  outline: var(--outline);
+}
+
+/* The handle icon, as a hint only */
+.dragHint {
   align-items: center;
-  color: var(--primary);
-  cursor: grab;
+  color: var(--disabled);
   display: flex;
   height: 100%;
   justify-content: center;
+  pointer-events: none;
   position: absolute;
   right: 10px;
   top: 0;
-}
-
-.dragHandle:focus {
-  outline: var(--outline);
 }
 
 .track {
@@ -25,7 +28,6 @@
   border: none;
   border-top: 1px solid var(--bg-highlight);
   color: inherit;
-  cursor: pointer;
   display: grid;
   font-size: 16px;
   gap: 5px;
@@ -33,9 +35,9 @@
   grid-template-columns: 40px 1fr auto;
   margin: 0;
   outline: none;
-  /* The right side leaves room for the drag handle, which sits over the row:
-     its 30px icon, 10px from the edge, with 10px before it */
-  padding: var(--space-medium) 50px var(--space-medium) var(--space-medium);
+  /* The right side leaves room for the drag hint, which sits over the row:
+     its 24px icon, 10px from the edge, with 10px before it */
+  padding: var(--space-medium) 44px var(--space-medium) var(--space-medium);
   text-align: left;
   width: 100%;
 }
