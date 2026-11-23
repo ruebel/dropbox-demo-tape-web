@@ -5,7 +5,7 @@ import { StrictMode, Suspense } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uploadFile } from "@/api/file";
-import { listFolderAudioFiles } from "@/api/folder";
+import { getFolder, listFolderAudioFiles } from "@/api/folder";
 import { downloadPlaylists, searchPlaylistFiles } from "@/api/playlists";
 import { useCacheSync } from "@/hooks/useCacheSync";
 import { logError } from "@/hooks/useErrorTracking";
@@ -29,7 +29,10 @@ vi.mock("@/api/playlists", () => ({
   searchPlaylistFiles: vi.fn(),
 }));
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
-vi.mock("@/api/folder", () => ({ listFolderAudioFiles: vi.fn() }));
+vi.mock("@/api/folder", () => ({
+  getFolder: vi.fn(),
+  listFolderAudioFiles: vi.fn(),
+}));
 vi.mock("@/api/user", () => ({ getUsers: vi.fn().mockResolvedValue([]) }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 
@@ -433,12 +436,21 @@ describe("syncFolderPlaylistAtom", () => {
     } as FileMeta;
   }
 
-  function makeStore(tracks: PlaylistTrack[], hasFolder = true) {
+  function makeStore(
+    tracks: PlaylistTrack[],
+    hasFolder = true,
+    includeSubfolders?: boolean
+  ) {
     const store = createStore();
     const playlist = makePlaylist(playlistFile);
     playlist.data.tracks = tracks;
     if (hasFolder) {
-      playlist.data.folder = { id: "id:folder", path: "/Demos", sort: "name" };
+      playlist.data.folder = {
+        id: "id:folder",
+        includeSubfolders,
+        path: "/Demos",
+        sort: "name",
+      };
     }
     store.set(playlistsAtom, [playlist]);
     return store;
@@ -448,12 +460,18 @@ describe("syncFolderPlaylistAtom", () => {
     return store.get(playlistsAtom)[0].data.tracks.map((t) => t.name);
   }
 
+  function savedFolderPath(store: Store) {
+    return store.get(playlistsAtom)[0].data.folder?.path;
+  }
+
   beforeEach(() => {
     localStorage.clear();
     vi.mocked(uploadFile).mockImplementation(async () => {
       await sleep(20);
       return playlistFile;
     });
+    // The folder is where the playlist says it is
+    vi.mocked(getFolder).mockResolvedValue({ id: "id:folder", path: "/Demos" });
   });
 
   afterEach(() => {
@@ -474,10 +492,55 @@ describe("syncFolderPlaylistAtom", () => {
     expect(cursor).toBe("c1");
     expect(listFolderAudioFiles).toHaveBeenCalledWith(
       expect.anything(),
-      "id:folder"
+      "id:folder",
+      { recursive: false }
     );
     expect(uploadFile).toHaveBeenCalledTimes(1);
     expect(savedNames(store)).toEqual(["a.mp3", "b.mp3"]);
+  });
+
+  it("lists subfolders when the playlist includes them", async () => {
+    const store = makeStore([], true, true);
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [],
+    });
+
+    await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(listFolderAudioFiles).toHaveBeenCalledWith(
+      expect.anything(),
+      "id:folder",
+      { recursive: true }
+    );
+  });
+
+  it("does not save when the subfolder setting changed during the listing", async () => {
+    const store = makeStore([]);
+    let finishListing = () => {};
+    vi.mocked(listFolderAudioFiles).mockReturnValue(
+      new Promise((resolve) => {
+        finishListing = () =>
+          resolve({ cursor: "c1", files: [audioFile("a.mp3")] });
+      })
+    );
+
+    const synced = store.set(syncFolderPlaylistAtom, playlistFile.id);
+    await store.set(updatePlaylistAtom, {
+      playlistId: playlistFile.id,
+      update: (p) => ({
+        ...p,
+        data: {
+          ...p.data,
+          folder: { ...p.data.folder!, includeSubfolders: true },
+        },
+      }),
+    });
+    finishListing();
+
+    expect(await synced).toBe("c1");
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(savedNames(store)).toEqual([]);
   });
 
   it("does not upload when the folder did not change", async () => {
@@ -500,6 +563,7 @@ describe("syncFolderPlaylistAtom", () => {
     const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
 
     expect(cursor).toBeUndefined();
+    expect(getFolder).not.toHaveBeenCalled();
     expect(listFolderAudioFiles).not.toHaveBeenCalled();
     expect(uploadFile).not.toHaveBeenCalled();
   });
@@ -559,5 +623,58 @@ describe("syncFolderPlaylistAtom", () => {
       store.set(syncFolderPlaylistAtom, playlistFile.id)
     ).rejects.toThrow("path/not_found");
     expect(uploadFile).not.toHaveBeenCalled();
+  });
+
+  it("saves the folder's new path after the folder moved", async () => {
+    const a = audioFile("a.mp3");
+    const store = makeStore([transformFile(a)]);
+    vi.mocked(getFolder).mockResolvedValue({
+      id: "id:folder",
+      path: "/Archive/Demos 2026",
+    });
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [a],
+    });
+
+    const cursor = await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(cursor).toBe("c1");
+    expect(getFolder).toHaveBeenCalledWith(expect.anything(), "id:folder");
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(savedFolderPath(store)).toBe("/Archive/Demos 2026");
+    expect(savedNames(store)).toEqual(["a.mp3"]);
+  });
+
+  it("saves a new path and new tracks in one upload", async () => {
+    const a = audioFile("a.mp3");
+    const b = audioFile("b.mp3");
+    const store = makeStore([transformFile(a)]);
+    vi.mocked(getFolder).mockResolvedValue({ id: "id:folder", path: "/Moved" });
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [a, b],
+    });
+
+    await store.set(syncFolderPlaylistAtom, playlistFile.id);
+
+    expect(uploadFile).toHaveBeenCalledTimes(1);
+    expect(savedFolderPath(store)).toBe("/Moved");
+    expect(savedNames(store)).toEqual(["a.mp3", "b.mp3"]);
+  });
+
+  it("throws and saves nothing when the folder cannot be found", async () => {
+    const store = makeStore([]);
+    vi.mocked(getFolder).mockRejectedValue(new Error("path/not_found"));
+    vi.mocked(listFolderAudioFiles).mockResolvedValue({
+      cursor: "c1",
+      files: [audioFile("a.mp3")],
+    });
+
+    await expect(
+      store.set(syncFolderPlaylistAtom, playlistFile.id)
+    ).rejects.toThrow("path/not_found");
+    expect(uploadFile).not.toHaveBeenCalled();
+    expect(savedFolderPath(store)).toBe("/Demos");
   });
 });

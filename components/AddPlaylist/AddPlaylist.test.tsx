@@ -208,12 +208,39 @@ describe("AddPlaylist", () => {
     );
     expect(saved).toEqual({
       artist: "Hunted Horse",
-      folder: { id: "id:band", path: "/Demos/Band", sort: "name" },
+      folder: {
+        id: "id:band",
+        includeSubfolders: false,
+        path: "/Demos/Band",
+        sort: "name",
+      },
       title: "Band",
       tracks: [],
     });
     expect(store.get(playlistsAtom)[0].data).toEqual(saved);
     expect(push).toHaveBeenCalledWith("/playlist/id%3Atape");
+  });
+
+  it("shows the subfolder option only for a folder playlist", () => {
+    renderPage();
+    expect(screen.queryByLabelText("Include subfolders")).toBeNull();
+
+    chooseFolderType();
+    expect(
+      (screen.getByLabelText("Include subfolders") as HTMLInputElement).checked
+    ).toBe(false);
+  });
+
+  it("saves a folder playlist that includes subfolders", async () => {
+    renderPage();
+    chooseFolderType();
+    openFolder("/Demos/Band");
+    fillIn("Artist", "Hunted Horse");
+    fireEvent.click(screen.getByLabelText("Include subfolders"));
+
+    const saved = await save();
+
+    expect(saved.folder?.includeSubfolders).toBe(true);
   });
 
   describe("when a file with the same name is in the folder", () => {

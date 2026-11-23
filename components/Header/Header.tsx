@@ -12,7 +12,7 @@ import { useCacheSync } from "@/hooks/useCacheSync";
 import { useDropboxAuth } from "@/hooks/useDropboxAuth";
 import { isAuthenticatedAtom, isStorageLoadingAtom } from "@/state/dropbox";
 import { currentUserAtom } from "@/state/users";
-import { HOME } from "@/utils/constants";
+import { getBackUrl } from "@/utils/url";
 import Link from "next/link";
 import { redirect, usePathname } from "next/navigation";
 import styles from "./header.module.css";
@@ -41,7 +41,7 @@ export function Header() {
 
   return (
     <nav className={styles.header}>
-      <Link href={HOME}>
+      <Link href={getBackUrl(path)}>
         <div className={styles.inner}>
           {path === "/" || path === "/auth" ? (
             <TapeIcon size={36} />

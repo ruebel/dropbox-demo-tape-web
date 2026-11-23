@@ -1,0 +1,31 @@
+.wrapper {
+  align-items: center;
+  color: var(--primary);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--fs-sm);
+  gap: var(--space-medium);
+  /* Only the box and its label are clickable, also inside a grid */
+  width: fit-content;
+}
+
+.input {
+  accent-color: var(--highlight);
+  cursor: pointer;
+  height: 16px;
+  margin: 0;
+  width: 16px;
+}
+
+.wrapper:has(.input:disabled) {
+  color: var(--disabled);
+  cursor: default;
+}
+
+.input:disabled {
+  cursor: default;
+}
+
+.input:focus-visible {
+  outline: var(--outline);
+}

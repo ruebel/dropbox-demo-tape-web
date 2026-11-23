@@ -1,21 +1,29 @@
 "use client";
 
 import { ButtonLink } from "@/components/ButtonLink/ButtonLink";
+import { Checkbox } from "@/components/Checkbox/Checkbox";
 import { TextInput } from "@/components/TextInput/TextInput";
-import {
-  artistsAtom,
-  playlistAtom,
-  updatePlaylistAtom,
-} from "@/state/playlists";
-import { sortTracksByName } from "@/utils/folderSync";
+import { artistsAtom, updatePlaylistAtom } from "@/state/playlists";
+import { reconcileFolderTracks, sortTracksByPath } from "@/utils/folderSync";
 import { mergeEditedOrder, mergeEditedTracks } from "@/utils/playlist";
 import { useAtomValue, useSetAtom } from "jotai";
-import { useState } from "react";
+import { useRef, useState } from "react";
 
+import { listFolderAudioFiles } from "@/api/folder";
 import { EditableTrackList } from "@/components/EditPlaylist/EditableTrackList";
+import { LoadedPlaylist } from "@/components/LoadedPlaylist/LoadedPlaylist";
+import { PathText } from "@/components/PathText/PathText";
 import { PlaylistImage } from "@/components/PlaylistImage/PlaylistImage";
+import { Progress } from "@/components/Progress/Progress";
+import { getFolderSyncErrorMessage } from "@/hooks/useFolderSync";
+import { dbxAtom } from "@/state/dropbox";
 import { Typeahead } from "@/components/Typeahead/Typeahead";
-import { FolderSort, PlaylistData, PlaylistTrack } from "@/utils/types";
+import {
+  FolderSort,
+  Playlist,
+  PlaylistData,
+  PlaylistTrack,
+} from "@/utils/types";
 import {
   editPlaylistImageUrl,
   editPlaylistTracksUrl,
@@ -30,17 +38,46 @@ type EditPlaylistProps = {
 };
 
 export function EditPlaylist({ id }: EditPlaylistProps) {
-  const playlist = useAtomValue(playlistAtom(id));
+  return (
+    <LoadedPlaylist id={id}>
+      {(playlist) => <EditPlaylistForm id={id} playlist={playlist} />}
+    </LoadedPlaylist>
+  );
+}
+
+type EditPlaylistFormProps = {
+  id: string;
+  // The latest playlist. The form's fields start from its first value.
+  playlist: Playlist;
+};
+
+function EditPlaylistForm({ id, playlist }: EditPlaylistFormProps) {
   const updatePlaylist = useSetAtom(updatePlaylistAtom);
   const [isDirty, setIsDirty] = useState(false);
-  const [artist, setArtist] = useState(playlist?.data.artist || "");
-  const [title, setTitle] = useState(playlist?.data.title || "");
-  const [tracks, setTracks] = useState(playlist?.data.tracks || []);
-  const folder = playlist?.data.folder;
+  const [artist, setArtist] = useState(playlist.data.artist);
+  const [title, setTitle] = useState(playlist.data.title);
+  const [tracks, setTracks] = useState(playlist.data.tracks);
+  const folder = playlist.data.folder;
   const [sort, setSort] = useState<FolderSort>(folder?.sort ?? "name");
+  // The sort for a folder listing to use when it finishes. A drag during the
+  // listing changes it.
+  const sortRef = useRef(sort);
+  const [includeSubfolders, setIncludeSubfolders] = useState(
+    !!folder?.includeSubfolders
+  );
+  // True while the folder is listed for a new includeSubfolders value
+  const [isListing, setIsListing] = useState(false);
+  // The error from the last listing, cleared when the next one starts
+  const [listError, setListError] = useState<unknown>(null);
   const artists = useAtomValue(artistsAtom);
+  const dbx = useAtomValue(dbxAtom);
 
   const { push } = useRouter();
+
+  function changeSort(newSort: FolderSort) {
+    setSort(newSort);
+    sortRef.current = newSort;
+  }
 
   function handleArtistChange(newArtist: string) {
     setArtist(newArtist);
@@ -55,13 +92,41 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
   function handleTrackChange(newTracks: PlaylistTrack[]) {
     setTracks(newTracks);
     // For a folder playlist, the only track change is a drag
-    setSort("custom");
+    changeSort("custom");
     setIsDirty(true);
   }
 
+  // Lists the folder with the new value, so the track list shows the tracks
+  // the playlist will have. The checkbox is disabled until the listing
+  // finishes, so listings cannot finish out of order.
+  async function handleIncludeSubfoldersChange(checked: boolean) {
+    if (!folder) return;
+
+    setIncludeSubfolders(checked);
+    setListError(null);
+    setIsListing(true);
+    try {
+      const { files } = await listFolderAudioFiles(dbx, folder.id, {
+        recursive: checked,
+      });
+      // Matches against the tracks on the page when the listing finishes, so
+      // a drag during the listing is kept
+      setTracks(
+        (current) =>
+          reconcileFolderTracks(current, files, sortRef.current) ?? current
+      );
+      setIsDirty(true);
+    } catch (error) {
+      setIncludeSubfolders(!checked);
+      setListError(error);
+    } finally {
+      setIsListing(false);
+    }
+  }
+
   function handleSortByName() {
-    setTracks(sortTracksByName(tracks));
-    setSort("name");
+    setTracks(sortTracksByPath(tracks));
+    changeSort("name");
     setIsDirty(true);
   }
 
@@ -71,20 +136,32 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       return { tracks: mergeEditedTracks(latest.tracks, tracks) };
     }
 
+    const nextFolder = { ...latest.folder, includeSubfolders, sort };
+
+    // After a change to includeSubfolders, the page's tracks come from a new
+    // listing, so they decide which tracks are in the playlist. The latest
+    // saved tracks still decide each track's details. The next sync fixes
+    // any file that changed since the listing.
+    if (!!latest.folder.includeSubfolders !== includeSubfolders) {
+      const merged = mergeEditedTracks(latest.tracks, tracks);
+      return {
+        folder: nextFolder,
+        tracks: sort === "name" ? sortTracksByPath(merged) : merged,
+      };
+    }
+
     // A sync can add or remove files while the page is open, so the latest
     // tracks decide which tracks are in the playlist
     return {
-      folder: { ...latest.folder, sort },
+      folder: nextFolder,
       tracks:
         sort === "name"
-          ? sortTracksByName(latest.tracks)
+          ? sortTracksByPath(latest.tracks)
           : mergeEditedOrder(latest.tracks, tracks),
     };
   }
 
   async function handleSave() {
-    if (!playlist) return;
-
     // Applies only this page's edits to the latest saved playlist, so changes
     // the player saved while the page was open are kept
     await updatePlaylist({
@@ -108,7 +185,7 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
       <div className={styles.header}>
         <h2>Edit playlist</h2>
         <div className={styles.actions}>
-          <ButtonLink disabled={!isDirty} onClick={handleSave}>
+          <ButtonLink disabled={!isDirty || isListing} onClick={handleSave}>
             Save
           </ButtonLink>
           <ButtonLink href={playlistUrl(id)}>Cancel</ButtonLink>
@@ -133,22 +210,49 @@ export function EditPlaylist({ id }: EditPlaylistProps) {
           />
         </div>
       </div>
-      <div className={styles.tracksHeader}>
-        <h2>Tracks</h2>
-        {folder ? (
-          <ButtonLink disabled={sort === "name"} onClick={handleSortByName}>
-            Sort A–Z
-          </ButtonLink>
-        ) : (
-          <ButtonLink href={editPlaylistTracksUrl(id)}>Edit Tracks</ButtonLink>
+      <div className={styles.tracksSection}>
+        <div className={styles.tracksHeader}>
+          <h2>Tracks</h2>
+          {folder ? (
+            <ButtonLink
+              disabled={sort === "name" || isListing}
+              onClick={handleSortByName}
+              size="small"
+            >
+              Sort A–Z
+            </ButtonLink>
+          ) : (
+            <ButtonLink href={editPlaylistTracksUrl(id)} size="small">
+              Edit Tracks
+            </ButtonLink>
+          )}
+        </div>
+        {folder && (
+          <>
+            <div className={styles.folderRow}>
+              <p className={styles.folderPath}>
+                Synced with{" "}
+                <strong>
+                  <PathText text={folder.path} />
+                </strong>
+              </p>
+              <Checkbox
+                checked={includeSubfolders}
+                disabled={isListing}
+                label="Include subfolders"
+                onChange={handleIncludeSubfoldersChange}
+              />
+            </div>
+            <p className={styles.dragHint}>Drag tracks to change their order.</p>
+            {listError !== null && (
+              <div className={styles.listError} role="alert">
+                {getFolderSyncErrorMessage(listError)}
+              </div>
+            )}
+          </>
         )}
       </div>
-      {folder && (
-        <p className={styles.folderPath}>
-          Every audio file in <strong>{folder.path}</strong> is in this
-          playlist. Drag tracks to change their order.
-        </p>
-      )}
+      {isListing && <Progress />}
       {tracks.length === 0 && !folder && (
         <a className={styles.emptyTracks} href={editPlaylistTracksUrl(id)}>
           Add tracks to your playlist

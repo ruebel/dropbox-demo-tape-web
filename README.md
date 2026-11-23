@@ -45,9 +45,9 @@ _You won't need to reselect the tracks when you upload new versions as long as t
 
 Choose "Sync a folder" when you create a playlist to make a playlist from a Dropbox folder.
 
-- Every audio file directly in the folder is in the playlist. Files in subfolders are not.
+- Every audio file directly in the folder is in the playlist. Check "Include subfolders" to also add the audio files in its subfolders, at any depth. You can change this on the edit page.
 - New files show up and deleted files go away while the playlist is open.
-- Tracks are in file name order ("Track 2" comes before "Track 10"). Drag tracks on the edit page to change the order. New files then go at the end. "Sort A–Z" goes back to file name order.
+- Tracks are in file name order ("Track 2" comes before "Track 10"). Tracks from the same subfolder stay together. Drag tracks on the edit page to change the order. New files then go at the end. "Sort A–Z" goes back to file name order.
 - The `.mix` file is saved in the folder, so sharing the folder also shares the playlist.
 - The playlist is named after the folder unless you type another title.
 

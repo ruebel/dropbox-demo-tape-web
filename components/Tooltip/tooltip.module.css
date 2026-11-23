@@ -13,6 +13,9 @@
   left: 0;
   line-height: 20px;
   max-width: min(300px, 70vw);
+  /* Breaks a word, such as a long folder name, only when it is longer than
+     the tooltip is wide */
+  overflow-wrap: anywhere;
   padding: var(--space-small) var(--space-medium);
   position: absolute;
   text-align: left;

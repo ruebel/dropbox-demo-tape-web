@@ -61,7 +61,33 @@ describe("listFolderAudioFiles", () => {
 
     await listFolderAudioFiles(dbx, "id:folder");
 
-    expect(filesListFolder).toHaveBeenCalledWith({ path: "id:folder" });
+    expect(filesListFolder).toHaveBeenCalledWith({
+      path: "id:folder",
+      recursive: false,
+    });
+  });
+
+  it("lists subfolders too when recursive", async () => {
+    filesListFolder.mockResolvedValue(
+      page(
+        [
+          file("Intro.mp3"),
+          folder("Disc 1"),
+          { ...file("Disc 1/Song.mp3"), name: "Song.mp3" },
+        ],
+        "c1"
+      )
+    );
+
+    const { files } = await listFolderAudioFiles(dbx, "id:folder", {
+      recursive: true,
+    });
+
+    expect(filesListFolder).toHaveBeenCalledWith({
+      path: "id:folder",
+      recursive: true,
+    });
+    expect(files.map((f) => f.name)).toEqual(["Intro.mp3", "Song.mp3"]);
   });
 
   it("returns only audio files", async () => {

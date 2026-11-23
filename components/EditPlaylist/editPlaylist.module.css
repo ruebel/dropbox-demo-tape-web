@@ -96,23 +96,52 @@
   color: var(--white);
 }
 
+/* The tracks heading with the text and controls under it */
+.tracksSection {
+  display: grid;
+  gap: var(--space-medium);
+  padding-top: 20px;
+}
+
 .tracksHeader {
   align-items: center;
-  display: grid;
-  grid-template-columns: 110px auto;
-  justify-content: flex-start;
-  padding-top: 20px;
-
-  @media (max-width: 768px) {
-    justify-content: space-between;
-  }
+  display: flex;
+  gap: var(--space-large);
+  justify-content: space-between;
 }
+
+/* The folder and the subfolder checkbox. The checkbox moves to its own line
+   when both do not fit. */
+.folderRow {
+  align-items: center;
+  column-gap: var(--space-large);
+  display: flex;
+  flex-wrap: wrap;
+  row-gap: var(--space-medium);
+}
+
+.dragHint {
+  color: var(--disabled);
+  font-size: var(--fs-xs);
+}
+.listError {
+  background-color: var(--background-light);
+  border-radius: 10px;
+  box-shadow: inset 3px 0 0 var(--error);
+  color: var(--error);
+  font-size: var(--fs-sm);
+  padding: 10px 20px;
+}
+
 .folderPath {
   color: var(--secondary);
+  font-size: var(--fs-sm);
   margin: 0;
 
   strong {
     color: var(--primary);
-    word-break: break-all;
+    /* PathText wraps the path after a slash. This breaks a folder name only
+       when the name alone is longer than the line. */
+    overflow-wrap: anywhere;
   }
 }

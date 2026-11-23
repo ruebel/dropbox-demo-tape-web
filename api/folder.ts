@@ -24,16 +24,23 @@ export type FolderAudioFiles = {
   files: FileMeta[];
 };
 
+type ListFolderAudioFilesOptions = {
+  // Also list the audio files in subfolders, at any depth. The cursor then
+  // reports changes in subfolders too.
+  recursive?: boolean;
+};
+
 /**
- * Lists the audio files directly in a folder, reading every page. Subfolders
- * and the files in them are not included. `folderId` can be a folder id
+ * Lists the audio files in a folder, reading every page. Files in subfolders
+ * are included only when `recursive` is true. `folderId` can be a folder id
  * ("id:...") or a path.
  */
 export async function listFolderAudioFiles(
   dbx: Dropbox,
-  folderId: string
+  folderId: string,
+  { recursive = false }: ListFolderAudioFilesOptions = {}
 ): Promise<FolderAudioFiles> {
-  let { result } = await dbx.filesListFolder({ path: folderId });
+  let { result } = await dbx.filesListFolder({ path: folderId, recursive });
   const entries = [...result.entries];
 
   while (result.has_more) {

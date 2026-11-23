@@ -20,6 +20,8 @@ import { useId } from "react";
 import styles from "./track.module.css";
 
 type TrackProps = {
+  // The folder the track's file is in, shown under the title
+  folder?: string;
   index: number;
   onClick: (id: string) => void;
   // False when the error message is already shown next to the track
@@ -28,6 +30,7 @@ type TrackProps = {
 };
 
 export function Track({
+  folder,
   index,
   onClick,
   showErrorTooltip = true,
@@ -37,6 +40,9 @@ export function Track({
   const playingTrackId = useAtomValue(playingTrackIdAtom);
   const isPlaying = playingTrackId === track.id;
   const audioState = useAtomValue(audioStateAtom);
+  // The current track is playing or about to
+  const isSounding =
+    isPlaying && (audioState === "playing" || audioState === "loading");
   const errorId = useId();
   // A saved error, or one from this session (such as a dropped connection)
   const sessionError = useAtomValue(sessionTrackErrorsAtom)[track.id];
@@ -53,24 +59,37 @@ export function Track({
       ])}
       onClick={() => onClick(track.id)}
     >
-      <div className={styles.play}>
+      <span className={styles.number}>
         {error ? (
-          <>
+          <span className={styles.errorIcon}>
             <ErrorIcon size={20} />
             {hasErrorTooltip && <Tooltip id={errorId}>{error}</Tooltip>}
-          </>
-        ) : isPlaying ? (
-          audioState === "playing" ? (
-            <PauseIcon size={20} />
-          ) : (
-            <HeadsetIcon size={20} />
-          )
+          </span>
         ) : (
-          <PlayIcon size={24} />
+          <>
+            <span className={styles.numberResting}>
+              {isSounding ? <HeadsetIcon size={20} /> : index}
+            </span>
+            {/* Shown instead on hover and focus: what a click does */}
+            <span className={styles.numberHover}>
+              {isPlaying && audioState === "playing" ? (
+                <PauseIcon size={20} />
+              ) : (
+                <PlayIcon size={20} />
+              )}
+            </span>
+          </>
         )}
-      </div>
-      <span>{index}.</span>
-      <span className={styles.trackName}>{removeExtension(track.name)}</span>
+      </span>
+      <span className={styles.title}>
+        <span className={styles.trackName}>{removeExtension(track.name)}</span>
+        {folder && (
+          <span className={styles.folder}>
+            {/* Keeps the path left to right inside the right-to-left box */}
+            <span dir="ltr">{folder}</span>
+          </span>
+        )}
+      </span>
       <span className={styles.duration}>
         {track.duration ? getMMSSFromMs(track.duration * 1000) : "--:--"}
       </span>

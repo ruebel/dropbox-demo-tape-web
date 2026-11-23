@@ -5,7 +5,7 @@ import { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { uploadFile } from "@/api/file";
-import { listFolderAudioFiles, watchFolder } from "@/api/folder";
+import { getFolder, listFolderAudioFiles, watchFolder } from "@/api/folder";
 import { useFolderSync } from "@/hooks/useFolderSync";
 import { isAuthenticatedAtom } from "@/state/dropbox";
 import { playlistsAtom } from "@/state/playlists";
@@ -13,6 +13,7 @@ import { transformFile } from "@/utils/file";
 import { FileMeta, Playlist } from "@/utils/types";
 
 vi.mock("@/api/folder", () => ({
+  getFolder: vi.fn(),
   listFolderAudioFiles: vi.fn(),
   watchFolder: vi.fn(),
 }));
@@ -76,6 +77,7 @@ describe("useFolderSync", () => {
     localStorage.clear();
     vi.mocked(watchFolder).mockResolvedValue(undefined);
     vi.mocked(uploadFile).mockResolvedValue(playlistFile as never);
+    vi.mocked(getFolder).mockResolvedValue({ id: "id:folder", path: "/Demos" });
     vi.mocked(listFolderAudioFiles).mockResolvedValue({
       cursor: "c1",
       files: [song],
@@ -108,6 +110,29 @@ describe("useFolderSync", () => {
 
     unmount();
     expect(signal.aborted).toBe(true);
+  });
+
+  it("starts a new watch when the playlist starts including subfolders", () => {
+    const store = makeStore();
+    renderSync(store);
+    const { signal } = lastWatch();
+
+    act(() => {
+      const [playlist] = store.get(playlistsAtom);
+      store.set(playlistsAtom, [
+        {
+          ...playlist,
+          data: {
+            ...playlist.data,
+            folder: { ...playlist.data.folder!, includeSubfolders: true },
+          },
+        },
+      ]);
+    });
+
+    expect(signal.aborted).toBe(true);
+    expect(watchFolder).toHaveBeenCalledTimes(2);
+    expect(lastWatch().signal.aborted).toBe(false);
   });
 
   it("syncs the folder when the watch reports a change", async () => {
