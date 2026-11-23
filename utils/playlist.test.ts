@@ -1,7 +1,6 @@
 import { describe, expect, it } from "vitest";
 
 import {
-  getSubfolderPath,
   getSyncedWithLabel,
   mergeEditedOrder,
   mergeEditedTracks,
@@ -11,39 +10,6 @@ import { PlaylistTrack } from "@/utils/types";
 function track(id: string, details: Partial<PlaylistTrack> = {}) {
   return { id, name: `${id}.mp3`, ...details } as PlaylistTrack;
 }
-
-describe("getSubfolderPath", () => {
-  it("is empty for a track directly in the folder", () => {
-    expect(getSubfolderPath("/Demos/Band/a.mp3", "/Demos/Band")).toBe("");
-  });
-
-  it("returns the subfolder relative to the folder", () => {
-    expect(getSubfolderPath("/Demos/Band/Live/a.mp3", "/Demos/Band")).toBe(
-      "Live"
-    );
-    expect(
-      getSubfolderPath("/Demos/Band/Disc 1/Extras/a.mp3", "/Demos/Band")
-    ).toBe("Disc 1/Extras");
-  });
-
-  it("ignores case and keeps the track path's case", () => {
-    expect(getSubfolderPath("/demos/BAND/Live/a.mp3", "/Demos/Band")).toBe(
-      "Live"
-    );
-  });
-
-  it("does not treat a folder with a longer name as a subfolder", () => {
-    expect(getSubfolderPath("/Demos/Band 2/a.mp3", "/Demos/Band")).toBe(
-      "/Demos/Band 2"
-    );
-  });
-
-  it("returns the whole parent folder for a track outside the folder", () => {
-    expect(getSubfolderPath("/Archive/Live/a.mp3", "/Demos/Band")).toBe(
-      "/Archive/Live"
-    );
-  });
-});
 
 describe("getSyncedWithLabel", () => {
   const folder = { id: "id:band", path: "/Demos/Band", sort: "name" as const };

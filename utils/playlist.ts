@@ -1,22 +1,4 @@
-import { getPathWithoutFileName } from "@/utils/file";
 import { PlaylistFolder, PlaylistTrack } from "@/utils/types";
-
-/**
- * The subfolder a folder playlist's track is in, relative to the playlist's
- * folder, such as "Live" or "Disc 1/Extras". Empty for a track directly in
- * the folder. Ignores case, because Dropbox does. A track outside the folder
- * returns its whole parent folder, so the row still shows where the file is.
- */
-export function getSubfolderPath(trackPath: string, folderPath: string) {
-  const parent = getPathWithoutFileName(trackPath);
-  const parentLower = parent.toLowerCase();
-  const folderLower = folderPath.toLowerCase();
-
-  if (parentLower === folderLower) return "";
-
-  const prefix = `${folderLower}/`;
-  return parentLower.startsWith(prefix) ? parent.slice(prefix.length) : parent;
-}
 
 /**
  * The text that says which folder a folder playlist shows, for its icon's
