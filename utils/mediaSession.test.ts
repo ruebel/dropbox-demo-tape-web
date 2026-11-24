@@ -1,6 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
-import { setMediaHandlers, setMediaPosition } from "@/utils/mediaSession";
+import {
+  clearMediaSession,
+  setMediaHandlers,
+  setMediaPosition,
+} from "@/utils/mediaSession";
 
 // jsdom has no Media Session, so the tests give navigator a fake one
 function fakeMediaSession() {
@@ -30,6 +34,7 @@ function noHandlers() {
     onPrevious: vi.fn(),
     onSeekBy: vi.fn(),
     onSeekTo: vi.fn(),
+    onStop: vi.fn(),
   };
 }
 
@@ -74,6 +79,19 @@ describe("mediaSession", () => {
     });
   });
 
+  describe("clearMediaSession", () => {
+    it("removes the track, its state and its position", () => {
+      fake.session.metadata = {} as never;
+      fake.session.playbackState = "playing";
+
+      clearMediaSession();
+
+      expect(fake.session.metadata).toBeNull();
+      expect(fake.session.playbackState).toBe("none");
+      expect(fake.session.setPositionState).toHaveBeenCalledWith();
+    });
+  });
+
   describe("setMediaHandlers", () => {
     it("seeks to the lock screen's time in milliseconds", () => {
       const handlers = noHandlers();
@@ -82,6 +100,15 @@ describe("mediaSession", () => {
       fake.handlers.get("seekto")?.({ action: "seekto", seekTime: 90 });
 
       expect(handlers.onSeekTo).toHaveBeenCalledWith(90_000);
+    });
+
+    it("stops from the lock screen", () => {
+      const handlers = noHandlers();
+      setMediaHandlers(handlers);
+
+      fake.handlers.get("stop")?.({ action: "stop" });
+
+      expect(handlers.onStop).toHaveBeenCalled();
     });
 
     it("removes next and previous when they are left out", () => {

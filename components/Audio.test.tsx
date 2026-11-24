@@ -21,6 +21,7 @@ import { playlistsAtom } from "@/state/playlists";
 import { MEDIA_ERROR } from "@/utils/error";
 import { transformFile } from "@/utils/file";
 import {
+  clearMediaSession,
   setMediaHandlers,
   setMediaPosition,
   setMediaTrack,
@@ -31,8 +32,9 @@ vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/track", () => ({ getTrackLink: vi.fn() }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 vi.mock("@/utils/mediaSession", () => ({
-  setMediaPosition: vi.fn(),
+  clearMediaSession: vi.fn(),
   setMediaHandlers: vi.fn(),
+  setMediaPosition: vi.fn(),
   setMediaState: vi.fn(),
   setMediaTrack: vi.fn(),
 }));
@@ -380,6 +382,31 @@ describe("Audio", () => {
 
       expect(lockScreen().onNext).toBeUndefined();
       expect(lockScreen().onPrevious).toBeDefined();
+    });
+
+    it("stops when the lock screen asks", () => {
+      const { store } = renderAudio();
+
+      act(() => lockScreen().onStop());
+
+      expect(store.get(audioStateAtom)).toBe("stopped");
+    });
+
+    it("clears the lock screen when playback stops, and shows the track again on play", () => {
+      const { audio, store } = renderAudio();
+      vi.mocked(clearMediaSession).mockClear();
+      vi.mocked(setMediaTrack).mockClear();
+
+      act(() => store.set(audioStateAtom, "stopped"));
+      // Stopping pauses the player, which must not put the position back
+      fireEvent.pause(audio);
+
+      expect(clearMediaSession).toHaveBeenCalledTimes(1);
+      expect(setMediaPosition).not.toHaveBeenCalled();
+
+      act(() => store.set(audioStateAtom, "playing"));
+
+      expect(setMediaTrack).toHaveBeenCalledTimes(1);
     });
 
     it("seeks from the latest position", () => {

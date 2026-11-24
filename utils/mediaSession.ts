@@ -52,6 +52,7 @@ export function setMediaHandlers({
   onPrevious,
   onSeekBy,
   onSeekTo,
+  onStop,
 }: {
   // Left out when there is no track to go to, so the lock screen hides or
   // disables the button
@@ -62,6 +63,7 @@ export function setMediaHandlers({
   // Both take milliseconds
   onSeekBy: (offsetMs: number) => void;
   onSeekTo: (positionMs: number) => void;
+  onStop: () => void;
 }) {
   if (hasSupport()) {
     try {
@@ -69,6 +71,9 @@ export function setMediaHandlers({
     } catch (e) {}
     try {
       navigator.mediaSession.setActionHandler("pause", onPause);
+    } catch (e) {}
+    try {
+      navigator.mediaSession.setActionHandler("stop", onStop);
     } catch (e) {}
 
     try {
@@ -119,6 +124,18 @@ export function setMediaTrack({
       artwork,
       title,
     });
+  }
+}
+
+// Removes the track from the lock screen and the media notification
+export function clearMediaSession() {
+  if (!hasSupport()) return;
+
+  navigator.mediaSession.metadata = null;
+  navigator.mediaSession.playbackState = "none";
+  if ("setPositionState" in navigator.mediaSession) {
+    // Without a state, the browser forgets the length and position
+    navigator.mediaSession.setPositionState();
   }
 }
 
