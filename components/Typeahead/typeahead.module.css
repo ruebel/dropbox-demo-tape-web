@@ -9,7 +9,7 @@
 
 .input {
   background-color: var(--background);
-  border: 1px solid var(--white);
+  border: 1px solid var(--secondary);
   border-radius: 10px;
   color: inherit;
   font-size: 16px;
@@ -37,9 +37,11 @@
 .options {
   -webkit-margin-start: 0;
   -webkit-padding-start: 0;
-  background: var(--white);
+  background: var(--background-light);
+  border: 1px solid var(--bg-highlight);
   border-radius: 10px;
-  color: var(--background);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: var(--primary);
   display: grid;
   list-style-type: none;
   margin-block-end: 0;
@@ -57,7 +59,13 @@
   outline: none;
 }
 
-.option:focus, .option:hover {
+.option:hover {
+  background-color: var(--bg-highlight);
+}
+
+/* The arrow keys move focus through the options, so the focused option gets
+   the stronger teal */
+.option:focus {
   background-color: var(--highlight);
   color: var(--background);
 }

@@ -87,9 +87,11 @@
 .options {
   -webkit-margin-start: 0;
   -webkit-padding-start: 0;
-  background: var(--white);
+  background: var(--background-light);
+  border: 1px solid var(--bg-highlight);
   border-radius: 10px;
-  color: var(--background);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: var(--primary);
   display: grid;
   list-style-type: none;
   margin-block-end: 0;
@@ -107,13 +109,13 @@
   outline: none;
 }
 
-.option[aria-selected="true"] {
-  background-color: var(--highlight);
-  color: var(--background);
-}
-
 .option:focus,
 .option:hover {
+  background-color: var(--bg-highlight);
+}
+
+/* After the hover rule, so the selected option stays teal on hover */
+.option[aria-selected="true"] {
   background-color: var(--highlight);
   color: var(--background);
 }
