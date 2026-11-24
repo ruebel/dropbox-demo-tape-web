@@ -2,6 +2,7 @@
 
 import { SongDetails } from "@/components/AudioControls/SongDetails";
 import { useAudio } from "@/hooks/useAudio";
+import { usePlaybackHotkeys } from "@/hooks/usePlaybackHotkeys";
 
 import { Position } from "@/components/AudioControls/Position";
 import { Volume } from "@/components/AudioControls/Volume";
@@ -26,6 +27,7 @@ export function AudioControls() {
     playlist,
     track,
   } = useAudio();
+  usePlaybackHotkeys();
 
   const playButton =
     audioState === "playing" ? (
