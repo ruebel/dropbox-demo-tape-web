@@ -121,7 +121,7 @@
 }
 
 .dragHint {
-  color: var(--disabled);
+  color: var(--muted);
   font-size: var(--fs-xs);
 }
 .listError {

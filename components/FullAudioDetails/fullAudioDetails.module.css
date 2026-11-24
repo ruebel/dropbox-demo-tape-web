@@ -49,6 +49,6 @@
 }
 
 .artist {
-  color: var(--disabled);
+  color: var(--muted);
   font-size: var(--fs-sm);
 }

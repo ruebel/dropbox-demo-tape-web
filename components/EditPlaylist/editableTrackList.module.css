@@ -11,7 +11,7 @@
 /* The handle icon, as a hint only */
 .dragHint {
   align-items: center;
-  color: var(--disabled);
+  color: var(--muted);
   display: flex;
   height: 100%;
   justify-content: center;
@@ -73,7 +73,7 @@
 
 .folder {
   /* Matches the name of who updated a track on the playlist page */
-  color: var(--disabled);
+  color: var(--muted);
   /* Right to left, so a long path is cut at its start and keeps its last
      folders */
   direction: rtl;

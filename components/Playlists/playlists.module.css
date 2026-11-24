@@ -52,7 +52,7 @@
 }
 
 .modified {
-  color: var(--disabled);
+  color: var(--muted);
 }
 
 .updated {
