@@ -6,6 +6,8 @@
   align-items: center;
   color: var(--primary);
   display: grid;
+  /* Every digit has the same width, so the times do not shift as they change */
+  font-variant-numeric: tabular-nums;
   grid-template-columns: 60px 1fr 60px;
   gap: 5px;
 }
