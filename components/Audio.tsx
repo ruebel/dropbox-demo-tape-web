@@ -73,7 +73,7 @@ export function Audio() {
   } = useAudio();
   const [audioState, setAudioState] = useAtom(audioStateAtom);
   const setPosition = useSetAtom(audioPostionAtom);
-  const [audioDuration, setAudioDuration] = useAtom(durationAtom);
+  const setAudioDuration = useSetAtom(durationAtom);
   const imageMap = useAtomValue(imageMapAtom);
   const brokenImageIds = useAtomValue(brokenImageIdsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -110,26 +110,48 @@ export function Audio() {
         player.currentTime = seekTo / 1000;
       }
 
-      setMediaPosition({
-        durationMs: audioDuration,
-        positionMs: seekTo,
-      });
       setPosition(seekTo);
       setSeekTo(-1);
     }
   }, [seekTo]);
 
-  // Setup media handlers
+  // The lock screen calls these after the effect below set them, so they read
+  // the latest state when they run
+  const handleMediaNext = useEffectEvent(() => onNext());
+  const handleMediaPause = useEffectEvent(() => onPause());
+  const handleMediaPlay = useEffectEvent(() => onResume());
+  const handleMediaPrevious = useEffectEvent(() => onPrevious());
+  const handleMediaSeekBy = useEffectEvent((offsetMs: number) =>
+    onSeekBy(offsetMs)
+  );
+  const handleMediaSeekTo = useEffectEvent((positionMs: number) =>
+    onSeekTo(positionMs)
+  );
+
+  // Sets the lock screen's actions once, instead of on every render
   useEffect(() => {
     setMediaHandlers({
-      onNext,
-      onPrevious,
-      onPause,
-      onPlay: onResume,
-      onSeekBy,
-      onSeekTo,
+      onNext: () => handleMediaNext(),
+      onPause: () => handleMediaPause(),
+      onPlay: () => handleMediaPlay(),
+      onPrevious: () => handleMediaPrevious(),
+      onSeekBy: (offsetMs) => handleMediaSeekBy(offsetMs),
+      onSeekTo: (positionMs) => handleMediaSeekTo(positionMs),
     });
-  }, [onNext, onPause, onResume, onPrevious, onSeekBy, onSeekTo]);
+  }, []);
+
+  // Tells the lock screen where playback is. The browser moves the lock
+  // screen's clock on its own while playing, so this is needed only when
+  // playback starts, pauses, or jumps, and when the track's length changes.
+  const syncMediaPosition = useCallback(() => {
+    const el = audioRef.current;
+    if (!el) return;
+
+    setMediaPosition({
+      durationMs: el.duration * 1000,
+      positionMs: el.currentTime * 1000,
+    });
+  }, []);
 
   const handleDurationChange = useCallback(() => {
     const el = audioRef.current;
@@ -139,9 +161,9 @@ export function Audio() {
 
     // Will save the duration in the playlist if needed
     onSetTrackDuration(duration);
-    setMediaPosition({ durationMs: duration * 1000 });
+    syncMediaPosition();
     setAudioDuration(duration * 1000);
-  }, [onSetTrackDuration, setAudioDuration]);
+  }, [onSetTrackDuration, setAudioDuration, syncMediaPosition]);
 
   const handleEnded = useCallback(() => {
     if (hasNext) {
@@ -159,7 +181,8 @@ export function Audio() {
   // fails later (for example, its link expires during a long pause)
   const handlePlaybackStarted = useCallback(() => {
     retriedTrackIdRef.current = undefined;
-  }, []);
+    syncMediaPosition();
+  }, [syncMediaPosition]);
 
   const handleProgress = useCallback(() => {
     const player = audioRef.current;
@@ -371,9 +394,11 @@ export function Audio() {
       onDurationChange={handleDurationChange}
       onEnded={handleEnded}
       onError={handleMediaError}
+      onPause={syncMediaPosition}
       onPlay={handlePlaying}
       onPlaying={handlePlaybackStarted}
       onProgress={handleProgress}
+      onSeeked={syncMediaPosition}
       ref={audioRef}
     />
   );

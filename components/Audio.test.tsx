@@ -7,7 +7,9 @@ import { uploadFile } from "@/api/file";
 import { getTrackLink } from "@/api/track";
 import { Audio } from "@/components/Audio";
 import {
+  audioPostionAtom,
   audioStateAtom,
+  durationAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
   sessionTrackErrorsAtom,
@@ -18,7 +20,11 @@ import { brokenImageIdsAtom, imageMapAtom } from "@/state/image";
 import { playlistsAtom } from "@/state/playlists";
 import { MEDIA_ERROR } from "@/utils/error";
 import { transformFile } from "@/utils/file";
-import { setMediaTrack } from "@/utils/mediaSession";
+import {
+  setMediaHandlers,
+  setMediaPosition,
+  setMediaTrack,
+} from "@/utils/mediaSession";
 import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
@@ -345,6 +351,52 @@ describe("Audio", () => {
 
       expect(store.get(audioStateAtom)).toBe("playing");
       expect(vi.mocked(getTrackLink).mock.calls).toHaveLength(1);
+    });
+  });
+
+  describe("lock screen controls", () => {
+    // The actions the player last gave the lock screen
+    function lockScreen() {
+      const handlers = vi.mocked(setMediaHandlers).mock.lastCall?.[0];
+      if (!handlers) throw new Error("No lock screen actions were set");
+      return handlers;
+    }
+
+    it("sets its actions once, even when the player re-renders", () => {
+      const { store } = renderAudio();
+
+      act(() => store.set(volumeAtom, 0.5));
+      act(() => store.set(audioPostionAtom, 30_000));
+
+      expect(setMediaHandlers).toHaveBeenCalledTimes(1);
+    });
+
+    it("seeks from the latest position", () => {
+      const { store } = renderAudio();
+      act(() => store.set(durationAtom, 180_000));
+      act(() => store.set(audioPostionAtom, 30_000));
+
+      act(() => lockScreen().onSeekBy(10_000));
+
+      expect(store.get(audioPostionAtom)).toBe(40_000);
+    });
+
+    it("tells the lock screen where playback paused or jumped to", () => {
+      const { audio } = renderAudio();
+      Object.defineProperty(audio, "duration", {
+        configurable: true,
+        value: 180,
+      });
+
+      audio.currentTime = 42;
+      fireEvent.pause(audio);
+      audio.currentTime = 90;
+      fireEvent.seeked(audio);
+
+      expect(vi.mocked(setMediaPosition).mock.calls).toEqual([
+        [{ durationMs: 180_000, positionMs: 42_000 }],
+        [{ durationMs: 180_000, positionMs: 90_000 }],
+      ]);
     });
   });
 
