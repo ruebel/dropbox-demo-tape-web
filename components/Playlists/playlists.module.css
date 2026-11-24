@@ -109,11 +109,11 @@
 
 .option[aria-selected="true"] {
   background-color: var(--highlight);
-  color: var(--white);
+  color: var(--background);
 }
 
 .option:focus,
 .option:hover {
   background-color: var(--highlight);
-  color: var(--white);
+  color: var(--background);
 }

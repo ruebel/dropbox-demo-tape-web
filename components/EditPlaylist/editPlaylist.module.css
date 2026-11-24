@@ -93,7 +93,7 @@
   border-color: var(--highlight);
   border-style: solid;
   background-color: var(--highlight);
-  color: var(--white);
+  color: var(--background);
 }
 
 /* The tracks heading with the text and controls under it */
