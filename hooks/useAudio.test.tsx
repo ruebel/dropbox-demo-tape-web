@@ -95,6 +95,50 @@ describe("useAudio", () => {
     });
   });
 
+  describe("onPrevious", () => {
+    it("goes to the previous track near the start of a track", () => {
+      const { result, store } = renderUseAudio({
+        positionMs: 2_000,
+        trackId: second.id,
+      });
+
+      act(() => result.current.onPrevious());
+
+      expect(store.get(playingTrackIdAtom)).toBe(first.id);
+      expect(store.get(audioPostionAtom)).toBe(0);
+    });
+
+    it("restarts the track further in", () => {
+      const { result, store } = renderUseAudio({
+        positionMs: 45_000,
+        trackId: second.id,
+      });
+
+      act(() => result.current.onPrevious());
+
+      expect(store.get(playingTrackIdAtom)).toBe(second.id);
+      expect(store.get(seekToAtom)).toBe(0);
+    });
+
+    it("restarts the first track", () => {
+      const { result, store } = renderUseAudio({ positionMs: 1_000 });
+
+      act(() => result.current.onPrevious());
+
+      expect(store.get(playingTrackIdAtom)).toBe(first.id);
+      expect(store.get(seekToAtom)).toBe(0);
+    });
+  });
+
+  it("starts a new track at the beginning", () => {
+    const { result, store } = renderUseAudio({ positionMs: 90_000 });
+
+    act(() => result.current.onNext());
+
+    expect(store.get(playingTrackIdAtom)).toBe(second.id);
+    expect(store.get(audioPostionAtom)).toBe(0);
+  });
+
   it("does not seek without a track", () => {
     const { result, store } = renderUseAudio({ trackId: "" });
 

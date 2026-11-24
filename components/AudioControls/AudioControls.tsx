@@ -18,7 +18,6 @@ import styles from "./audioControls.module.css";
 export function AudioControls() {
   const {
     audioState,
-    hasPrevious,
     hasNext,
     onPrevious,
     onNext,
@@ -72,7 +71,7 @@ export function AudioControls() {
           <div className={styles.buttons}>
             <IconButton
               ariaLabel="Previous"
-              disabled={!hasPrevious}
+              disabled={!track}
               hideBorder={true}
               onClick={onPrevious}
             >

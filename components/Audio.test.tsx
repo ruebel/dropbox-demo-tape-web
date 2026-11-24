@@ -373,14 +373,18 @@ describe("Audio", () => {
       expect(setMediaHandlers).toHaveBeenCalledTimes(1);
     });
 
-    it("offers next and previous only when there is a track to go to", () => {
+    it("offers next only when there is a next track", () => {
       const { store } = renderAudio();
       expect(lockScreen().onNext).toBeDefined();
-      expect(lockScreen().onPrevious).toBeUndefined();
 
       playTrack(store, second.id);
 
       expect(lockScreen().onNext).toBeUndefined();
+    });
+
+    it("offers previous on the first track, where it restarts the track", () => {
+      renderAudio();
+
       expect(lockScreen().onPrevious).toBeDefined();
     });
 

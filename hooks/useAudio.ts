@@ -12,6 +12,9 @@ import { updateTrackMeta } from "@/utils/file";
 import { FileMeta, PlaylistTrack, TrackErrorCode } from "@/utils/types";
 import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
 
+// From this far into a track, previous restarts it
+const RESTART_AFTER_MS = 3000;
+
 export function useAudio() {
   const [playingPlaylistId, setPlayingPlaylistId] = useAtom(
     playingPlaylistIdAtom
@@ -22,8 +25,8 @@ export function useAudio() {
   const setSessionTrackErrors = useSetAtom(sessionTrackErrorsAtom);
   const [audioState, setAudioState] = useAtom(audioStateAtom);
   const setSeekTo = useSetAtom(seekToAtom);
-  // Reads the position when a seek happens, so components that use this hook
-  // do not re-render every time the position changes
+  // Reads and sets the position only when needed, so components that use this
+  // hook do not re-render every time the position changes
   const store = useStore();
 
   const tracks = playlist?.data.tracks || [];
@@ -36,6 +39,10 @@ export function useAudio() {
   function onPlay(playlistId: string, trackId: string) {
     setPlayingPlaylistId(playlistId);
     setPlayingTrackId(trackId);
+    // The new track starts at the beginning. Otherwise the last track's
+    // position shows until this one plays, and previous would restart this
+    // track instead of going back.
+    store.set(audioPostionAtom, 0);
     setAudioState("loading");
   }
 
@@ -49,9 +56,15 @@ export function useAudio() {
     setAudioState("paused");
   }
 
+  // Goes to the previous track near the start of a track. Further in, or on
+  // the first track, it restarts the track instead, like most players.
   function onPrevious() {
-    if (hasPrevious) {
+    if (!track) return;
+
+    if (hasPrevious && store.get(audioPostionAtom) < RESTART_AFTER_MS) {
       onPlay(playingPlaylistId, tracks[trackIndex - 1].id);
+    } else {
+      onSeekTo(0);
     }
   }
 
@@ -141,7 +154,6 @@ export function useAudio() {
   return {
     audioState,
     hasNext,
-    hasPrevious,
     onNext,
     onPause,
     onPlay,

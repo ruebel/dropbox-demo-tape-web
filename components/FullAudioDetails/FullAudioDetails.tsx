@@ -21,7 +21,6 @@ export function FullAudioDetails() {
   const {
     audioState,
     hasNext,
-    hasPrevious,
     onNext,
     onPause,
     onPrevious,
@@ -54,7 +53,7 @@ export function FullAudioDetails() {
       <div className={styles.buttons}>
         <IconButton
           ariaLabel="Previous"
-          disabled={!hasPrevious}
+          disabled={!track}
           hideBorder={true}
           onClick={onPrevious}
           size={40}

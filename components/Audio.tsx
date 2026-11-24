@@ -58,7 +58,6 @@ export function Audio() {
   const [reloadCount, setReloadCount] = useState(0);
   const {
     hasNext,
-    hasPrevious,
     onNext,
     onPause,
     onPrevious,
@@ -132,7 +131,8 @@ export function Audio() {
   const handleMediaStop = useEffectEvent(() => onStop());
 
   const canGoNext = !!hasNext;
-  const canGoPrevious = !!hasPrevious;
+  // Previous restarts the track when there is no earlier one
+  const canGoPrevious = !!track;
 
   // Sets the lock screen's actions when the tracks it can go to change,
   // instead of on every render
