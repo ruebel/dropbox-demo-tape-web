@@ -44,7 +44,9 @@ export function Header() {
       <Link href={getBackUrl(path)}>
         <div className={styles.inner}>
           {path === "/" || path === "/auth" ? (
-            <TapeIcon size={36} />
+            <span className={styles.logo}>
+              <TapeIcon size={36} />
+            </span>
           ) : (
             <ArrowLeftIcon size={36} />
           )}

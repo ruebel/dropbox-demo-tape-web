@@ -7,7 +7,9 @@ import { uploadFile } from "@/api/file";
 import { getTrackLink } from "@/api/track";
 import { Audio } from "@/components/Audio";
 import {
+  audioPostionAtom,
   audioStateAtom,
+  durationAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
   sessionTrackErrorsAtom,
@@ -18,15 +20,21 @@ import { brokenImageIdsAtom, imageMapAtom } from "@/state/image";
 import { playlistsAtom } from "@/state/playlists";
 import { MEDIA_ERROR } from "@/utils/error";
 import { transformFile } from "@/utils/file";
-import { setMediaTrack } from "@/utils/mediaSession";
+import {
+  clearMediaSession,
+  setMediaHandlers,
+  setMediaPosition,
+  setMediaTrack,
+} from "@/utils/mediaSession";
 import { FileMeta, Playlist, PlaylistData } from "@/utils/types";
 
 vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/track", () => ({ getTrackLink: vi.fn() }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 vi.mock("@/utils/mediaSession", () => ({
-  setMediaDuration: vi.fn(),
+  clearMediaSession: vi.fn(),
   setMediaHandlers: vi.fn(),
+  setMediaPosition: vi.fn(),
   setMediaState: vi.fn(),
   setMediaTrack: vi.fn(),
 }));
@@ -345,6 +353,92 @@ describe("Audio", () => {
 
       expect(store.get(audioStateAtom)).toBe("playing");
       expect(vi.mocked(getTrackLink).mock.calls).toHaveLength(1);
+    });
+  });
+
+  describe("lock screen controls", () => {
+    // The actions the player last gave the lock screen
+    function lockScreen() {
+      const handlers = vi.mocked(setMediaHandlers).mock.lastCall?.[0];
+      if (!handlers) throw new Error("No lock screen actions were set");
+      return handlers;
+    }
+
+    it("sets its actions once, even when the player re-renders", () => {
+      const { store } = renderAudio();
+
+      act(() => store.set(volumeAtom, 0.5));
+      act(() => store.set(audioPostionAtom, 30_000));
+
+      expect(setMediaHandlers).toHaveBeenCalledTimes(1);
+    });
+
+    it("offers next only when there is a next track", () => {
+      const { store } = renderAudio();
+      expect(lockScreen().onNext).toBeDefined();
+
+      playTrack(store, second.id);
+
+      expect(lockScreen().onNext).toBeUndefined();
+    });
+
+    it("offers previous on the first track, where it restarts the track", () => {
+      renderAudio();
+
+      expect(lockScreen().onPrevious).toBeDefined();
+    });
+
+    it("stops when the lock screen asks", () => {
+      const { store } = renderAudio();
+
+      act(() => lockScreen().onStop());
+
+      expect(store.get(audioStateAtom)).toBe("stopped");
+    });
+
+    it("clears the lock screen when playback stops, and shows the track again on play", () => {
+      const { audio, store } = renderAudio();
+      vi.mocked(clearMediaSession).mockClear();
+      vi.mocked(setMediaTrack).mockClear();
+
+      act(() => store.set(audioStateAtom, "stopped"));
+      // Stopping pauses the player, which must not put the position back
+      fireEvent.pause(audio);
+
+      expect(clearMediaSession).toHaveBeenCalledTimes(1);
+      expect(setMediaPosition).not.toHaveBeenCalled();
+
+      act(() => store.set(audioStateAtom, "playing"));
+
+      expect(setMediaTrack).toHaveBeenCalledTimes(1);
+    });
+
+    it("seeks from the latest position", () => {
+      const { store } = renderAudio();
+      act(() => store.set(durationAtom, 180_000));
+      act(() => store.set(audioPostionAtom, 30_000));
+
+      act(() => lockScreen().onSeekBy(10_000));
+
+      expect(store.get(audioPostionAtom)).toBe(40_000);
+    });
+
+    it("tells the lock screen where playback paused or jumped to", () => {
+      const { audio } = renderAudio();
+      Object.defineProperty(audio, "duration", {
+        configurable: true,
+        value: 180,
+      });
+
+      audio.currentTime = 42;
+      fireEvent.pause(audio);
+      audio.currentTime = 90;
+      fireEvent.seeked(audio);
+
+      expect(vi.mocked(setMediaPosition).mock.calls).toEqual([
+        [{ durationMs: 180_000, positionMs: 42_000 }],
+        [{ durationMs: 180_000, positionMs: 90_000 }],
+      ]);
     });
   });
 

@@ -2,6 +2,7 @@
 
 import { SongDetails } from "@/components/AudioControls/SongDetails";
 import { useAudio } from "@/hooks/useAudio";
+import { usePlaybackHotkeys } from "@/hooks/usePlaybackHotkeys";
 
 import { Position } from "@/components/AudioControls/Position";
 import { Volume } from "@/components/AudioControls/Volume";
@@ -18,7 +19,6 @@ import styles from "./audioControls.module.css";
 export function AudioControls() {
   const {
     audioState,
-    hasPrevious,
     hasNext,
     onPrevious,
     onNext,
@@ -27,6 +27,7 @@ export function AudioControls() {
     playlist,
     track,
   } = useAudio();
+  usePlaybackHotkeys();
 
   const playButton =
     audioState === "playing" ? (
@@ -72,7 +73,7 @@ export function AudioControls() {
           <div className={styles.buttons}>
             <IconButton
               ariaLabel="Previous"
-              disabled={!hasPrevious}
+              disabled={!track}
               hideBorder={true}
               onClick={onPrevious}
             >

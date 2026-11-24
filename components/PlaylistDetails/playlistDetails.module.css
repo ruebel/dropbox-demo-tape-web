@@ -31,7 +31,7 @@
   border-color: var(--highlight);
   border-style: solid;
   background-color: var(--highlight);
-  color: var(--white);
+  color: var(--background);
 }
 
 /* Draws a missing track and the row that offers to replace it as one block */

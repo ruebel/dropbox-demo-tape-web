@@ -75,7 +75,7 @@
 }
 
 .emptyTracks {
-  border: 1px dashed var(--disabled);
+  border: 1px dashed var(--muted);
   border-radius: 10px;
   padding: 20px;
   margin: 20px;
@@ -93,7 +93,7 @@
   border-color: var(--highlight);
   border-style: solid;
   background-color: var(--highlight);
-  color: var(--white);
+  color: var(--background);
 }
 
 /* The tracks heading with the text and controls under it */
@@ -121,7 +121,7 @@
 }
 
 .dragHint {
-  color: var(--disabled);
+  color: var(--muted);
   font-size: var(--fs-xs);
 }
 .listError {

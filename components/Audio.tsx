@@ -22,13 +22,14 @@ import {
 } from "@/utils/error";
 import { getImageMimeType, removeExtension } from "@/utils/file";
 import {
-  setMediaDuration,
+  clearMediaSession,
   setMediaHandlers,
+  setMediaPosition,
   setMediaState,
   setMediaTrack,
 } from "@/utils/mediaSession";
 import { FileMeta, TrackErrorCode } from "@/utils/types";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   useCallback,
   useEffect,
@@ -61,6 +62,8 @@ export function Audio() {
     onPause,
     onPrevious,
     onResume,
+    onSeekBy,
+    onSeekTo,
     onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
@@ -70,8 +73,8 @@ export function Audio() {
     track,
   } = useAudio();
   const [audioState, setAudioState] = useAtom(audioStateAtom);
-  const [position, setPosition] = useAtom(audioPostionAtom);
-  const [audioDuration, setAudioDuration] = useAtom(durationAtom);
+  const setPosition = useSetAtom(audioPostionAtom);
+  const setAudioDuration = useSetAtom(durationAtom);
   const imageMap = useAtomValue(imageMapAtom);
   const brokenImageIds = useAtomValue(brokenImageIdsAtom);
   const isAuthenticated = useAtomValue(isAuthenticatedAtom);
@@ -99,22 +102,6 @@ export function Audio() {
     return () => clearInterval(interval);
   }, [audioState, setPosition]);
 
-  const onSeek = useCallback(
-    (positionMs?: number, isForward?: boolean) => {
-      let nextPosition = positionMs || 0;
-
-      if (positionMs === undefined) {
-        // Handles bumping the position +/- 10 seconds if
-        // the user presses the seek buttons instead of using
-        // the position bar
-        nextPosition = position + (isForward ? 10000 : -10000);
-      }
-
-      setSeekTo(nextPosition);
-    },
-    [position, audioDuration, track?.id]
-  );
-
   // Handle seek changes from controls
   useEffect(() => {
     if (track && seekTo >= 0) {
@@ -124,25 +111,58 @@ export function Audio() {
         player.currentTime = seekTo / 1000;
       }
 
-      setMediaDuration({
-        duration: audioDuration,
-        position: seekTo,
-      });
       setPosition(seekTo);
       setSeekTo(-1);
     }
   }, [seekTo]);
 
-  // Setup media handlers
+  // The lock screen calls these after the effect below set them, so they read
+  // the latest state when they run
+  const handleMediaNext = useEffectEvent(() => onNext());
+  const handleMediaPause = useEffectEvent(() => onPause());
+  const handleMediaPlay = useEffectEvent(() => onResume());
+  const handleMediaPrevious = useEffectEvent(() => onPrevious());
+  const handleMediaSeekBy = useEffectEvent((offsetMs: number) =>
+    onSeekBy(offsetMs)
+  );
+  const handleMediaSeekTo = useEffectEvent((positionMs: number) =>
+    onSeekTo(positionMs)
+  );
+  const handleMediaStop = useEffectEvent(() => onStop());
+
+  const canGoNext = !!hasNext;
+  // Previous restarts the track when there is no earlier one
+  const canGoPrevious = !!track;
+
+  // Sets the lock screen's actions when the tracks it can go to change,
+  // instead of on every render
   useEffect(() => {
     setMediaHandlers({
-      onNext,
-      onPrevious,
-      onPause,
-      onPlay: onResume,
-      onSeek,
+      onNext: canGoNext ? () => handleMediaNext() : undefined,
+      onPause: () => handleMediaPause(),
+      onPlay: () => handleMediaPlay(),
+      onPrevious: canGoPrevious ? () => handleMediaPrevious() : undefined,
+      onSeekBy: (offsetMs) => handleMediaSeekBy(offsetMs),
+      onSeekTo: (positionMs) => handleMediaSeekTo(positionMs),
+      onStop: () => handleMediaStop(),
     });
-  }, [onNext, onPause, onResume, onPrevious, onSeek]);
+  }, [canGoNext, canGoPrevious]);
+
+  const isStopped = audioState === "stopped";
+
+  // Tells the lock screen where playback is. The browser moves the lock
+  // screen's clock on its own while playing, so this is needed only when
+  // playback starts, pauses, or jumps, and when the track's length changes.
+  const syncMediaPosition = useCallback(() => {
+    const el = audioRef.current;
+    // Stopping pauses the player, and the lock screen is already cleared
+    if (!el || isStopped) return;
+
+    setMediaPosition({
+      durationMs: el.duration * 1000,
+      positionMs: el.currentTime * 1000,
+    });
+  }, [isStopped]);
 
   const handleDurationChange = useCallback(() => {
     const el = audioRef.current;
@@ -152,9 +172,9 @@ export function Audio() {
 
     // Will save the duration in the playlist if needed
     onSetTrackDuration(duration);
-    setMediaDuration({ duration });
+    syncMediaPosition();
     setAudioDuration(duration * 1000);
-  }, [onSetTrackDuration, setAudioDuration]);
+  }, [onSetTrackDuration, setAudioDuration, syncMediaPosition]);
 
   const handleEnded = useCallback(() => {
     if (hasNext) {
@@ -172,7 +192,8 @@ export function Audio() {
   // fails later (for example, its link expires during a long pause)
   const handlePlaybackStarted = useCallback(() => {
     retriedTrackIdRef.current = undefined;
-  }, []);
+    syncMediaPosition();
+  }, [syncMediaPosition]);
 
   const handleProgress = useCallback(() => {
     const player = audioRef.current;
@@ -181,22 +202,26 @@ export function Audio() {
     setPosition(player.currentTime * 1000);
   }, [setPosition]);
 
-  // Updates media when track changes
+  // Shows the track on the lock screen, and removes it when playback stops so
+  // the media notification goes away
   useEffect(() => {
-    if (track) {
-      setMediaTrack({
-        title: removeExtension(track?.name),
-        artist: playlist?.data?.artist || playlist?.data?.title,
-        album: playlist?.data?.title || "Demo Tape",
-        // Without artwork, setMediaTrack uses the app icons. The image's size
-        // is not known, so `sizes` is left out rather than guessed, and so
-        // is `type` when the extension is not a known image type.
-        artwork: imagePath
-          ? [{ src: imagePath, ...(imageType && { type: imageType }) }]
-          : undefined,
-      });
+    if (!track || isStopped) {
+      clearMediaSession();
+      return;
     }
-  }, [track?.id, imagePath, imageType, playlist?.meta?.id]);
+
+    setMediaTrack({
+      title: removeExtension(track?.name),
+      artist: playlist?.data?.artist || playlist?.data?.title,
+      album: playlist?.data?.title || "Demo Tape",
+      // Without artwork, setMediaTrack uses the app icons. The image's size
+      // is not known, so `sizes` is left out rather than guessed, and so
+      // is `type` when the extension is not a known image type.
+      artwork: imagePath
+        ? [{ src: imagePath, ...(imageType && { type: imageType }) }]
+        : undefined,
+    });
+  }, [isStopped, track?.id, imagePath, imageType, playlist?.meta?.id]);
 
   // Records why the playing track failed, then moves to the next track or
   // stops. Errors about the file are saved in the shared playlist. Transient
@@ -343,7 +368,6 @@ export function Audio() {
         setMediaState("paused");
       } else if (audioState === "stopped") {
         player.pause();
-        setMediaState("none");
         // clear time so we restart at beginning
         player.currentTime = 0;
       }
@@ -384,9 +408,11 @@ export function Audio() {
       onDurationChange={handleDurationChange}
       onEnded={handleEnded}
       onError={handleMediaError}
+      onPause={syncMediaPosition}
       onPlay={handlePlaying}
       onPlaying={handlePlaybackStarted}
       onProgress={handleProgress}
+      onSeeked={syncMediaPosition}
       ref={audioRef}
     />
   );

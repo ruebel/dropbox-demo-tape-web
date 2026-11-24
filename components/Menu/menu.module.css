@@ -1,6 +1,8 @@
 .menuWrapper {
-  background: var(--white);
-  color: var(--background);
+  background: var(--background-light);
+  border: 1px solid var(--bg-highlight);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  color: var(--primary);
   position: fixed;
   margin-top: 5px;
   padding: 10px 0;
@@ -30,5 +32,5 @@
 }
 
 .menuItem:hover {
-  background: var(--highlight-light);
+  background: var(--bg-highlight);
 }

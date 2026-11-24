@@ -2,15 +2,16 @@
   --background: #242A31;
   --background-light: #2D323C;
   --bg-highlight: #d2d2d211;
-  --disabled: #656565;
+  --disabled: #5a626e;
   --error: #E7777F;
   --highlight-light: #c5e1e8;
   --highlight: #5eb1bf;
   --highlight-dark: #48657c;
   --inherit: inherit;
-  --primary: #d2d2d2;
+  --muted: #8a93a0;
+  --primary: #d5dae1;
   --primary-light: #d2d2d211;
-  --secondary: #b3b3b3;
+  --secondary: #aab2bd;
   --success: #A1CA7E;
   --transparent: transparent;
   --white: #fff;
@@ -30,11 +31,6 @@
   --fs-xs: 12px;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-  }
-}
-
 * {
   box-sizing: border-box;
   padding: 0;
@@ -52,13 +48,6 @@ body {
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
   font-size: 16px;
   font-weight: 400;
 }

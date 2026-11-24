@@ -1,13 +1,19 @@
 import {
+  audioPostionAtom,
   audioStateAtom,
+  durationAtom,
   playingPlaylistIdAtom,
   playingTrackIdAtom,
+  seekToAtom,
   sessionTrackErrorsAtom,
 } from "@/state/audio";
 import { playlistAtom, updatePlaylistTrackAtom } from "@/state/playlists";
 import { updateTrackMeta } from "@/utils/file";
 import { FileMeta, PlaylistTrack, TrackErrorCode } from "@/utils/types";
-import { useAtom, useAtomValue, useSetAtom } from "jotai";
+import { useAtom, useAtomValue, useSetAtom, useStore } from "jotai";
+
+// From this far into a track, previous restarts it
+const RESTART_AFTER_MS = 3000;
 
 export function useAudio() {
   const [playingPlaylistId, setPlayingPlaylistId] = useAtom(
@@ -18,6 +24,10 @@ export function useAudio() {
   const updatePlaylistTrack = useSetAtom(updatePlaylistTrackAtom);
   const setSessionTrackErrors = useSetAtom(sessionTrackErrorsAtom);
   const [audioState, setAudioState] = useAtom(audioStateAtom);
+  const setSeekTo = useSetAtom(seekToAtom);
+  // Reads and sets the position only when needed, so components that use this
+  // hook do not re-render every time the position changes
+  const store = useStore();
 
   const tracks = playlist?.data.tracks || [];
   const trackIndex = tracks.findIndex((t) => t.id === playingTrackId);
@@ -29,6 +39,10 @@ export function useAudio() {
   function onPlay(playlistId: string, trackId: string) {
     setPlayingPlaylistId(playlistId);
     setPlayingTrackId(trackId);
+    // The new track starts at the beginning. Otherwise the last track's
+    // position shows until this one plays, and previous would restart this
+    // track instead of going back.
+    store.set(audioPostionAtom, 0);
     setAudioState("loading");
   }
 
@@ -42,14 +56,35 @@ export function useAudio() {
     setAudioState("paused");
   }
 
+  // Goes to the previous track near the start of a track. Further in, or on
+  // the first track, it restarts the track instead, like most players.
   function onPrevious() {
-    if (hasPrevious) {
+    if (!track) return;
+
+    if (hasPrevious && store.get(audioPostionAtom) < RESTART_AFTER_MS) {
       onPlay(playingPlaylistId, tracks[trackIndex - 1].id);
+    } else {
+      onSeekTo(0);
     }
   }
 
   function onResume() {
     setAudioState("playing");
+  }
+
+  // Moves playback forward, or back when `offsetMs` is negative
+  function onSeekBy(offsetMs: number) {
+    onSeekTo(store.get(audioPostionAtom) + offsetMs);
+  }
+
+  // Moves playback to `positionMs`, kept between the start and the end of the
+  // track. The end is unknown until the file loads.
+  function onSeekTo(positionMs: number) {
+    if (!track) return;
+
+    const durationMs = store.get(durationAtom);
+    const end = durationMs > 0 ? durationMs : Infinity;
+    setSeekTo(Math.min(Math.max(positionMs, 0), end));
   }
 
   // Saves a change to the playing track. The update runs against the latest
@@ -119,12 +154,13 @@ export function useAudio() {
   return {
     audioState,
     hasNext,
-    hasPrevious,
     onNext,
     onPause,
     onPlay,
     onPrevious,
     onResume,
+    onSeekBy,
+    onSeekTo,
     onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,

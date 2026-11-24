@@ -1,7 +1,7 @@
 .iconButton {
   align-items: center;
   background-color: var(--background);
-  border: 1px solid var(--white);
+  border: 1px solid var(--secondary);
   border-radius: 50%;
   color: var(--white);
   cursor: pointer;

@@ -108,7 +108,7 @@
 
 .folder {
   /* Matches the name of who updated the track */
-  color: var(--disabled);
+  color: var(--muted);
   /* Right to left, so a long path is cut at its start and keeps its last
      folders */
   direction: rtl;
@@ -141,5 +141,5 @@
 }
 
 .updatedBy {
-  color: var(--disabled);
+  color: var(--muted);
 }

@@ -13,7 +13,7 @@
 }
 
 .artist {
-  color: var(--disabled);
+  color: var(--muted);
 }
 
 .artistName {

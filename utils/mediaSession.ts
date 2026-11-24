@@ -14,24 +14,43 @@ const defaultArtwork: MediaImage[] = [
     type: "image/png",
   },
   {
-    src: `/apple-icon-180x180.png`,
+    src: `/apple-icon.png`,
     sizes: "180x180",
     type: "image/png",
   },
 ];
 
-export function setMediaDuration({
-  duration = 0,
-  position = 0,
-  playbackRate = 1,
+// Tells the lock screen the track's length and where playback is. The app
+// counts in milliseconds, and the browser in seconds.
+export function setMediaPosition({
+  durationMs,
+  positionMs = 0,
+}: {
+  durationMs: number;
+  positionMs?: number;
 }) {
-  if (hasSupport() && "setPositionState" in navigator.mediaSession) {
-    window.navigator.mediaSession.setPositionState({
-      duration,
-      position,
-      playbackRate,
-    });
+  if (!hasSupport() || !("setPositionState" in navigator.mediaSession)) {
+    return;
   }
+  // The browser rejects a length that is not a number yet, such as before the
+  // file loads, or that is negative
+  if (!(durationMs >= 0)) return;
+
+  const duration = durationMs / 1000;
+  navigator.mediaSession.setPositionState({
+    duration,
+    // The browser also rejects a position past the end
+    position: Math.min(Math.max(positionMs / 1000, 0), duration),
+    playbackRate: 1,
+  });
+}
+
+// How far the skip buttons move, in seconds, when the system does not say
+const DEFAULT_SKIP_SECONDS = 10;
+
+// The system can give its own skip distance in seconds, such as 15
+function getSkipMs(seekOffset?: number) {
+  return (seekOffset ?? DEFAULT_SKIP_SECONDS) * 1000;
 }
 
 export function setMediaHandlers({
@@ -39,13 +58,20 @@ export function setMediaHandlers({
   onPause,
   onPlay,
   onPrevious,
-  onSeek,
+  onSeekBy,
+  onSeekTo,
+  onStop,
 }: {
-  onNext: () => void;
+  // Left out when there is no track to go to, so the lock screen hides or
+  // disables the button
+  onNext?: () => void;
   onPause: () => void;
   onPlay: () => void;
-  onPrevious: () => void;
-  onSeek: (positionMs?: number, isForward?: boolean) => void;
+  onPrevious?: () => void;
+  // Both take milliseconds
+  onSeekBy: (offsetMs: number) => void;
+  onSeekTo: (positionMs: number) => void;
+  onStop: () => void;
 }) {
   if (hasSupport()) {
     try {
@@ -54,28 +80,36 @@ export function setMediaHandlers({
     try {
       navigator.mediaSession.setActionHandler("pause", onPause);
     } catch (e) {}
-
     try {
-      navigator.mediaSession.setActionHandler("nexttrack", onNext);
-    } catch (e) {}
-    try {
-      navigator.mediaSession.setActionHandler("previoustrack", onPrevious);
+      navigator.mediaSession.setActionHandler("stop", onStop);
     } catch (e) {}
 
     try {
-      navigator.mediaSession.setActionHandler("seekbackward", () =>
-        onSeek(undefined, false)
+      navigator.mediaSession.setActionHandler("nexttrack", onNext ?? null);
+    } catch (e) {}
+    try {
+      navigator.mediaSession.setActionHandler(
+        "previoustrack",
+        onPrevious ?? null
+      );
+    } catch (e) {}
+
+    try {
+      navigator.mediaSession.setActionHandler(
+        "seekbackward",
+        ({ seekOffset }) => onSeekBy(-getSkipMs(seekOffset))
       );
     } catch (e) {}
     try {
-      navigator.mediaSession.setActionHandler("seekforward", () =>
-        onSeek(undefined, true)
+      navigator.mediaSession.setActionHandler("seekforward", ({ seekOffset }) =>
+        onSeekBy(getSkipMs(seekOffset))
       );
     } catch (e) {}
     try {
-      navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) =>
-        onSeek(seekTime)
-      );
+      navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
+        // The browser gives the time in seconds
+        if (seekTime !== undefined) onSeekTo(seekTime * 1000);
+      });
     } catch (e) {}
   }
 }
@@ -99,6 +133,18 @@ export function setMediaTrack({
       artwork,
       title,
     });
+  }
+}
+
+// Removes the track from the lock screen and the media notification
+export function clearMediaSession() {
+  if (!hasSupport()) return;
+
+  navigator.mediaSession.metadata = null;
+  navigator.mediaSession.playbackState = "none";
+  if ("setPositionState" in navigator.mediaSession) {
+    // Without a state, the browser forgets the length and position
+    navigator.mediaSession.setPositionState();
   }
 }
 

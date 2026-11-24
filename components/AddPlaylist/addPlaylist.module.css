@@ -29,7 +29,7 @@
 }
 
 .explorerWrapper {
-  border: 1px solid var(--primary);
+  border: 1px solid var(--secondary);
   border-radius: 10px;
   max-height: 400px;
   padding: 5px;
@@ -42,7 +42,7 @@
 }
 
 .typeOptions {
-  border: 1px solid var(--white);
+  border: 1px solid var(--secondary);
   border-radius: 10px;
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -62,7 +62,7 @@
 }
 
 .typeOption + .typeOption {
-  border-left: 1px solid var(--white);
+  border-left: 1px solid var(--secondary);
 }
 
 .typeOption:not(.typeSelected):hover {
