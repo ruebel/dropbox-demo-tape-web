@@ -83,5 +83,16 @@ describe("mediaSession", () => {
 
       expect(handlers.onSeekTo).toHaveBeenCalledWith(90_000);
     });
+
+    it("removes next and previous when they are left out", () => {
+      setMediaHandlers({
+        ...noHandlers(),
+        onNext: undefined,
+        onPrevious: undefined,
+      });
+
+      expect(fake.handlers.get("nexttrack")).toBeNull();
+      expect(fake.handlers.get("previoustrack")).toBeNull();
+    });
   });
 });

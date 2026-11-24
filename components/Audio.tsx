@@ -57,6 +57,7 @@ export function Audio() {
   const [reloadCount, setReloadCount] = useState(0);
   const {
     hasNext,
+    hasPrevious,
     onNext,
     onPause,
     onPrevious,
@@ -128,17 +129,21 @@ export function Audio() {
     onSeekTo(positionMs)
   );
 
-  // Sets the lock screen's actions once, instead of on every render
+  const canGoNext = !!hasNext;
+  const canGoPrevious = !!hasPrevious;
+
+  // Sets the lock screen's actions when the tracks it can go to change,
+  // instead of on every render
   useEffect(() => {
     setMediaHandlers({
-      onNext: () => handleMediaNext(),
+      onNext: canGoNext ? () => handleMediaNext() : undefined,
       onPause: () => handleMediaPause(),
       onPlay: () => handleMediaPlay(),
-      onPrevious: () => handleMediaPrevious(),
+      onPrevious: canGoPrevious ? () => handleMediaPrevious() : undefined,
       onSeekBy: (offsetMs) => handleMediaSeekBy(offsetMs),
       onSeekTo: (positionMs) => handleMediaSeekTo(positionMs),
     });
-  }, []);
+  }, [canGoNext, canGoPrevious]);
 
   // Tells the lock screen where playback is. The browser moves the lock
   // screen's clock on its own while playing, so this is needed only when

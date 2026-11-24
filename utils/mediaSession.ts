@@ -53,10 +53,12 @@ export function setMediaHandlers({
   onSeekBy,
   onSeekTo,
 }: {
-  onNext: () => void;
+  // Left out when there is no track to go to, so the lock screen hides or
+  // disables the button
+  onNext?: () => void;
   onPause: () => void;
   onPlay: () => void;
-  onPrevious: () => void;
+  onPrevious?: () => void;
   // Both take milliseconds
   onSeekBy: (offsetMs: number) => void;
   onSeekTo: (positionMs: number) => void;
@@ -70,10 +72,13 @@ export function setMediaHandlers({
     } catch (e) {}
 
     try {
-      navigator.mediaSession.setActionHandler("nexttrack", onNext);
+      navigator.mediaSession.setActionHandler("nexttrack", onNext ?? null);
     } catch (e) {}
     try {
-      navigator.mediaSession.setActionHandler("previoustrack", onPrevious);
+      navigator.mediaSession.setActionHandler(
+        "previoustrack",
+        onPrevious ?? null
+      );
     } catch (e) {}
 
     try {

@@ -371,6 +371,17 @@ describe("Audio", () => {
       expect(setMediaHandlers).toHaveBeenCalledTimes(1);
     });
 
+    it("offers next and previous only when there is a track to go to", () => {
+      const { store } = renderAudio();
+      expect(lockScreen().onNext).toBeDefined();
+      expect(lockScreen().onPrevious).toBeUndefined();
+
+      playTrack(store, second.id);
+
+      expect(lockScreen().onNext).toBeUndefined();
+      expect(lockScreen().onPrevious).toBeDefined();
+    });
+
     it("seeks from the latest position", () => {
       const { store } = renderAudio();
       act(() => store.set(durationAtom, 180_000));
