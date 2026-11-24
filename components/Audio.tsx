@@ -28,7 +28,7 @@ import {
   setMediaTrack,
 } from "@/utils/mediaSession";
 import { FileMeta, TrackErrorCode } from "@/utils/types";
-import { useAtom, useAtomValue } from "jotai";
+import { useAtom, useAtomValue, useSetAtom } from "jotai";
 import {
   useCallback,
   useEffect,
@@ -61,6 +61,8 @@ export function Audio() {
     onPause,
     onPrevious,
     onResume,
+    onSeekBy,
+    onSeekTo,
     onSetSessionTrackError,
     onSetTrackDuration,
     onSetTrackError,
@@ -70,7 +72,7 @@ export function Audio() {
     track,
   } = useAudio();
   const [audioState, setAudioState] = useAtom(audioStateAtom);
-  const [position, setPosition] = useAtom(audioPostionAtom);
+  const setPosition = useSetAtom(audioPostionAtom);
   const [audioDuration, setAudioDuration] = useAtom(durationAtom);
   const imageMap = useAtomValue(imageMapAtom);
   const brokenImageIds = useAtomValue(brokenImageIdsAtom);
@@ -99,22 +101,6 @@ export function Audio() {
     return () => clearInterval(interval);
   }, [audioState, setPosition]);
 
-  const onSeek = useCallback(
-    (positionMs?: number, isForward?: boolean) => {
-      let nextPosition = positionMs || 0;
-
-      if (positionMs === undefined) {
-        // Handles bumping the position +/- 10 seconds if
-        // the user presses the seek buttons instead of using
-        // the position bar
-        nextPosition = position + (isForward ? 10000 : -10000);
-      }
-
-      setSeekTo(nextPosition);
-    },
-    [position, audioDuration, track?.id]
-  );
-
   // Handle seek changes from controls
   useEffect(() => {
     if (track && seekTo >= 0) {
@@ -140,9 +126,10 @@ export function Audio() {
       onPrevious,
       onPause,
       onPlay: onResume,
-      onSeek,
+      onSeekBy,
+      onSeekTo,
     });
-  }, [onNext, onPause, onResume, onPrevious, onSeek]);
+  }, [onNext, onPause, onResume, onPrevious, onSeekBy, onSeekTo]);
 
   const handleDurationChange = useCallback(() => {
     const el = audioRef.current;

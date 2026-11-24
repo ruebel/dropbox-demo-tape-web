@@ -50,13 +50,16 @@ export function setMediaHandlers({
   onPause,
   onPlay,
   onPrevious,
-  onSeek,
+  onSeekBy,
+  onSeekTo,
 }: {
   onNext: () => void;
   onPause: () => void;
   onPlay: () => void;
   onPrevious: () => void;
-  onSeek: (positionMs?: number, isForward?: boolean) => void;
+  // Both take milliseconds
+  onSeekBy: (offsetMs: number) => void;
+  onSeekTo: (positionMs: number) => void;
 }) {
   if (hasSupport()) {
     try {
@@ -75,18 +78,18 @@ export function setMediaHandlers({
 
     try {
       navigator.mediaSession.setActionHandler("seekbackward", () =>
-        onSeek(undefined, false)
+        onSeekBy(-10_000)
       );
     } catch (e) {}
     try {
       navigator.mediaSession.setActionHandler("seekforward", () =>
-        onSeek(undefined, true)
+        onSeekBy(10_000)
       );
     } catch (e) {}
     try {
       navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
         // The browser gives the time in seconds
-        if (seekTime !== undefined) onSeek(seekTime * 1000);
+        if (seekTime !== undefined) onSeekTo(seekTime * 1000);
       });
     } catch (e) {}
   }

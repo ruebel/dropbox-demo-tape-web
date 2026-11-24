@@ -28,7 +28,8 @@ function noHandlers() {
     onPause: vi.fn(),
     onPlay: vi.fn(),
     onPrevious: vi.fn(),
-    onSeek: vi.fn(),
+    onSeekBy: vi.fn(),
+    onSeekTo: vi.fn(),
   };
 }
 
@@ -80,7 +81,7 @@ describe("mediaSession", () => {
 
       fake.handlers.get("seekto")?.({ action: "seekto", seekTime: 90 });
 
-      expect(handlers.onSeek).toHaveBeenCalledWith(90_000);
+      expect(handlers.onSeekTo).toHaveBeenCalledWith(90_000);
     });
   });
 });
