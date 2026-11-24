@@ -12,6 +12,12 @@
   flex-direction: row;
 }
 
+/* Teal, to match the app icon */
+.logo {
+  color: var(--highlight);
+  display: flex;
+}
+
 .title {
   font-size: 30px;
   font-weight: 600;
