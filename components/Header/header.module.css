@@ -3,7 +3,7 @@
   background-color: var(--background-light);
   display: grid;
   grid-template-columns: auto 1fr auto;
-  padding: 20px;
+  padding: 10px 20px;
 }
 
 .inner {
@@ -19,12 +19,12 @@
 }
 
 .title {
-  font-size: 30px;
+  font-size: 22px;
   font-weight: 600;
   padding-left: 10px;
 
   @media screen and (max-width: 768px) {
-    font-size: 28px;
+    font-size: 20px;
   }
 }
 
