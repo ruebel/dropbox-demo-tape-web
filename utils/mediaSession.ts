@@ -45,6 +45,14 @@ export function setMediaPosition({
   });
 }
 
+// How far the skip buttons move, in seconds, when the system does not say
+const DEFAULT_SKIP_SECONDS = 10;
+
+// The system can give its own skip distance in seconds, such as 15
+function getSkipMs(seekOffset?: number) {
+  return (seekOffset ?? DEFAULT_SKIP_SECONDS) * 1000;
+}
+
 export function setMediaHandlers({
   onNext,
   onPause,
@@ -87,13 +95,14 @@ export function setMediaHandlers({
     } catch (e) {}
 
     try {
-      navigator.mediaSession.setActionHandler("seekbackward", () =>
-        onSeekBy(-10_000)
+      navigator.mediaSession.setActionHandler(
+        "seekbackward",
+        ({ seekOffset }) => onSeekBy(-getSkipMs(seekOffset))
       );
     } catch (e) {}
     try {
-      navigator.mediaSession.setActionHandler("seekforward", () =>
-        onSeekBy(10_000)
+      navigator.mediaSession.setActionHandler("seekforward", ({ seekOffset }) =>
+        onSeekBy(getSkipMs(seekOffset))
       );
     } catch (e) {}
     try {

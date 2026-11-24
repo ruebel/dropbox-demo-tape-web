@@ -102,6 +102,19 @@ describe("mediaSession", () => {
       expect(handlers.onSeekTo).toHaveBeenCalledWith(90_000);
     });
 
+    it("skips by the system's distance, or 10 seconds", () => {
+      const handlers = noHandlers();
+      setMediaHandlers(handlers);
+
+      fake.handlers.get("seekforward")?.({
+        action: "seekforward",
+        seekOffset: 15,
+      });
+      fake.handlers.get("seekbackward")?.({ action: "seekbackward" });
+
+      expect(handlers.onSeekBy.mock.calls).toEqual([[15_000], [-10_000]]);
+    });
+
     it("stops from the lock screen", () => {
       const handlers = noHandlers();
       setMediaHandlers(handlers);
