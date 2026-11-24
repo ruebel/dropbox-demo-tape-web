@@ -1,6 +1,6 @@
 .header {
   align-items: center;
-  background-color: #2D323C;
+  background-color: var(--background-light);
   display: grid;
   grid-template-columns: auto 1fr auto;
   padding: 20px;
