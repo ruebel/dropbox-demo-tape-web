@@ -20,18 +20,29 @@ const defaultArtwork: MediaImage[] = [
   },
 ];
 
-export function setMediaDuration({
-  duration = 0,
-  position = 0,
-  playbackRate = 1,
+// Tells the lock screen the track's length and where playback is. The app
+// counts in milliseconds, and the browser in seconds.
+export function setMediaPosition({
+  durationMs,
+  positionMs = 0,
+}: {
+  durationMs: number;
+  positionMs?: number;
 }) {
-  if (hasSupport() && "setPositionState" in navigator.mediaSession) {
-    window.navigator.mediaSession.setPositionState({
-      duration,
-      position,
-      playbackRate,
-    });
+  if (!hasSupport() || !("setPositionState" in navigator.mediaSession)) {
+    return;
   }
+  // The browser rejects a length that is not a number yet, such as before the
+  // file loads, or that is negative
+  if (!(durationMs >= 0)) return;
+
+  const duration = durationMs / 1000;
+  navigator.mediaSession.setPositionState({
+    duration,
+    // The browser also rejects a position past the end
+    position: Math.min(Math.max(positionMs / 1000, 0), duration),
+    playbackRate: 1,
+  });
 }
 
 export function setMediaHandlers({
@@ -73,9 +84,10 @@ export function setMediaHandlers({
       );
     } catch (e) {}
     try {
-      navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) =>
-        onSeek(seekTime)
-      );
+      navigator.mediaSession.setActionHandler("seekto", ({ seekTime }) => {
+        // The browser gives the time in seconds
+        if (seekTime !== undefined) onSeek(seekTime * 1000);
+      });
     } catch (e) {}
   }
 }

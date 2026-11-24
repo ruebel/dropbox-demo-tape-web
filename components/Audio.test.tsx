@@ -25,7 +25,7 @@ vi.mock("@/api/file", () => ({ uploadFile: vi.fn() }));
 vi.mock("@/api/track", () => ({ getTrackLink: vi.fn() }));
 vi.mock("@/hooks/useErrorTracking", () => ({ logError: vi.fn() }));
 vi.mock("@/utils/mediaSession", () => ({
-  setMediaDuration: vi.fn(),
+  setMediaPosition: vi.fn(),
   setMediaHandlers: vi.fn(),
   setMediaState: vi.fn(),
   setMediaTrack: vi.fn(),

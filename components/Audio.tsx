@@ -22,7 +22,7 @@ import {
 } from "@/utils/error";
 import { getImageMimeType, removeExtension } from "@/utils/file";
 import {
-  setMediaDuration,
+  setMediaPosition,
   setMediaHandlers,
   setMediaState,
   setMediaTrack,
@@ -124,9 +124,9 @@ export function Audio() {
         player.currentTime = seekTo / 1000;
       }
 
-      setMediaDuration({
-        duration: audioDuration,
-        position: seekTo,
+      setMediaPosition({
+        durationMs: audioDuration,
+        positionMs: seekTo,
       });
       setPosition(seekTo);
       setSeekTo(-1);
@@ -152,7 +152,7 @@ export function Audio() {
 
     // Will save the duration in the playlist if needed
     onSetTrackDuration(duration);
-    setMediaDuration({ duration });
+    setMediaPosition({ durationMs: duration * 1000 });
     setAudioDuration(duration * 1000);
   }, [onSetTrackDuration, setAudioDuration]);
 
